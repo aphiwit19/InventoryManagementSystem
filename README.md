@@ -1,4 +1,38 @@
+# Simple Firebase Auth (Email/Password)
+
+1) Install deps (already added): `npm install`
+
+2) Add your Firebase web config in `src/firebase.js`:
+
+```
+const firebaseConfig = {
+  apiKey: '...'
+  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+  messagingSenderId: '...'
+  appId: '...'
+}
+```
+
+Find it in Firebase Console → Project settings → Your apps → SDK setup and configuration.
+
+3) Enable Authentication → Sign-in method → Email/Password in Firebase Console.
+
+4) Run the app: `npm start` then open http://localhost:3000
+
 # Getting Started with Create React App
+
+## Role-based setup (Admin, Staff, Customer)
+
+- Customer registersจากหน้า Register (role จะเป็น `customer` อัตโนมัติ)
+- Admin ให้สร้างบัญชีครั้งแรกผ่าน Firebase Console (Auth) แล้วไปที่ `users/{uid}` ใน Firestore ใส่ `role: "admin"`
+- เมื่อมี Admin แล้ว ให้ผู้พนักงาน/ผู้เบิกสมัครหรือแอดมินสมัครให้ชั่วคราว จากนั้นแอดมินเข้า `Admin → Manage Users` เปลี่ยน `role` เป็น `staff`
+
+เส้นทางหลักหลังล็อกอินจะเปลี่ยนตาม role:
+- Admin → `/admin` (จัดการผู้ใช้ `/admin/users`)
+- Staff → `/staff`
+- Customer → `/customer`
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
