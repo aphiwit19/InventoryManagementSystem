@@ -52,7 +52,7 @@ export default function InventoryHistoryPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '50px',
@@ -71,7 +71,8 @@ export default function InventoryHistoryPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
+    // Removed the sidebar and adjusted the main content styling
+    <div style={{ padding: '20px' }}>
       {/* Header */}
       <div style={{ marginBottom: '30px' }}>
         <Link
@@ -198,11 +199,11 @@ export default function InventoryHistoryPage() {
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px'
                     }}>
-                      วันที่เข้า
+                      วันที่
                     </th>
                     <th style={{
                       padding: '16px',
-                      textAlign: 'right',
+                      textAlign: 'left',
                       fontSize: '14px',
                       fontWeight: '600',
                       color: '#333',
@@ -213,7 +214,7 @@ export default function InventoryHistoryPage() {
                     </th>
                     <th style={{
                       padding: '16px',
-                      textAlign: 'right',
+                      textAlign: 'left',
                       fontSize: '14px',
                       fontWeight: '600',
                       color: '#333',
@@ -222,89 +223,58 @@ export default function InventoryHistoryPage() {
                     }}>
                       จำนวน
                     </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      รวมมูลค่า
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((item, index) => {
-                    const totalValue = (item.costPrice || 0) * (item.quantity || 0);
-                    return (
-                      <tr
-                        key={item.id}
-                        style={{
-                          borderBottom: index < history.length - 1 ? '1px solid #e0e0e0' : 'none',
-                          transition: 'background-color 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
-                      >
-                        <td style={{ padding: '16px', color: '#666' }}>
-                          {history.length - index}
-                        </td>
-                        <td style={{ padding: '16px' }}>
-                          <div style={{ color: '#333', fontWeight: '500' }}>
-                            {formatDateOnly(item.date)}
-                          </div>
-                          <div style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>
-                            {formatDate(item.createdAt)}
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px', textAlign: 'right', color: '#FF9800', fontWeight: '600' }}>
-                          ฿{item.costPrice?.toLocaleString() || '0'}
-                        </td>
-                        <td style={{ padding: '16px', textAlign: 'right', color: '#4CAF50', fontWeight: '600' }}>
-                          {item.quantity?.toLocaleString() || '0'} ชิ้น
-                        </td>
-                        <td style={{ padding: '16px', textAlign: 'right', color: '#333', fontWeight: '600' }}>
-                          ฿{totalValue.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {history.map((item, index) => (
+                    <tr
+                      key={item.id}
+                      style={{
+                        borderBottom: '1px solid #eee',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <td style={{
+                        padding: '16px',
+                        fontSize: '14px',
+                        color: '#333'
+                      }}>
+                        {index + 1}
+                      </td>
+                      <td style={{
+                        padding: '16px',
+                        fontSize: '14px',
+                        color: '#333'
+                      }}>
+                        {formatDateOnly(item.date)}
+                      </td>
+                      <td style={{
+                        padding: '16px',
+                        fontSize: '14px',
+                        color: '#333'
+                      }}>
+                        ฿{parseFloat(item.costPrice || 0).toLocaleString()}
+                      </td>
+                      <td style={{
+                        padding: '16px',
+                        fontSize: '14px',
+                        color: '#333'
+                      }}>
+                        <span style={{
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          backgroundColor: '#e8f5e9',
+                          color: '#2e7d32',
+                          fontWeight: '500'
+                        }}>
+                          +{parseInt(item.quantity || 0).toLocaleString()} ชิ้น
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
-                <tfoot>
-                  <tr style={{
-                    backgroundColor: '#f8f9fa',
-                    borderTop: '2px solid #e0e0e0'
-                  }}>
-                    <td colSpan="3" style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#333'
-                    }}>
-                      รวมทั้งหมด:
-                    </td>
-                    <td style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#4CAF50',
-                      fontSize: '16px'
-                    }}>
-                      {history.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString()} ชิ้น
-                    </td>
-                    <td style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontWeight: '700',
-                      color: '#333',
-                      fontSize: '16px'
-                    }}>
-                      ฿{history.reduce((sum, item) => sum + ((item.costPrice || 0) * (item.quantity || 0)), 0).toLocaleString()}
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           </>
@@ -313,4 +283,3 @@ export default function InventoryHistoryPage() {
     </div>
   );
 }
-

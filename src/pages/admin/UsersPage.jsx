@@ -81,20 +81,18 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              border: '4px solid #f3f3f3',
-              borderTop: '4px solid #667eea',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 20px'
-            }}></div>
-            <p style={{ color: '#666', fontSize: '16px' }}>กำลังโหลดข้อมูลผู้ใช้...</p>
-          </div>
+      <div style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid #667eea',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 20px'
+          }}></div>
+          <p style={{ color: '#666', fontSize: '16px' }}>กำลังโหลดข้อมูลผู้ใช้...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -102,381 +100,152 @@ export default function UsersPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      {/* Sidebar */}
+    <div style={{ padding: '20px' }}>
+      {/* Header */}
       <div style={{
-        width: '250px',
         backgroundColor: '#fff',
         padding: '20px',
-        boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
+        borderRadius: '8px',
+        marginBottom: '20px',
         display: 'flex',
-        flexDirection: 'column',
-        gap: '10px'
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
-        <h2 style={{ marginBottom: '30px', color: '#333' }}>Admin Panel</h2>
-        <Link
-          to="/admin/dashboard"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/dashboard') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/dashboard') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'block',
-            fontWeight: isActiveLink('/admin/dashboard') ? 'bold' : 'normal',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          Products
-        </Link>
-        <Link
-          to="/admin/users"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/users') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/users') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'block',
-            fontWeight: isActiveLink('/admin/users') ? 'bold' : 'normal',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          Manage User
-        </Link>
-        <Link
-          to="/admin/addproduct"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#f0f0f0',
-            color: '#333',
-            textDecoration: 'none',
-            display: 'block'
-          }}
-        >
-          Add Product
-        </Link>
-        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <button
-            onClick={() => signOut(auth)}
+        <div>
+          <h1 style={{ margin: '0 0 5px 0', fontSize: '28px', color: '#333', fontWeight: '700' }}>
+            จัดการผู้ใช้
+          </h1>
+          <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+            จัดการสิทธิ์และบทบาทของผู้ใช้ทั้งหมด
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="ค้นหาผู้ใช้..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                padding: '10px 40px 10px 15px',
+                borderRadius: '20px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                width: '250px'
+              }}
+            />
+            <span style={{
+              position: 'absolute',
+              right: '15px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#999'
+            }}>🔍</span>
+          </div>
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
             style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: '8px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              border: 'none',
-              cursor: 'pointer',
+              padding: '10px 15px',
+              borderRadius: '20px',
+              border: '1px solid #ddd',
               fontSize: '14px',
-              transition: 'background-color 0.3s ease'
+              backgroundColor: '#fff'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#d32f2f'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#f44336'}
           >
-            Logout
-          </button>
+            <option value="all">ทุกบทบาท</option>
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+            <option value="customer">Customer</option>
+          </select>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
-        {/* Header */}
+      {/* Users Table */}
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        overflow: 'hidden'
+      }}>
         <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          display: 'grid',
+          gridTemplateColumns: '1fr 2fr 1fr 1fr',
+          padding: '16px 20px',
+          backgroundColor: '#f8f9fa',
+          borderBottom: '1px solid #eee',
+          fontWeight: 'bold'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <div>
-              <h1 style={{ margin: '0 0 5px 0', fontSize: '28px', color: '#333', fontWeight: '700' }}>
-                จัดการผู้ใช้
-              </h1>
-              <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
-                จัดการสิทธิ์และบทบาทของผู้ใช้ทั้งหมด
-              </p>
-            </div>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px',
-              color: '#fff',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-            }}>
-              👥
-            </div>
-          </div>
-
-          {/* Search and Filter */}
-          <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: '1', minWidth: '250px' }}>
-              <input
-                type="text"
-                placeholder="ค้นหาด้วยอีเมลหรือชื่อ"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 40px 12px 15px',
-                  fontSize: '14px',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  outline: 'none',
-                  transition: 'border-color 0.3s ease',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-              />
-              <span style={{
-                position: 'absolute',
-                right: '15px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#999',
-                fontSize: '18px'
-              }}>🔍</span>
-            </div>
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              style={{
-                padding: '12px 15px',
-                fontSize: '14px',
-                border: '2px solid #e0e0e0',
-                borderRadius: '8px',
-                outline: 'none',
-                cursor: 'pointer',
-                backgroundColor: '#fff',
-                minWidth: '150px'
-              }}
-            >
-              <option value="all">ทั้งหมด</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-              <option value="customer">Customer</option>
-            </select>
-          </div>
-
-          {/* Info Note */}
-          <div style={{
-            marginTop: '15px',
-            padding: '12px 16px',
-            backgroundColor: '#e3f2fd',
-            borderLeft: '4px solid #2196F3',
-            borderRadius: '4px',
-            fontSize: '13px',
-            color: '#1976d2'
-          }}>
-            <strong>หมายเหตุ:</strong> Staff (ผู้เบิกสินค้า) ให้ผู้ใช้สมัครก่อน แล้วแอดมินเปลี่ยน role เป็น staff ที่นี่
-          </div>
+          <div>อีเมล</div>
+          <div>ชื่อ</div>
+          <div>บทบาทปัจจุบัน</div>
+          <div>เปลี่ยนบทบาท</div>
         </div>
-
-        {/* Users Table */}
-        <div style={{
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
+        
+        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
           {filteredUsers.length === 0 ? (
-            <div style={{
-              padding: '60px 20px',
-              textAlign: 'center',
-              color: '#999'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '15px' }}>📭</div>
-              <p style={{ fontSize: '16px', margin: 0 }}>
-                {searchTerm || filterRole !== 'all' ? 'ไม่พบผู้ใช้ที่ค้นหา' : 'ยังไม่มีผู้ใช้'}
-              </p>
+            <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+              ไม่พบผู้ใช้ที่ตรงกับเงื่อนไขการค้นหา
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                minWidth: '600px'
-              }}>
-                <thead>
-                  <tr style={{
-                    backgroundColor: '#f8f9fa',
-                    borderBottom: '2px solid #e0e0e0'
-                  }}>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+            filteredUsers.map((user) => {
+              const currentRole = user.role || 'customer';
+              const roleInfo = getRoleBadgeColor(currentRole);
+              
+              return (
+                <div
+                  key={user.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 2fr 1fr 1fr',
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #eee',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ fontSize: '14px', color: '#333' }}>
+                    {user.email}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#333' }}>
+                    {user.displayName || '-'}
+                  </div>
+                  <div>
+                    <span style={{
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      backgroundColor: roleInfo.bg,
+                      color: roleInfo.color,
+                      fontWeight: '500'
                     }}>
-                      ผู้ใช้
-                    </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      บทบาท
-                    </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      เปลี่ยนบทบาท
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((u, index) => {
-                    const roleBadge = getRoleBadgeColor(u.role || 'customer');
-                    return (
-                      <tr
-                        key={u.id}
-                        style={{
-                          borderBottom: index < filteredUsers.length - 1 ? '1px solid #e0e0e0' : 'none',
-                          transition: 'background-color 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
-                      >
-                        <td style={{ padding: '16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{
-                              width: '40px',
-                              height: '40px',
-                              borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#fff',
-                              fontWeight: 'bold',
-                              fontSize: '16px',
-                              flexShrink: 0
-                            }}>
-                              {(u.displayName || u.email || 'U')[0].toUpperCase()}
-                            </div>
-                            <div>
-                              <div style={{
-                                fontSize: '15px',
-                                fontWeight: '600',
-                                color: '#333',
-                                marginBottom: '4px'
-                              }}>
-                                {u.displayName || 'ไม่มีชื่อ'}
-                              </div>
-                              <div style={{
-                                fontSize: '13px',
-                                color: '#666'
-                              }}>
-                                {u.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            backgroundColor: roleBadge.bg,
-                            color: roleBadge.color
-                          }}>
-                            {roleBadge.label}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px' }}>
-                          <select
-                            value={u.role || 'customer'}
-                            onChange={(e) => handleUpdateRole(u.id, e.target.value, u.role || 'customer')}
-                            disabled={saving}
-                            style={{
-                              padding: '8px 12px',
-                              fontSize: '14px',
-                              border: '2px solid #e0e0e0',
-                              borderRadius: '8px',
-                              outline: 'none',
-                              cursor: saving ? 'not-allowed' : 'pointer',
-                              backgroundColor: saving ? '#f5f5f5' : '#fff',
-                              color: '#333',
-                              transition: 'all 0.3s ease',
-                              minWidth: '120px'
-                            }}
-                            onFocus={(e) => {
-                              if (!saving) e.target.style.borderColor = '#667eea';
-                            }}
-                            onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-                          >
-                            <option value="admin">Admin</option>
-                            <option value="staff">Staff</option>
-                            <option value="customer">Customer</option>
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      {roleInfo.label}
+                    </span>
+                  </div>
+                  <div>
+                    <select
+                      value={currentRole}
+                      onChange={(e) => handleUpdateRole(user.id, e.target.value, currentRole)}
+                      disabled={saving}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd',
+                        fontSize: '13px',
+                        backgroundColor: '#fff',
+                        cursor: saving ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <option value="customer">Customer</option>
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
-
-        {/* Summary */}
-        {filteredUsers.length > 0 && (
-          <div style={{
-            marginTop: '20px',
-            padding: '15px 20px',
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <div style={{ color: '#666', fontSize: '14px' }}>
-              แสดง <strong>{filteredUsers.length}</strong> จาก <strong>{users.length}</strong> ผู้ใช้
-            </div>
-            <div style={{ display: 'flex', gap: '15px', fontSize: '13px' }}>
-              <span style={{ color: '#666' }}>
-                Admin: <strong style={{ color: '#f44336' }}>
-                  {users.filter(u => (u.role || 'customer') === 'admin').length}
-                </strong>
-              </span>
-              <span style={{ color: '#666' }}>
-                Staff: <strong style={{ color: '#2196F3' }}>
-                  {users.filter(u => (u.role || 'customer') === 'staff').length}
-                </strong>
-              </span>
-              <span style={{ color: '#666' }}>
-                Customer: <strong style={{ color: '#4CAF50' }}>
-                  {users.filter(u => (u.role || 'customer') === 'customer').length}
-                </strong>
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

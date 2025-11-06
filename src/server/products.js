@@ -161,6 +161,54 @@ export async function updateProductQuantity(productId, quantity, isAdd = true) {
 }
 
 /**
+ * สร้างเอกสารการเบิกสินค้า และหักสต็อกตามจำนวนที่เบิก
+ * @param {Object} payload - ข้อมูลการเบิก
+ * @param {Array} payload.items - รายการที่เบิก [{ productId, productName, price, quantity, subtotal }]
+ * @param {string} payload.requestedBy - ชื่อผู้เบิก
+ * @param {string} payload.receivedBy - ชื่อผู้รับ
+ * @param {Date|string} payload.withdrawDate - วันที่เบิก
+ * @param {number} payload.total - ราคารวม
+ * @returns {Promise<string>} - Document ID ของการเบิก
+ */
+export async function createWithdrawal(payload) {
+  try {
+    const withdrawDoc = {
+      items: (payload.items || []).map(it => ({
+        productId: it.productId,
+        productName: it.productName || null,
+        price: parseFloat(it.price || 0),
+        quantity: parseInt(it.quantity || 0),
+        subtotal: parseFloat(it.subtotal || 0),
+      })),
+      requestedBy: payload.requestedBy || null,
+      receivedBy: payload.receivedBy || null,
+      withdrawDate: Timestamp.fromDate(new Date(payload.withdrawDate || new Date())),
+      total: parseFloat(payload.total || 0),
+      createdAt: Timestamp.now()
+    };
+
+    // สร้างเอกสารการเบิก
+    const ref = await addDoc(collection(db, 'withdrawals'), withdrawDoc);
+
+    // หักสต็อกสินค้าแต่ละชิ้น
+    for (const it of withdrawDoc.items) {
+      const pRef = doc(db, 'products', it.productId);
+      const snap = await getDoc(pRef);
+      if (snap.exists()) {
+        const currentQty = parseInt(snap.data().quantity || 0);
+        const newQty = Math.max(0, currentQty - parseInt(it.quantity || 0));
+        await updateDoc(pRef, { quantity: newQty, updatedAt: Timestamp.now() });
+      }
+    }
+
+    return ref.id;
+  } catch (error) {
+    console.error('Error creating withdrawal:', error);
+    throw error;
+  }
+}
+
+/**
  * ลบสินค้า
  * @param {string} productId - ID ของสินค้า
  * @returns {Promise<void>}

@@ -6,7 +6,12 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StaffDashboard from './pages/staff/StaffDashboard';
+import StaffLayout from './pages/staff/StaffLayout';
+import AdminLayout from './pages/admin/AdminLayout';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
+import CustomerLayout from './pages/customer/CustomerLayout';
+import CustomerWithdrawPage from './pages/customer/CustomerWithdrawPage';
+import WithdrawPage from './pages/staff/WithdrawPage';
 import UsersPage from './pages/admin/UsersPage';
 import ProductsPage from './pages/admin/ProductsPage';
 import EditProductPage from './pages/admin/EditProductPage';
@@ -30,20 +35,28 @@ function App() {
           </Route>
 
           <Route path="/admin" element={<ProtectedRoute allow={['admin']} />}> 
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<ProductsPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="addproduct" element={<AdminDashboard />} />
-            <Route path="products/:id/edit" element={<EditProductPage />} />
-            <Route path="products/:id/history" element={<InventoryHistoryPage />} />
+            <Route element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<ProductsPage />} />
+              <Route path="users" element={<UsersPage />} />
+              <Route path="addproduct" element={<AdminDashboard />} />
+              <Route path="products/:id/edit" element={<EditProductPage />} />
+              <Route path="products/:id/history" element={<InventoryHistoryPage />} />
+            </Route>
           </Route>
 
           <Route path="/staff" element={<ProtectedRoute allow={['staff']} />}> 
-            <Route index element={<StaffDashboard />} />
+            <Route element={<StaffLayout />}> 
+              <Route index element={<StaffDashboard />} />
+              <Route path="withdraw" element={<WithdrawPage />} />
+            </Route>
           </Route>
 
           <Route path="/customer" element={<ProtectedRoute allow={['customer']} />}> 
-            <Route index element={<CustomerDashboard />} />
+            <Route element={<CustomerLayout />}> 
+              <Route index element={<CustomerDashboard />} />
+              <Route path="withdraw" element={<CustomerWithdrawPage />} />
+            </Route>
           </Route>
 
           <Route path="/login" element={<LoginPage />} />
