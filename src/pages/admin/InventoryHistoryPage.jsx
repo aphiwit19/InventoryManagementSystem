@@ -1,0 +1,316 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { getProductById, getInventoryHistory } from '../../server/products';
+
+export default function InventoryHistoryPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [productData, historyData] = await Promise.all([
+          getProductById(id),
+          getInventoryHistory(id)
+        ]);
+        setProduct(productData);
+        setHistory(historyData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [id]);
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDateOnly = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid #667eea',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 20px'
+          }}></div>
+          <p style={{ color: '#666' }}>กำลังโหลดข้อมูล...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '30px' }}>
+        <Link
+          to="/admin/dashboard"
+          style={{
+            color: '#667eea',
+            textDecoration: 'none',
+            fontSize: '14px',
+            display: 'inline-block',
+            marginBottom: '15px'
+          }}
+        >
+          ← กลับไปหน้ารายการสินค้า
+        </Link>
+        <h1 style={{
+          margin: '0 0 10px 0',
+          fontSize: '28px',
+          fontWeight: '700',
+          color: '#333'
+        }}>
+          ประวัติการเข้าคลังสินค้า
+        </h1>
+        {product && (
+          <p style={{ margin: 0, color: '#666', fontSize: '16px' }}>
+            สินค้า: <strong>{product.productName}</strong>
+          </p>
+        )}
+      </div>
+
+      {/* Product Info Card */}
+      {product && (
+        <div style={{
+          backgroundColor: '#fff',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '30px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '20px'
+        }}>
+          <div>
+            <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>จำนวนปัจจุบัน</p>
+            <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#4CAF50' }}>
+              {product.quantity || 0} ชิ้น
+            </p>
+          </div>
+          <div>
+            <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>ราคาขาย</p>
+            <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#2196F3' }}>
+              ฿{product.price?.toLocaleString() || '0'}
+            </p>
+          </div>
+          {product.costPrice && (
+            <div>
+              <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>ราคาทุนล่าสุด</p>
+              <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#FF9800' }}>
+                ฿{product.costPrice.toLocaleString()}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* History Table */}
+      <div style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        overflow: 'hidden'
+      }}>
+        {history.length === 0 ? (
+          <div style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            color: '#999'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '15px' }}>📭</div>
+            <p style={{ fontSize: '16px', margin: 0 }}>ยังไม่มีประวัติการเข้าคลัง</p>
+          </div>
+        ) : (
+          <>
+            <div style={{
+              padding: '20px',
+              borderBottom: '2px solid #e0e0e0',
+              backgroundColor: '#f8f9fa'
+            }}>
+              <h2 style={{
+                margin: 0,
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#333'
+              }}>
+                รายการประวัติการเข้าคลัง ({history.length} รายการ)
+              </h2>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse'
+              }}>
+                <thead>
+                  <tr style={{
+                    backgroundColor: '#f8f9fa',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'left',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#333',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      ลำดับ
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'left',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#333',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      วันที่เข้า
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#333',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      ราคาทุน
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#333',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      จำนวน
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#333',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      รวมมูลค่า
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((item, index) => {
+                    const totalValue = (item.costPrice || 0) * (item.quantity || 0);
+                    return (
+                      <tr
+                        key={item.id}
+                        style={{
+                          borderBottom: index < history.length - 1 ? '1px solid #e0e0e0' : 'none',
+                          transition: 'background-color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
+                      >
+                        <td style={{ padding: '16px', color: '#666' }}>
+                          {history.length - index}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ color: '#333', fontWeight: '500' }}>
+                            {formatDateOnly(item.date)}
+                          </div>
+                          <div style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>
+                            {formatDate(item.createdAt)}
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px', textAlign: 'right', color: '#FF9800', fontWeight: '600' }}>
+                          ฿{item.costPrice?.toLocaleString() || '0'}
+                        </td>
+                        <td style={{ padding: '16px', textAlign: 'right', color: '#4CAF50', fontWeight: '600' }}>
+                          {item.quantity?.toLocaleString() || '0'} ชิ้น
+                        </td>
+                        <td style={{ padding: '16px', textAlign: 'right', color: '#333', fontWeight: '600' }}>
+                          ฿{totalValue.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr style={{
+                    backgroundColor: '#f8f9fa',
+                    borderTop: '2px solid #e0e0e0'
+                  }}>
+                    <td colSpan="3" style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#333'
+                    }}>
+                      รวมทั้งหมด:
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#4CAF50',
+                      fontSize: '16px'
+                    }}>
+                      {history.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString()} ชิ้น
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '700',
+                      color: '#333',
+                      fontSize: '16px'
+                    }}>
+                      ฿{history.reduce((sum, item) => sum + ((item.costPrice || 0) * (item.quantity || 0)), 0).toLocaleString()}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+

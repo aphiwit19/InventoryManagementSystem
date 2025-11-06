@@ -2,17 +2,20 @@ import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AdminDashboard from './pages/dashboards/AdminDashboard';
-import StaffDashboard from './pages/dashboards/StaffDashboard';
-import CustomerDashboard from './pages/dashboards/CustomerDashboard';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import StaffDashboard from './pages/staff/StaffDashboard';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
 import UsersPage from './pages/admin/UsersPage';
+import ProductsPage from './pages/admin/ProductsPage';
+import EditProductPage from './pages/admin/EditProductPage';
+import InventoryHistoryPage from './pages/admin/InventoryHistoryPage';
 
 function HomeRouter() {
   const { profile } = useAuth();
   if (!profile) return null;
-  if (profile.role === 'admin') return <Navigate to="/admin" replace />;
+  if (profile.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
   if (profile.role === 'staff') return <Navigate to="/staff" replace />;
   return <Navigate to="/customer" replace />;
 }
@@ -27,8 +30,12 @@ function App() {
           </Route>
 
           <Route path="/admin" element={<ProtectedRoute allow={['admin']} />}> 
-            <Route index element={<AdminDashboard />} />
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<ProductsPage />} />
             <Route path="users" element={<UsersPage />} />
+            <Route path="addproduct" element={<AdminDashboard />} />
+            <Route path="products/:id/edit" element={<EditProductPage />} />
+            <Route path="products/:id/history" element={<InventoryHistoryPage />} />
           </Route>
 
           <Route path="/staff" element={<ProtectedRoute allow={['staff']} />}> 
