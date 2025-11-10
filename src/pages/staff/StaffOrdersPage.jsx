@@ -55,16 +55,22 @@ export default function StaffOrdersPage() {
         <div style={{ background:'#fff', padding:40, borderRadius:8, textAlign:'center', color:'#777' }}>ไม่พบรายการ</div>
       ) : (
         <div style={{ background:'#fff', borderRadius:8, overflow:'hidden', boxShadow:'0 2px 4px rgba(0,0,0,0.1)' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr', padding:'12px 16px', background:'#f8f9fa', fontWeight:600 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1.1fr 1fr 1fr 1.6fr 1fr 1fr 1fr 1fr', padding:'12px 16px', background:'#f8f9fa', fontWeight:600 }}>
             <div>วันที่เบิก</div>
+            <div>ผู้เบิก</div>
+            <div>ผู้รับ</div>
+            <div>ที่อยู่ผู้รับ</div>
             <div>ขนส่ง</div>
             <div>Tracking</div>
             <div>สถานะ</div>
             <div>ราคารวม</div>
           </div>
           {filtered.map(o => (
-            <div key={o.id} style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr', padding:'12px 16px', borderTop:'1px solid #eee', alignItems:'center' }}>
+            <div key={o.id} style={{ display:'grid', gridTemplateColumns:'1.1fr 1fr 1fr 1.6fr 1fr 1fr 1fr 1fr', padding:'12px 16px', borderTop:'1px solid #eee', alignItems:'center' }}>
               <div>{new Date(o.withdrawDate?.seconds ? o.withdrawDate.seconds*1000 : o.withdrawDate).toLocaleDateString('th-TH')}</div>
+              <div>{o.requestedBy || '-'}</div>
+              <div>{o.receivedBy || '-'}</div>
+              <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{o.receivedAddress || '-'}</div>
               <div>{o.shippingCarrier || '-'}</div>
               <div style={{ fontFamily:'monospace' }}>{o.trackingNumber || '-'}</div>
               <div>{o.shippingStatus || 'รอดำเนินการ'}</div>

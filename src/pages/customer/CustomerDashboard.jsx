@@ -71,15 +71,16 @@ export default function CustomerDashboard() {
 
   const confirmAddToCart = () => {
     if (!promptProduct) return;
-    const qty = Math.max(1, Math.min(parseInt(promptQty || 1), promptProduct.quantity || 0));
+    const available = Math.max(0, (promptProduct.quantity || 0) - (promptProduct.reserved || 0));
+    const qty = Math.max(1, Math.min(parseInt(promptQty || 1), available));
     try {
       const raw = localStorage.getItem(cartKey(user?.uid));
       const cart = raw ? JSON.parse(raw) : [];
       const exists = cart.find(it => it.id === promptProduct.id);
       if (exists) {
-        exists.quantity = Math.min((exists.quantity || 0) + qty, promptProduct.quantity || 0);
+        exists.quantity = Math.min((exists.quantity || 0) + qty, available);
       } else {
-        cart.push({ id: promptProduct.id, productName: promptProduct.productName, price: promptProduct.price ?? promptProduct.costPrice ?? 0, quantity: qty, image: promptProduct.image || null, stock: promptProduct.quantity || 0 });
+        cart.push({ id: promptProduct.id, productName: promptProduct.productName, price: promptProduct.price ?? promptProduct.costPrice ?? 0, quantity: qty, image: promptProduct.image || null, stock: available });
       }
       localStorage.setItem(cartKey(user?.uid), JSON.stringify(cart));
       setShowQtyPrompt(false);
@@ -259,7 +260,7 @@ export default function CustomerDashboard() {
                   color: '#2e7d32',
                   fontWeight: 500
                 }}>
-                  จำนวนคงเหลือ: {product.quantity || 0} ชิ้น
+                  คงเหลือพร้อมขาย: {Math.max(0, (product.quantity || 0) - (product.reserved || 0))} ชิ้น
                 </div>
                 <div style={{
                   display: 'flex',
@@ -368,7 +369,7 @@ export default function CustomerDashboard() {
             <div>
               <h2 style={{ marginTop: 0 }}>{detailProduct.productName || 'Unnamed Product'}</h2>
               <p style={{ color:'#666', whiteSpace:'pre-wrap' }}>{detailProduct.description || 'ไม่มีคำอธิบาย'}</p>
-              <div style={{ background:'#e8f5e9', color:'#2e7d32', padding:'8px 12px', borderRadius:6, fontWeight:500, marginTop:8 }}>จำนวนคงเหลือ: {detailProduct.quantity || 0} ชิ้น</div>
+              <div style={{ background:'#e8f5e9', color:'#2e7d32', padding:'8px 12px', borderRadius:6, fontWeight:500, marginTop:8 }}>คงเหลือพร้อมขาย: {Math.max(0, (detailProduct.quantity || 0) - (detailProduct.reserved || 0))} ชิ้น</div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:12 }}>
                 <span style={{ fontSize:22, fontWeight:'bold', color:'#4CAF50' }}>฿{(detailProduct.price ?? detailProduct.costPrice ?? 0).toLocaleString()}</span>
                 <div style={{ display:'flex', gap:8 }}>
@@ -387,7 +388,7 @@ export default function CustomerDashboard() {
           <div style={{ background: '#fff', borderRadius: 12, width: 420, maxWidth: '100%', padding: 20 }} onClick={(e)=>e.stopPropagation()}>
             <h3 style={{ marginTop: 0 }}>ระบุจำนวนสินค้า</h3>
             <p style={{ marginTop: 0, color: '#666' }}>{promptProduct.productName}</p>
-            <input type="number" min={1} max={promptProduct.quantity || 0} value={promptQty} onChange={(e)=>setPromptQty(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
+            <input type="number" min={1} max={Math.max(0, (promptProduct.quantity || 0) - (promptProduct.reserved || 0))} value={promptQty} onChange={(e)=>setPromptQty(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
               <button onClick={()=>setShowQtyPrompt(false)} style={{ padding: '10px 16px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>ยกเลิก</button>
               <button onClick={confirmAddToCart} style={{ padding: '10px 16px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>เพิ่มลงตะกร้า</button>

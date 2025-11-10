@@ -1,4 +1,4 @@
-import { collection, addDoc, Timestamp, getDocs, query, orderBy, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, getDocs, query, orderBy, doc, getDoc, updateDoc, deleteDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
@@ -26,6 +26,7 @@ export async function addProduct(productData) {
       image: productData.image,
       addDate: Timestamp.fromDate(new Date(productData.addDate)),
       quantity: parseInt(productData.quantity),
+      reserved: 0,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     };
@@ -181,7 +182,9 @@ export async function createWithdrawal(payload) {
         subtotal: parseFloat(it.subtotal || 0),
       })),
       requestedBy: payload.requestedBy || null,
+      requestedAddress: payload.requestedAddress || '',
       receivedBy: payload.receivedBy || null,
+      receivedAddress: payload.receivedAddress || '',
       withdrawDate: Timestamp.fromDate(new Date(payload.withdrawDate || new Date())),
       total: parseFloat(payload.total || 0),
       // shipping fields
@@ -190,24 +193,38 @@ export async function createWithdrawal(payload) {
       shippingStatus: payload.shippingStatus || 'รอดำเนินการ',
       createdAt: Timestamp.now(),
       createdByUid: payload.createdByUid || null,
-      createdByEmail: payload.createdByEmail || null
+      createdByEmail: payload.createdByEmail || null,
+      createdSource: payload.createdSource || null
     };
 
-    // สร้างเอกสารการเบิก
-    const ref = await addDoc(collection(db, 'withdrawals'), withdrawDoc);
+    const withdrawalsCol = collection(db, 'withdrawals');
+    const newWithdrawRef = doc(withdrawalsCol);
 
-    // หักสต็อกสินค้าแต่ละชิ้น
-    for (const it of withdrawDoc.items) {
-      const pRef = doc(db, 'products', it.productId);
-      const snap = await getDoc(pRef);
-      if (snap.exists()) {
-        const currentQty = parseInt(snap.data().quantity || 0);
-        const newQty = Math.max(0, currentQty - parseInt(it.quantity || 0));
-        await updateDoc(pRef, { quantity: newQty, updatedAt: Timestamp.now() });
+    // ใช้ธุรกรรมเพื่อ "จองสต๊อก" (เพิ่ม reserved) ตามจำนวนที่สั่ง หากสต๊อกพร้อมขายไม่พอจะ throw
+    await runTransaction(db, async (tx) => {
+      // ตรวจสอบและจองสต๊อกทีละรายการ
+      for (const it of withdrawDoc.items) {
+        const pRef = doc(db, 'products', it.productId);
+        const pSnap = await tx.get(pRef);
+        if (!pSnap.exists()) throw new Error('ไม่พบสินค้า');
+        const data = pSnap.data();
+        const qty = parseInt(data.quantity || 0);
+        const reserved = parseInt(data.reserved || 0);
+        const req = parseInt(it.quantity || 0);
+        const available = qty - reserved;
+        if (req <= 0) throw new Error('จำนวนที่สั่งไม่ถูกต้อง');
+        if (available < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
+        tx.update(pRef, {
+          reserved: reserved + req,
+          updatedAt: Timestamp.now(),
+        });
       }
-    }
 
-    return ref.id;
+      // บันทึกคำสั่งซื้อ (สถานะเริ่มต้น: รอดำเนินการ)
+      tx.set(newWithdrawRef, withdrawDoc);
+    });
+
+    return newWithdrawRef.id;
   } catch (error) {
     console.error('Error creating withdrawal:', error);
     throw error;
@@ -253,6 +270,38 @@ export async function getWithdrawalsByUser(uid) {
 export async function updateWithdrawalShipping(withdrawalId, updates) {
   try {
     const ref = doc(db, 'withdrawals', withdrawalId);
+    const curr = await getDoc(ref);
+    if (!curr.exists()) throw new Error('ไม่พบคำสั่งซื้อ');
+    const currentData = curr.data();
+
+    // หากอัปเดตเป็น "ส่งสำเร็จ" และยังไม่เคยสำเร็จมาก่อน ให้ตัดสต๊อกจริง (โอนจาก reserved -> quantity)
+    if (updates.shippingStatus === 'ส่งสำเร็จ' && currentData.shippingStatus !== 'ส่งสำเร็จ') {
+      await runTransaction(db, async (tx) => {
+        // อัปเดตสินค้าแต่ละชิ้น
+        for (const it of (currentData.items || [])) {
+          const pRef = doc(db, 'products', it.productId);
+          const pSnap = await tx.get(pRef);
+          if (!pSnap.exists()) continue;
+          const pData = pSnap.data();
+          const qty = parseInt(pData.quantity || 0);
+          const reserved = parseInt(pData.reserved || 0);
+          const used = parseInt(it.quantity || 0);
+          const nextReserved = Math.max(0, reserved - used);
+          const nextQty = Math.max(0, qty - used);
+          tx.update(pRef, { reserved: nextReserved, quantity: nextQty, updatedAt: Timestamp.now() });
+        }
+        // อัปเดตเอกสารคำสั่งซื้อในธุรกรรมเดียวกัน
+        tx.update(ref, {
+          ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
+          ...(updates.trackingNumber !== undefined ? { trackingNumber: updates.trackingNumber } : {}),
+          shippingStatus: 'ส่งสำเร็จ',
+          updatedAt: Timestamp.now()
+        });
+      });
+      return;
+    }
+
+    // กรณีอัปเดตฟิลด์ทั่วไป หรือเปลี่ยนสถานะอื่นที่ไม่ใช่ "ส่งสำเร็จ"
     await updateDoc(ref, {
       ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
       ...(updates.trackingNumber !== undefined ? { trackingNumber: updates.trackingNumber } : {}),

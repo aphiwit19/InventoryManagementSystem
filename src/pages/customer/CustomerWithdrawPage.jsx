@@ -10,7 +10,7 @@ export default function CustomerWithdrawPage() {
   const [productsById, setProductsById] = useState({});
   const [items, setItems] = useState([]);
   const [requestedBy, setRequestedBy] = useState('');
-  const [receivedBy, setReceivedBy] = useState('');
+  const [requestedAddress, setRequestedAddress] = useState('');
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
   const [submitting, setSubmitting] = useState(false);
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
@@ -43,7 +43,9 @@ export default function CustomerWithdrawPage() {
   }, [user?.uid]);
 
   const updateQty = (id, qty) => {
-    const stock = productsById[id]?.quantity ?? 0;
+    const qtyTotal = productsById[id]?.quantity ?? 0;
+    const qtyReserved = productsById[id]?.reserved ?? 0;
+    const stock = Math.max(0, qtyTotal - qtyReserved);
     const value = Math.max(1, Math.min(parseInt(qty || 1), stock));
     const next = items.map(it => it.id === id ? { ...it, quantity: value } : it);
     setItems(next);
@@ -58,7 +60,7 @@ export default function CustomerWithdrawPage() {
 
   const submit = async () => {
     if (items.length === 0) return;
-    if (!requestedBy.trim() || !receivedBy.trim() || !withdrawDate) {
+    if (!requestedBy.trim() || !requestedAddress.trim() || !withdrawDate) {
       alert('กรุณากรอกข้อมูลให้ครบ');
       return;
     }
@@ -67,11 +69,12 @@ export default function CustomerWithdrawPage() {
       await createWithdrawal({
         items: items.map(it => ({ productId: it.id, productName: it.productName, price: it.price, quantity: it.quantity, subtotal: it.price * it.quantity })),
         requestedBy: requestedBy.trim(),
-        receivedBy: receivedBy.trim(),
+        requestedAddress: requestedAddress.trim(),
         withdrawDate,
         total,
         createdByUid: user?.uid || null,
-        createdByEmail: user?.email || null
+        createdByEmail: user?.email || null,
+        createdSource: 'customer'
       });
       localStorage.setItem(cartKey(user?.uid), JSON.stringify([]));
       alert('บันทึกคำสั่งเบิกสำเร็จ');
@@ -100,11 +103,11 @@ export default function CustomerWithdrawPage() {
                 <div key={it.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', gap: 12, alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 600 }}>{it.productName}</div>
-                    <div style={{ color: '#777', fontSize: 12 }}>คงเหลือ: {productsById[it.id]?.quantity ?? 0} ชิ้น</div>
+                    <div style={{ color: '#777', fontSize: 12 }}>คงเหลือพร้อมขาย: {Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0))} ชิ้น</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>฿{(it.price).toLocaleString()}</div>
                   <div>
-                    <input type="number" min={1} max={productsById[it.id]?.quantity ?? 0} value={it.quantity} onChange={(e)=>updateQty(it.id, e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8 }} />
+                    <input type="number" min={1} max={Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0))} value={it.quantity} onChange={(e)=>updateQty(it.id, e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8 }} />
                   </div>
                   <div style={{ textAlign: 'right', fontWeight: 600 }}>฿{(it.price * it.quantity).toLocaleString()}</div>
                   <button onClick={()=>removeItem(it.id)} style={{ gridColumn: '1 / -1', justifySelf: 'end', background: 'transparent', border: 'none', color: '#f44336', cursor: 'pointer' }}>ลบ</button>
@@ -122,8 +125,8 @@ export default function CustomerWithdrawPage() {
               <input value={requestedBy} onChange={(e)=>setRequestedBy(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ผู้รับ</div>
-              <input value={receivedBy} onChange={(e)=>setReceivedBy(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่ผู้สั่งซื้อ</div>
+              <textarea value={requestedAddress} onChange={(e)=>setRequestedAddress(e.target.value)} rows={3} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical' }} />
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>วันที่สั่งซื้อ</div>

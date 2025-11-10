@@ -4,6 +4,8 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { addProduct } from '../../server/products';
+import { storage } from '../../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -24,6 +26,9 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
 
   // Redirect ถ้าไม่ใช่หน้าเพิ่มสินค้า
   useEffect(() => {
@@ -46,6 +51,12 @@ export default function AdminDashboard() {
     setError('');
 
     try {
+      if (uploading) {
+        throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
+      }
+      if (!formData.image) {
+        throw new Error('กรุณาอัพโหลดรูปภาพสินค้า');
+      }
       // ใช้ฟังก์ชันจาก server/products.js
       await addProduct(formData);
       
@@ -157,16 +168,31 @@ export default function AdminDashboard() {
 
             <div>
               <label htmlFor="image" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
-                URL รูปภาพ *
+                รูปภาพสินค้า *
               </label>
               <input
-                type="url"
+                type="file"
                 id="image"
-                name="image"
-                value={formData.image}
-                onChange={handleChange}
-                required
-                placeholder="https://example.com/image.jpg"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  setUploadError('');
+                  if (!file) return;
+                  try {
+                    setUploading(true);
+                    const path = `products/${Date.now()}_${file.name}`;
+                    const ref = storageRef(storage, path);
+                    await uploadBytes(ref, file);
+                    const url = await getDownloadURL(ref);
+                    setFormData(prev => ({ ...prev, image: url }));
+                    setImagePreview(url);
+                  } catch (err) {
+                    console.error(err);
+                    setUploadError('อัพโหลดรูปภาพล้มเหลว');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '8px 12px',
@@ -175,6 +201,13 @@ export default function AdminDashboard() {
                   borderRadius: 4
                 }}
               />
+              {(uploading) && <div style={{ marginTop: 8, color: '#666' }}>กำลังอัพโหลดรูปภาพ...</div>}
+              {uploadError && <div style={{ marginTop: 8, color: '#c00' }}>{uploadError}</div>}
+              {imagePreview && (
+                <div style={{ marginTop: 12 }}>
+                  <img src={imagePreview} alt="preview" style={{ maxWidth: '200px', borderRadius: 6, border: '1px solid #eee' }} />
+                </div>
+              )}
             </div>
 
             <div>
@@ -223,18 +256,18 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploading}
                 style={{
                   padding: '10px 24px',
                   fontSize: 16,
-                  backgroundColor: loading ? '#6c757d' : '#007bff',
+                  backgroundColor: (loading || uploading) ? '#6c757d' : '#007bff',
                   color: 'white',
                   border: 'none',
                   borderRadius: 4,
-                  cursor: loading ? 'not-allowed' : 'pointer'
+                  cursor: (loading || uploading) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {loading ? 'กำลังบันทึก...' : 'บันทึกสินค้า'}
+                {loading ? 'กำลังบันทึก...' : (uploading ? 'กำลังอัพโหลดรูป...' : 'บันทึกสินค้า')}
               </button>
               <button
                 type="button"
