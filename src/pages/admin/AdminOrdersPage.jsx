@@ -53,6 +53,8 @@ export default function AdminOrdersPage() {
   });
 
   const canSave = (id) => {
+    const order = orders.find(o => o.id === id);
+    if ((order?.deliveryMethod || 'shipping') === 'pickup') return false;
     const e = edits[id] || {};
     return (e.shippingCarrier && e.trackingNumber && e.shippingStatus);
   };
@@ -119,16 +121,16 @@ export default function AdminOrdersPage() {
                   <div>{o.requestedBy || '-'}</div>
                   <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{o.requestedAddress || '-'}</div>
                   <div>
-                    <select value={(edits[o.id]?.shippingCarrier) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingCarrier: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
+                    <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingCarrier) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingCarrier: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
                       <option value="">เลือกผู้ให้บริการ</option>
                       {carriers.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div style={{ display:'flex', gap:8 }}>
-                    <input value={(edits[o.id]?.trackingNumber) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], trackingNumber: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} placeholder="เช่น EX123456789TH" style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, width:'100%' }} />
+                    <input disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.trackingNumber) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], trackingNumber: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} placeholder="เช่น EX123456789TH" style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, width:'100%' }} />
                   </div>
                   <div>
-                    <select value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
+                    <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
                       {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
@@ -161,16 +163,16 @@ export default function AdminOrdersPage() {
                     <div>{o.receivedBy || ((o.createdSource||'')==='customer' ? '-' : '-')}</div>
                     <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{address}</div>
                     <div>
-                      <select value={(edits[o.id]?.shippingCarrier) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingCarrier: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
+                      <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingCarrier) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingCarrier: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
                         <option value="">เลือกผู้ให้บริการ</option>
                         {carriers.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div style={{ display:'flex', gap:8 }}>
-                      <input value={(edits[o.id]?.trackingNumber) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], trackingNumber: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} placeholder="เช่น EX123456789TH" style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, width:'100%' }} />
+                      <input disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.trackingNumber) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], trackingNumber: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} placeholder="เช่น EX123456789TH" style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, width:'100%' }} />
                     </div>
                     <div>
-                      <select value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
+                      <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
                         {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>

@@ -3,17 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createWithdrawal, getAllProducts } from '../../server/products';
 import { useAuth } from '../../auth/AuthContext';
 
-function readCart() {
+function cartKey(uid) {
+  return `staffCart_${uid || 'guest'}`;
+}
+
+function readCartFor(uid) {
   try {
-    const raw = localStorage.getItem('staffCart');
+    const key = cartKey(uid);
+    // migrate legacy single-key cart if exists
+    const legacy = localStorage.getItem('staffCart');
+    if (legacy && !localStorage.getItem(key)) {
+      localStorage.setItem(key, legacy);
+      localStorage.removeItem('staffCart');
+    }
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function writeCart(items) {
-  localStorage.setItem('staffCart', JSON.stringify(items));
+function writeCartFor(uid, items) {
+  localStorage.setItem(cartKey(uid), JSON.stringify(items));
 }
 
 export default function WithdrawPage() {
@@ -21,11 +32,12 @@ export default function WithdrawPage() {
   const { user } = useAuth();
 
   const [productsById, setProductsById] = useState({});
-  const [items, setItems] = useState(readCart());
+  const [items, setItems] = useState([]);
   const [requestedBy, setRequestedBy] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [receivedAddress, setReceivedAddress] = useState('');
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
+  const [deliveryMethod, setDeliveryMethod] = useState('shipping');
   const [submitting, setSubmitting] = useState(false);
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
 
@@ -39,6 +51,13 @@ export default function WithdrawPage() {
     load();
   }, []);
 
+  // load/migrate cart for this user
+  useEffect(() => {
+    const uid = user?.uid || 'guest';
+    const data = readCartFor(uid);
+    setItems(data);
+  }, [user?.uid]);
+
   const updateQty = (id, qty) => {
     const qtyTotal = productsById[id]?.quantity ?? 0;
     const qtyReserved = productsById[id]?.reserved ?? 0;
@@ -46,18 +65,19 @@ export default function WithdrawPage() {
     const value = Math.max(1, Math.min(parseInt(qty || 1), stock));
     const next = items.map(it => it.id === id ? { ...it, quantity: value } : it);
     setItems(next);
-    writeCart(next);
+    writeCartFor(user?.uid, next);
   };
 
   const removeItem = (id) => {
     const next = items.filter(it => it.id !== id);
     setItems(next);
-    writeCart(next);
+    writeCartFor(user?.uid, next);
   };
 
   const submit = async () => {
     if (items.length === 0) return;
-    if (!requestedBy.trim() || !receivedBy.trim() || !receivedAddress.trim() || !withdrawDate) {
+    const needAddress = deliveryMethod === 'shipping';
+    if (!requestedBy.trim() || !receivedBy.trim() || (needAddress && !receivedAddress.trim()) || !withdrawDate) {
       alert('กรุณากรอกข้อมูลให้ครบ');
       return;
     }
@@ -73,8 +93,9 @@ export default function WithdrawPage() {
         createdByUid: user?.uid || null,
         createdByEmail: user?.email || null,
         createdSource: 'staff',
+        deliveryMethod,
       });
-      writeCart([]);
+      writeCartFor(user?.uid, []);
       alert('บันทึกคำสั่งเบิกสำเร็จ');
       navigate('/staff');
     } catch (e) {
@@ -85,7 +106,6 @@ export default function WithdrawPage() {
   };
 
   return (
-    // Removed the outer div with flex layout since it's now handled by StaffLayout
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>คำสั่งเบิก</h2>
@@ -120,6 +140,13 @@ export default function WithdrawPage() {
           <h3 style={{ marginTop: 0 }}>รายละเอียดผู้เบิก</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>วิธีรับสินค้า</div>
+              <select value={deliveryMethod} onChange={(e)=>setDeliveryMethod(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }}>
+                <option value="shipping">จัดส่ง</option>
+                <option value="pickup">รับเอง</option>
+              </select>
+            </div>
+            <div>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ผู้เบิก</div>
               <input value={requestedBy} onChange={(e)=>setRequestedBy(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
             </div>
@@ -128,13 +155,14 @@ export default function WithdrawPage() {
               <input value={receivedBy} onChange={(e)=>setReceivedBy(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่ผู้รับ</div>
-              <textarea value={receivedAddress} onChange={(e)=>setReceivedAddress(e.target.value)} rows={3} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical' }} />
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่ผู้รับ {deliveryMethod==='pickup' ? '(ไม่บังคับเมื่อรับเอง)' : ''}</div>
+              <textarea value={receivedAddress} onChange={(e)=>setReceivedAddress(e.target.value)} rows={3} disabled={deliveryMethod==='pickup'} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical', background: deliveryMethod==='pickup' ? '#f5f5f5' : '#fff' }} />
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>วันที่เบิก</div>
               <input type="date" value={withdrawDate} onChange={(e)=>setWithdrawDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
             </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
               <span style={{ color: '#666' }}>ราคารวม</span>
               <strong>฿{total.toLocaleString()}</strong>

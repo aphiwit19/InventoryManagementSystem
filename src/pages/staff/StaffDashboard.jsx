@@ -719,7 +719,7 @@ export default function StaffDashboard() {
                         },
                       ];
                     }
-                    localStorage.setItem("staffCart", JSON.stringify(next));
+                    saveCart(next);
                     return next;
                   });
                   setShowQtyPrompt(false);

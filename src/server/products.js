@@ -173,6 +173,7 @@ export async function updateProductQuantity(productId, quantity, isAdd = true) {
  */
 export async function createWithdrawal(payload) {
   try {
+    const method = (payload.deliveryMethod || 'shipping');
     const withdrawDoc = {
       items: (payload.items || []).map(it => ({
         productId: it.productId,
@@ -190,7 +191,8 @@ export async function createWithdrawal(payload) {
       // shipping fields
       shippingCarrier: payload.shippingCarrier || null,
       trackingNumber: payload.trackingNumber || '',
-      shippingStatus: payload.shippingStatus || 'รอดำเนินการ',
+      shippingStatus: method === 'pickup' ? 'ส่งสำเร็จ' : (payload.shippingStatus || 'รอดำเนินการ'),
+      deliveryMethod: method,
       createdAt: Timestamp.now(),
       createdByUid: payload.createdByUid || null,
       createdByEmail: payload.createdByEmail || null,
@@ -202,7 +204,8 @@ export async function createWithdrawal(payload) {
 
     // ใช้ธุรกรรมเพื่อ "จองสต๊อก" (เพิ่ม reserved) ตามจำนวนที่สั่ง หากสต๊อกพร้อมขายไม่พอจะ throw
     await runTransaction(db, async (tx) => {
-      // ตรวจสอบและจองสต๊อกทีละรายการ
+      // PASS 1: อ่านข้อมูลสินค้าทั้งหมดก่อน แล้วตรวจสอบความถูกต้อง
+      const productStates = [];
       for (const it of withdrawDoc.items) {
         const pRef = doc(db, 'products', it.productId);
         const pSnap = await tx.get(pRef);
@@ -214,13 +217,18 @@ export async function createWithdrawal(payload) {
         const available = qty - reserved;
         if (req <= 0) throw new Error('จำนวนที่สั่งไม่ถูกต้อง');
         if (available < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
-        tx.update(pRef, {
-          reserved: reserved + req,
-          updatedAt: Timestamp.now(),
-        });
+        productStates.push({ pRef, qty, reserved, req });
       }
 
-      // บันทึกคำสั่งซื้อ (สถานะเริ่มต้น: รอดำเนินการ)
+      // PASS 2: เขียนอัปเดตสต๊อก และเอกสารคำสั่งซื้อ
+      for (const s of productStates) {
+        if (method === 'pickup') {
+          const nextQty = Math.max(0, s.qty - s.req);
+          tx.update(s.pRef, { quantity: nextQty, updatedAt: Timestamp.now() });
+        } else {
+          tx.update(s.pRef, { reserved: s.reserved + s.req, updatedAt: Timestamp.now() });
+        }
+      }
       tx.set(newWithdrawRef, withdrawDoc);
     });
 
@@ -277,20 +285,28 @@ export async function updateWithdrawalShipping(withdrawalId, updates) {
     // หากอัปเดตเป็น "ส่งสำเร็จ" และยังไม่เคยสำเร็จมาก่อน ให้ตัดสต๊อกจริง (โอนจาก reserved -> quantity)
     if (updates.shippingStatus === 'ส่งสำเร็จ' && currentData.shippingStatus !== 'ส่งสำเร็จ') {
       await runTransaction(db, async (tx) => {
-        // อัปเดตสินค้าแต่ละชิ้น
-        for (const it of (currentData.items || [])) {
+        // PASS 1: อ่านข้อมูลสินค้าทั้งหมดก่อน
+        const items = currentData.items || [];
+        const states = [];
+        for (const it of items) {
           const pRef = doc(db, 'products', it.productId);
           const pSnap = await tx.get(pRef);
           if (!pSnap.exists()) continue;
           const pData = pSnap.data();
-          const qty = parseInt(pData.quantity || 0);
-          const reserved = parseInt(pData.reserved || 0);
-          const used = parseInt(it.quantity || 0);
-          const nextReserved = Math.max(0, reserved - used);
-          const nextQty = Math.max(0, qty - used);
-          tx.update(pRef, { reserved: nextReserved, quantity: nextQty, updatedAt: Timestamp.now() });
+          states.push({
+            pRef,
+            qty: parseInt(pData.quantity || 0),
+            reserved: parseInt(pData.reserved || 0),
+            used: parseInt(it.quantity || 0),
+          });
         }
-        // อัปเดตเอกสารคำสั่งซื้อในธุรกรรมเดียวกัน
+
+        // PASS 2: เขียนอัปเดตสต๊อก และสถานะคำสั่งซื้อ
+        for (const s of states) {
+          const nextReserved = Math.max(0, s.reserved - s.used);
+          const nextQty = Math.max(0, s.qty - s.used);
+          tx.update(s.pRef, { reserved: nextReserved, quantity: nextQty, updatedAt: Timestamp.now() });
+        }
         tx.update(ref, {
           ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
           ...(updates.trackingNumber !== undefined ? { trackingNumber: updates.trackingNumber } : {}),
