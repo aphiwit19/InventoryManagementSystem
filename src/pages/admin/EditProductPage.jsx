@@ -92,11 +92,7 @@ export default function EditProductPage() {
   return (
     // Removed the sidebar and adjusted the main content styling
     <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: 20 }}>
-        <Link to="/admin/dashboard" style={{ color: '#007bff', textDecoration: 'none', fontSize: '14px' }}>
-          ← กลับไปหน้ารายการสินค้า
-        </Link>
-      </div>
+      
       <div style={{
         backgroundColor: '#fff',
         borderRadius: '8px',

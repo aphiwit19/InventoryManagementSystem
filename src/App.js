@@ -18,6 +18,7 @@ import UsersPage from './pages/admin/UsersPage';
 import ProductsPage from './pages/admin/ProductsPage';
 import EditProductPage from './pages/admin/EditProductPage';
 import InventoryHistoryPage from './pages/admin/InventoryHistoryPage';
+import InventoryHistoryIndex from './pages/admin/inventory_history';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 
 function HomeRouter() {
@@ -46,6 +47,7 @@ function App() {
               <Route path="addproduct" element={<AdminDashboard />} />
               <Route path="products/:id/edit" element={<EditProductPage />} />
               <Route path="products/:id/history" element={<InventoryHistoryPage />} />
+              <Route path="inventory_history" element={<InventoryHistoryIndex />} />
             </Route>
           </Route>
 

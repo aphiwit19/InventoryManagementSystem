@@ -128,6 +128,29 @@ const AdminLayout = () => {
           }} />
           <span>เพิ่มสินค้าใหม่</span>
         </Link>
+        <Link
+          to="/admin/inventory_history"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: isActiveLink('/admin/inventory_history') ? '#4CAF50' : '#f0f0f0',
+            color: isActiveLink('/admin/inventory_history') ? 'white' : '#333',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: isActiveLink('/admin/inventory_history') ? 'bold' : 'normal'
+          }}
+        >
+          <span style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: isActiveLink('/admin/inventory_history') ? 'white' : '#888'
+          }} />
+          <span>จัดการสินค้าเข้า/ออก</span>
+        </Link>
         {/* moved logout to profile menu */}
       </div>
 

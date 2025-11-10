@@ -35,12 +35,14 @@ export async function addProduct(productData) {
     const docRef = await addDoc(collection(db, 'products'), data);
     const productId = docRef.id;
 
-    // บันทึกประวัติการเข้าคลังครั้งแรก
+    // บันทึกประวัติการเข้าคลังครั้งแรก (IN)
     if (productData.costPrice && productData.quantity) {
       await addInventoryHistory(productId, {
         date: productData.addDate,
         costPrice: productData.costPrice,
-        quantity: productData.quantity
+        quantity: productData.quantity,
+        type: 'in',
+        source: 'admin_add'
       });
     }
 
@@ -137,9 +139,10 @@ export async function updateProductQuantity(productId, quantity, isAdd = true) {
   try {
     const product = await getProductById(productId);
     const currentQuantity = product.quantity || 0;
+    const change = parseInt(quantity);
     const newQuantity = isAdd 
-      ? currentQuantity + parseInt(quantity)
-      : Math.max(0, currentQuantity - parseInt(quantity));
+      ? currentQuantity + change
+      : Math.max(0, currentQuantity - change);
 
     const docRef = doc(db, 'products', productId);
     await updateDoc(docRef, {
@@ -147,12 +150,22 @@ export async function updateProductQuantity(productId, quantity, isAdd = true) {
       updatedAt: Timestamp.now()
     });
 
-    // บันทึกประวัติการเข้าคลัง (เฉพาะเมื่อเพิ่มสินค้า) - ใช้ราคาทุนจากสินค้า
-    if (isAdd && product.costPrice) {
+    // Log inventory history
+    if (isAdd) {
       await addInventoryHistory(productId, {
         date: new Date(),
-        costPrice: product.costPrice,
-        quantity: parseInt(quantity)
+        costPrice: product.costPrice || 0,
+        quantity: change,
+        type: 'in',
+        source: 'admin_adjust_inc'
+      });
+    } else {
+      await addInventoryHistory(productId, {
+        date: new Date(),
+        costPrice: null,
+        quantity: change,
+        type: 'out',
+        source: 'admin_adjust_dec'
       });
     }
   } catch (error) {
@@ -216,11 +229,12 @@ export async function createWithdrawal(payload) {
         const data = pSnap.data();
         const qty = parseInt(data.quantity || 0);
         const reserved = parseInt(data.reserved || 0);
+        const cost = parseFloat(data.costPrice || 0);
         const req = parseInt(it.quantity || 0);
         const available = qty - reserved;
         if (req <= 0) throw new Error('จำนวนที่สั่งไม่ถูกต้อง');
         if (available < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
-        productStates.push({ pRef, qty, reserved, req });
+        productStates.push({ pRef, qty, reserved, req, costPrice: cost });
       }
 
       // PASS 2: เขียนอัปเดตสต๊อก และเอกสารคำสั่งซื้อ (เฉพาะใน users/{uid}/orders)
@@ -228,6 +242,20 @@ export async function createWithdrawal(payload) {
         if (method === 'pickup') {
           const nextQty = Math.max(0, s.qty - s.req);
           tx.update(s.pRef, { quantity: nextQty, updatedAt: Timestamp.now() });
+          // Write OUT history for pickup
+          const productHistoryCol = collection(s.pRef, 'inventory_history');
+          const histRef = doc(productHistoryCol);
+          const outSource = withdrawDoc.createdSource === 'customer' ? 'order_customer_pickup' : 'order_staff_pickup';
+          tx.set(histRef, {
+            date: Timestamp.now(),
+            costPrice: s.costPrice ?? null,
+            quantity: s.req,
+            type: 'out',
+            source: outSource,
+            orderId: newWithdrawRef.id,
+            actorUid: withdrawDoc.createdByUid,
+            createdAt: Timestamp.now()
+          });
         } else {
           tx.update(s.pRef, { reserved: s.reserved + s.req, updatedAt: Timestamp.now() });
         }
@@ -302,6 +330,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
             qty: parseInt(pData.quantity || 0),
             reserved: parseInt(pData.reserved || 0),
             used: parseInt(it.quantity || 0),
+            costPrice: parseFloat(pData.costPrice || 0)
           });
         }
 
@@ -310,6 +339,20 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
           const nextReserved = Math.max(0, s.reserved - s.used);
           const nextQty = Math.max(0, s.qty - s.used);
           tx.update(s.pRef, { reserved: nextReserved, quantity: nextQty, updatedAt: Timestamp.now() });
+          // เขียน OUT history ต่อสินค้าแต่ละตัว
+          const productHistoryCol = collection(s.pRef, 'inventory_history');
+          const histRef = doc(productHistoryCol);
+          const outSource = currentData.createdSource === 'customer' ? 'order_customer_ship_success' : 'order_staff_ship_success';
+          tx.set(histRef, {
+            date: Timestamp.now(),
+            costPrice: s.costPrice ?? null,
+            quantity: s.used,
+            type: 'out',
+            source: outSource,
+            orderId: withdrawalId,
+            actorUid: createdByUid,
+            createdAt: Timestamp.now()
+          });
         }
         tx.update(ref, {
           ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
@@ -363,11 +406,15 @@ export async function addInventoryHistory(productId, historyData) {
     const productRef = doc(db, 'products', productId);
     const historyCollection = collection(productRef, 'inventory_history');
     const historyDoc = {
-      date: typeof historyData.date === 'string' 
-        ? Timestamp.fromDate(new Date(historyData.date))
-        : Timestamp.fromDate(historyData.date),
-      costPrice: parseFloat(historyData.costPrice),
-      quantity: parseInt(historyData.quantity),
+      date: (historyData.date && historyData.date.toDate) ? historyData.date : (
+        typeof historyData.date === 'string' ? Timestamp.fromDate(new Date(historyData.date)) : Timestamp.fromDate(historyData.date || new Date())
+      ),
+      costPrice: historyData.costPrice === null || historyData.costPrice === undefined ? null : parseFloat(historyData.costPrice),
+      quantity: parseInt(historyData.quantity || 0),
+      type: historyData.type || 'in',
+      source: historyData.source || null,
+      orderId: historyData.orderId || null,
+      actorUid: historyData.actorUid || null,
       createdAt: Timestamp.now()
     };
     const docRef = await addDoc(historyCollection, historyDoc);

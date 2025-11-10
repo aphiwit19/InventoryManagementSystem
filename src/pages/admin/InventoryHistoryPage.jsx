@@ -167,101 +167,35 @@ export default function InventoryHistoryPage() {
                     backgroundColor: '#f8f9fa',
                     borderBottom: '2px solid #e0e0e0'
                   }}>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      ลำดับ
-                    </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      วันที่
-                    </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      ราคาทุน
-                    </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#333',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      จำนวน
-                    </th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>ลำดับ</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>วันที่</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>ประเภท</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>ที่มา</th>
+                    <th style={{ padding: '16px', textAlign: 'right' }}>จำนวน (+/−)</th>
+                    <th style={{ padding: '16px', textAlign: 'right' }}>ราคาทุน</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((item, index) => (
-                    <tr
-                      key={item.id}
-                      style={{
-                        borderBottom: '1px solid #eee',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <td style={{
-                        padding: '16px',
-                        fontSize: '14px',
-                        color: '#333'
-                      }}>
-                        {index + 1}
-                      </td>
-                      <td style={{
-                        padding: '16px',
-                        fontSize: '14px',
-                        color: '#333'
-                      }}>
-                        {formatDateOnly(item.date)}
-                      </td>
-                      <td style={{
-                        padding: '16px',
-                        fontSize: '14px',
-                        color: '#333'
-                      }}>
-                        ฿{parseFloat(item.costPrice || 0).toLocaleString()}
-                      </td>
-                      <td style={{
-                        padding: '16px',
-                        fontSize: '14px',
-                        color: '#333'
-                      }}>
-                        <span style={{
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          backgroundColor: '#e8f5e9',
-                          color: '#2e7d32',
-                          fontWeight: '500'
-                        }}>
-                          +{parseInt(item.quantity || 0).toLocaleString()} ชิ้น
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {history.map((item, index) => {
+                    const isOut = (item.type || 'in') === 'out';
+                    const sign = isOut ? '-' : '+';
+                    const color = isOut ? '#e53935' : '#2e7d32';
+                    return (
+                      <tr
+                        key={item.id}
+                        style={{ borderBottom: '1px solid #eee', transition: 'background-color 0.2s' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>{index + 1}</td>
+                        <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>{formatDateOnly(item.date)}</td>
+                        <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>{(item.type || 'in').toUpperCase()}</td>
+                        <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>{item.source || '-'}</td>
+                        <td style={{ padding: '16px', fontSize: '14px', color, textAlign: 'right' }}>{sign}{parseInt(item.quantity || 0).toLocaleString()}</td>
+                        <td style={{ padding: '16px', fontSize: '14px', color: '#333', textAlign: 'right' }}>{isOut ? '-' : `฿${parseFloat(item.costPrice || 0).toLocaleString()}`}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
