@@ -20,6 +20,7 @@ import EditProductPage from './pages/admin/EditProductPage';
 import InventoryHistoryPage from './pages/admin/InventoryHistoryPage';
 import InventoryHistoryIndex from './pages/admin/inventory_history';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import ProfilePage from './pages/admin/ProfilePage';
 
 function HomeRouter() {
   const { profile } = useAuth();
@@ -48,6 +49,7 @@ function App() {
               <Route path="products/:id/edit" element={<EditProductPage />} />
               <Route path="products/:id/history" element={<InventoryHistoryPage />} />
               <Route path="inventory_history" element={<InventoryHistoryIndex />} />
+              <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>
 

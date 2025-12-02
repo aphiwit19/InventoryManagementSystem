@@ -151,6 +151,29 @@ const AdminLayout = () => {
           }} />
           <span>จัดการสินค้าเข้า/ออก</span>
         </Link>
+        <Link
+          to="/admin/profile"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: isActiveLink('/admin/profile') ? '#4CAF50' : '#f0f0f0',
+            color: isActiveLink('/admin/profile') ? 'white' : '#333',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: isActiveLink('/admin/profile') ? 'bold' : 'normal'
+          }}
+        >
+          <span style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: isActiveLink('/admin/profile') ? 'white' : '#888'
+          }} />
+          <span>โปรไฟล์</span>
+        </Link>
         {/* moved logout to profile menu */}
       </div>
 
