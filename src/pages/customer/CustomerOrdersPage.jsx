@@ -238,6 +238,12 @@ export default function CustomerOrdersPage() {
                   : status === 'กำลังดำเนินการส่ง'
                   ? '#2563EB'
                   : '#F97316';
+              const items = o.items || [];
+              const itemsText = items.length
+                ? items
+                    .map((it) => `${it.productName || ''} x${it.quantity || 0}`)
+                    .join('\n')
+                : '-';
 
               return (
                 <div
@@ -261,7 +267,18 @@ export default function CustomerOrdersPage() {
                       {o.trackingNumber || '-'}
                     </div>
                     <div style={{ fontSize: 13, color: '#6B7280' }}>วันที่สั่งซื้อ</div>
-                    <div style={{ fontSize: 14 }}>{dateStr}</div>
+                    <div style={{ fontSize: 14, marginBottom: 6 }}>{dateStr}</div>
+                    <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>สินค้า / จำนวน</div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: '#374151',
+                        marginTop: 2,
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      {itemsText}
+                    </div>
                   </div>
 
                   <div style={{ flex: '1.4 1 260px', minWidth: 0 }}>
@@ -276,6 +293,12 @@ export default function CustomerOrdersPage() {
                       }}
                     >
                       {o.requestedAddress || '-'}
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 13, color: '#6B7280' }}>ขนส่ง</div>
+                      <div style={{ fontSize: 14, color: '#374151' }}>
+                        {o.shippingCarrier || '-'}
+                      </div>
                     </div>
                   </div>
 
@@ -310,9 +333,6 @@ export default function CustomerOrdersPage() {
                       <div style={{ fontSize: 13, color: '#6B7280' }}>ยอดรวม</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>
                         ฿{(o.total || 0).toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#9CA3AF' }}>
-                        ขนส่ง: {o.shippingCarrier || '-'}
                       </div>
                     </div>
                   </div>
