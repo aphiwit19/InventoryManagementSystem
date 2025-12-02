@@ -102,156 +102,198 @@ export default function StaffDashboard() {
   // no direct checkout here; use WithdrawPage for final confirmation
 
   return (
-    // Removed the sidebar div and adjusted the main content styling
-    <div style={{ flex: 1, padding: "20px" }}>
-      {/* Header */}
-      <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "20px",
-          borderRadius: "8px",
-          marginBottom: "20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        }}
-      >
-        <h1 style={{ margin: 0, color: "#333" }}>All Products</h1>
+    <div style={{ flex: 1, padding: "24px", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", maxWidth: 1200, margin: "0 auto" }}>
+        {/* Header */}
         <div
           style={{
+            background:
+              "linear-gradient(135deg, #1D4ED8 0%, #2563EB 35%, #38BDF8 75%, #4F46E5 100%)",
+            padding: "18px 24px",
+            borderRadius: 20,
+            marginBottom: 18,
             display: "flex",
-            gap: "15px",
+            justifyContent: "space-between",
             alignItems: "center",
-            position: "relative",
+            boxShadow: "0 14px 32px rgba(15,23,42,0.38)",
+            color: "#fff",
           }}
         >
-          <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              placeholder="Search by name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: "10px 40px 10px 15px",
-                borderRadius: "20px",
-                border: "1px solid #ddd",
-                fontSize: "14px",
-                width: "250px",
-              }}
-            />
-            <span
-              style={{
-                position: "absolute",
-                right: "15px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#999",
-              }}
-            >
-              🔍
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ color: "#666" }}>
-              {profile?.displayName || user?.email || "Staff"}
-            </span>
+          <div>
             <div
               style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                backgroundColor: "#4CAF50",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontWeight: "bold",
-                cursor: "pointer",
+                fontSize: 12,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                opacity: 0.9,
               }}
-              onClick={() => setShowMenu((v) => !v)}
-              title={profile?.displayName || "Staff"}
-              role="button"
-              aria-label="profile-menu"
-              tabIndex={0}
             >
-              {(profile?.displayName || user?.email || "S")[0].toUpperCase()}
+              STAFF PANEL
+            </div>
+            <h1
+              style={{
+                margin: "4px 0 2px",
+                fontSize: 20,
+                letterSpacing: "0.03em",
+              }}
+            >
+              จัดการรายการสินค้า
+            </h1>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>
+              ดูและจัดการสต็อกสินค้าเพื่อเตรียมการเบิกและจัดส่ง
             </div>
           </div>
-          {showMenu && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: "calc(100% + 8px)",
-                background: "#323232",
-                color: "#fff",
-                borderRadius: 8,
-                padding: "10px 12px",
-                minWidth: 160,
-                boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
-                zIndex: 3000,
-              }}
-            >
-              <div
-                style={{
-                  paddingBottom: 8,
-                  borderBottom: "1px solid rgba(255,255,255,0.15)",
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 600 }}>
-                  {profile?.displayName || user?.email || "Staff"}
-                </div>
-              </div>
-              <button
-                onClick={() => signOut(auth)}
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 6,
-                  background: "#f44336",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 13,
-                }}
-              >
-                ออกจากระบบ
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Products Grid */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <p>Loading products...</p>
-        </div>
-      ) : currentProducts.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "40px",
-            backgroundColor: "#fff",
-            borderRadius: "8px",
-          }}
-        >
-          <p style={{ color: "#999", fontSize: "18px" }}>
-            {searchTerm ? "ไม่พบสินค้าที่ค้นหา" : "ยังไม่มีสินค้า"}
-          </p>
-        </div>
-      ) : (
-        <>
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: "20px",
-              marginBottom: "30px",
+              display: "flex",
+              gap: 15,
+              alignItems: "center",
+              position: "relative",
             }}
           >
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Search by name"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: "8px 32px 8px 12px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(255,255,255,0.4)",
+                  background: "rgba(15,23,42,0.4)",
+                  color: "#E5E7EB",
+                  fontSize: 13,
+                  width: "240px",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#9CA3AF",
+                }}
+              >
+                🔍
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                background: "rgba(15,23,42,0.55)",
+                padding: "6px 10px",
+                borderRadius: 999,
+              }}
+            >
+              <span style={{ color: "#D1D5DB", fontSize: 12 }}>
+                {profile?.displayName || user?.email || "Staff"}
+              </span>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "999px",
+                  background:
+                    "radial-gradient(circle at 30% 20%, #FFFFFF 0%, #4ADE80 45%, #16A34A 90%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#052E16",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 10px rgba(22,163,74,0.6)",
+                }}
+                onClick={() => setShowMenu((v) => !v)}
+                title={profile?.displayName || "Staff"}
+                role="button"
+                aria-label="profile-menu"
+                tabIndex={0}
+              >
+                {(profile?.displayName || user?.email || "S")[0].toUpperCase()}
+              </div>
+            </div>
+            {showMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "calc(100% + 10px)",
+                  background: "#111827",
+                  color: "#F9FAFB",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                  minWidth: 180,
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+                  zIndex: 3000,
+                }}
+              >
+                <div
+                  style={{
+                    paddingBottom: 8,
+                    borderBottom: "1px solid rgba(249,250,251,0.14)",
+                    marginBottom: 8,
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>
+                    {profile?.displayName || user?.email || "Staff"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => signOut(auth)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    background:
+                      "linear-gradient(135deg,#EF4444,#DC2626)",
+                    color: "#fff",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
+                  ออกจากระบบ
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#4B5563" }}>
+            <p>Loading products...</p>
+          </div>
+        ) : currentProducts.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "40px",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              boxShadow: "0 6px 16px rgba(15,23,42,0.12)",
+              marginTop: 12,
+            }}
+          >
+            <p style={{ color: "#9CA3AF", fontSize: 16 }}>
+              {searchTerm ? "ไม่พบสินค้าที่ค้นหา" : "ยังไม่มีสินค้า"}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 20,
+                margin: "18px 0 26px",
+              }}
+            >
             {currentProducts.map((product) => (
               <div
                 key={product.id}
@@ -763,6 +805,7 @@ export default function StaffDashboard() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
