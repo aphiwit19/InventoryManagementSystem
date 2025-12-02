@@ -329,13 +329,23 @@ export default function CustomerWithdrawPage() {
               background: '#f9fafb',
               borderRadius: 20,
               padding: 18,
-              border: '1px solid #e5e7eb'
+              border: '1px solid #e5e7eb',
+              overflow: 'hidden'
             }}
           >
             <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>
               รายละเอียดผู้สั่งซื้อ
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                maxWidth: 460,
+                padding: '0 8px',
+                margin: '0 auto'
+              }}
+            >
               <div>
                 <div
                   style={{
@@ -354,7 +364,7 @@ export default function CustomerWithdrawPage() {
                     width: '100%',
                     padding: '10px 12px',
                     border: '1px solid #d1d5db',
-                    borderRadius: 999,
+                    borderRadius: 16,
                     fontSize: 14
                   }}
                 />

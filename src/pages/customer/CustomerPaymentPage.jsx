@@ -224,11 +224,21 @@ export default function CustomerPaymentPage() {
                 background: '#f9fafb',
                 borderRadius: 20,
                 padding: 20,
-                border: '1px solid #e5e7eb'
+                border: '1px solid #e5e7eb',
+                overflow: 'hidden'
               }}
             >
               <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>ที่อยู่จัดส่ง</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 14,
+                  maxWidth: 460,
+                  padding: '0 8px',
+                  margin: '0 auto'
+                }}
+              >
                 <div>
                   <div
                     style={{
@@ -248,7 +258,7 @@ export default function CustomerPaymentPage() {
                     style={{
                       width: '100%',
                       padding: '10px 14px',
-                      borderRadius: 999,
+                      borderRadius: 16,
                       border: '1px solid #d1d5db',
                       outline: 'none',
                       fontSize: 14
@@ -275,7 +285,7 @@ export default function CustomerPaymentPage() {
                     style={{
                       width: '100%',
                       padding: '10px 14px',
-                      borderRadius: 999,
+                      borderRadius: 16,
                       border: '1px solid #d1d5db',
                       outline: 'none',
                       fontSize: 14
