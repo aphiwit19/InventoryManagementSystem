@@ -21,7 +21,7 @@ export async function createWithdrawal(payload) {
       total: parseFloat(payload.total || 0),
       shippingCarrier: payload.shippingCarrier || null,
       trackingNumber: payload.trackingNumber || '',
-      shippingStatus: method === 'pickup' ? 'ส่งสำเร็จ' : (payload.shippingStatus || 'รอดำเนินการ'),
+      shippingStatus: payload.shippingStatus || 'รอดำเนินการ',
       deliveryMethod: method,
       createdAt: Timestamp.now(),
       createdByUid: payload.createdByUid || null,
@@ -42,32 +42,27 @@ export async function createWithdrawal(payload) {
         const data = pSnap.data();
         const qty = parseInt(data.quantity || 0);
         const reserved = parseInt(data.reserved || 0);
+        const staffReserved = parseInt(data.staffReserved || 0);
         const cost = parseFloat(data.costPrice || 0);
         const req = parseInt(it.quantity || 0);
-        const available = qty - reserved;
+        const availableForStaff = qty - reserved - staffReserved;
         if (req <= 0) throw new Error('จำนวนที่สั่งไม่ถูกต้อง');
-        if (available < req && method !== 'pickup') throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
-        productStates.push({ pRef, qty, reserved, req, costPrice: cost });
+
+        if (method === 'pickup' && (withdrawDoc.createdSource || '') === 'staff') {
+          if (availableForStaff < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
+        } else if (method !== 'pickup') {
+          const available = qty - reserved;
+          if (available < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
+        }
+
+        productStates.push({ pRef, qty, reserved, staffReserved, req, costPrice: cost });
       }
 
       for (const s of productStates) {
-        if (method === 'pickup') {
-          const nextQty = Math.max(0, s.qty - s.req);
-          tx.update(s.pRef, { quantity: nextQty, updatedAt: Timestamp.now() });
-          const productHistoryCol = collection(s.pRef, 'inventory_history');
-          const histRef = doc(productHistoryCol);
-          const outSource = withdrawDoc.createdSource === 'customer' ? 'order_customer_pickup' : 'order_staff_pickup';
-          tx.set(histRef, {
-            date: Timestamp.now(),
-            costPrice: s.costPrice ?? null,
-            quantity: s.req,
-            type: 'out',
-            source: outSource,
-            orderId: newWithdrawRef.id,
-            actorUid: withdrawDoc.createdByUid,
-            createdAt: Timestamp.now(),
-          });
-        } else {
+        if (method === 'pickup' && (withdrawDoc.createdSource || '') === 'staff') {
+          const nextStaffReserved = (s.staffReserved || 0) + s.req;
+          tx.update(s.pRef, { staffReserved: nextStaffReserved, updatedAt: Timestamp.now() });
+        } else if (method !== 'pickup') {
           tx.update(s.pRef, { reserved: s.reserved + s.req, updatedAt: Timestamp.now() });
         }
       }
@@ -112,11 +107,56 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
     if (!curr.exists()) throw new Error('ไม่พบคำสั่งซื้อ');
     const currentData = curr.data();
 
-    // ตัดสต็อกเมื่อเปลี่ยนจาก "รอดำเนินการ" ไปเป็น "กำลังดำเนินการส่ง" หรือ "ส่งสำเร็จ" ครั้งแรก
-    // (ย้ายจากเดิมที่ตัดสต็อกตอนเปลี่ยนเป็น "ส่งสำเร็จ")
     const isPickup = (currentData.deliveryMethod || 'shipping') === 'pickup';
     const isNewShippingProgressStatus =
       (updates.shippingStatus === 'กำลังดำเนินการส่ง' || updates.shippingStatus === 'ส่งสำเร็จ');
+
+    if (isPickup && updates.shippingStatus === 'รับของแล้ว' && currentData.shippingStatus !== 'รับของแล้ว') {
+      await runTransaction(db, async (tx) => {
+        const items = currentData.items || [];
+        const states = [];
+        for (const it of items) {
+          const pRef = doc(db, 'products', it.productId);
+          const pSnap = await tx.get(pRef);
+          if (!pSnap.exists()) continue;
+          const pData = pSnap.data();
+          states.push({
+            pRef,
+            qty: parseInt(pData.quantity || 0),
+            staffReserved: parseInt(pData.staffReserved || 0),
+            used: parseInt(it.quantity || 0),
+            costPrice: parseFloat(pData.costPrice || 0),
+          });
+        }
+
+        for (const s of states) {
+          const nextStaffReserved = Math.max(0, (s.staffReserved || 0) - s.used);
+          const nextQty = Math.max(0, s.qty - s.used);
+          tx.update(s.pRef, { staffReserved: nextStaffReserved, quantity: nextQty, updatedAt: Timestamp.now() });
+          const productHistoryCol = collection(s.pRef, 'inventory_history');
+          const histRef = doc(productHistoryCol);
+          const outSource = currentData.createdSource === 'customer' ? 'order_customer_pickup' : 'order_staff_pickup';
+          tx.set(histRef, {
+            date: Timestamp.now(),
+            costPrice: s.costPrice ?? null,
+            quantity: s.used,
+            type: 'out',
+            source: outSource,
+            orderId: withdrawalId,
+            actorUid: createdByUid,
+            createdAt: Timestamp.now(),
+          });
+        }
+
+        tx.update(ref, {
+          ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
+          ...(updates.trackingNumber !== undefined ? { trackingNumber: updates.trackingNumber } : {}),
+          shippingStatus: 'รับของแล้ว',
+          updatedAt: Timestamp.now(),
+        });
+      });
+      return;
+    }
 
     if (!isPickup &&
         isNewShippingProgressStatus &&

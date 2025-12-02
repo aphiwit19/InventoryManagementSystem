@@ -4,6 +4,7 @@ import { getAllWithdrawals, updateWithdrawalShipping } from '../../services';
 
 const carriers = ['EMS', 'ไปรษณีย์ไทย', 'Kerry', 'J&T', 'Flash'];
 const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
+const pickupStatuses = ['รอดำเนินการ', 'รับของแล้ว'];
 
 export default function AdminOrdersPage() {
   const location = useLocation();
@@ -16,6 +17,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState(initialSource); // all | customer | staff
+  const [deliveryFilter, setDeliveryFilter] = useState('all'); // all | shipping | pickup
   const [edits, setEdits] = useState({}); // { [id]: { shippingCarrier, trackingNumber, shippingStatus } }
   const [savedOk, setSavedOk] = useState({}); // { [id]: true when last save succeeded }
 
@@ -71,13 +73,17 @@ export default function AdminOrdersPage() {
     );
     const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
     const sourceOk = sourceFilter === 'all' || (o.createdSource || '') === sourceFilter;
-    return hit && statusOk && sourceOk;
+    const deliveryOk = deliveryFilter === 'all' || ((o.deliveryMethod || 'shipping') === deliveryFilter);
+    return hit && statusOk && sourceOk && deliveryOk;
   });
 
   const canSave = (id) => {
     const order = orders.find(o => o.id === id);
-    if ((order?.deliveryMethod || 'shipping') === 'pickup') return false;
     const e = edits[id] || {};
+    const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';
+    if (isPickup) {
+      return !!e.shippingStatus;
+    }
     return (e.shippingCarrier && e.trackingNumber && e.shippingStatus);
   };
 
@@ -121,6 +127,41 @@ export default function AdminOrdersPage() {
               <option value="staff">ผู้เบิก</option>
             </select>
           )}
+          {sourceFilter === 'staff' && (
+            <div style={{ display: 'inline-flex', borderRadius: 20, border: '1px solid #ddd', overflow: 'hidden' }}>
+              <button
+                type="button"
+                onClick={() => setDeliveryFilter('shipping')}
+                style={{
+                  padding: '8px 14px',
+                  border: 'none',
+                  background: deliveryFilter === 'shipping' ? '#4CAF50' : '#fff',
+                  color: deliveryFilter === 'shipping' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: deliveryFilter === 'shipping' ? 600 : 400,
+                  borderRight: '1px solid #ddd'
+                }}
+              >
+                จัดส่ง
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryFilter('pickup')}
+                style={{
+                  padding: '8px 14px',
+                  border: 'none',
+                  background: deliveryFilter === 'pickup' ? '#4CAF50' : '#fff',
+                  color: deliveryFilter === 'pickup' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: deliveryFilter === 'pickup' ? 600 : 400,
+                }}
+              >
+                รับเอง
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -132,9 +173,10 @@ export default function AdminOrdersPage() {
         <div style={{ background:'#fff', borderRadius: 8, overflow:'hidden', boxShadow:'0 2px 4px rgba(0,0,0,0.1)' }}>
           {sourceFilter === 'customer' ? (
             <>
-              <div style={{ display:'grid', gridTemplateColumns:'1.1fr 1.1fr 1.6fr 1.1fr 1.1fr 1fr 0.8fr', gap:8, padding:'12px 16px', background:'#f8f9fa', fontWeight:600 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1.1fr 1.1fr 1.2fr 1.4fr 1.1fr 1.1fr 1fr 0.8fr', gap:8, padding:'12px 16px', background:'#f8f9fa', fontWeight:600 }}>
                 <div>วันที่</div>
                 <div>ผู้สั่งซื้อ</div>
+                <div>วิธีรับ</div>
                 <div>ที่อยู่</div>
                 <div>ขนส่ง</div>
                 <div>Tracking</div>
@@ -142,9 +184,10 @@ export default function AdminOrdersPage() {
                 <div style={{ textAlign:'center' }}>บันทึก</div>
               </div>
               {filtered.map(o => (
-                <div key={o.id} style={{ display:'grid', gridTemplateColumns:'1.1fr 1.1fr 1.6fr 1.1fr 1.1fr 1fr 0.8fr', gap:8, padding:'12px 16px', borderTop:'1px solid #eee', alignItems:'center' }}>
+                <div key={o.id} style={{ display:'grid', gridTemplateColumns:'1.1fr 1.1fr 1.2fr 1.4fr 1.1fr 1.1fr 1fr 0.8fr', gap:8, padding:'12px 16px', borderTop:'1px solid #eee', alignItems:'center' }}>
                   <div>{new Date(o.withdrawDate?.seconds ? o.withdrawDate.seconds*1000 : o.withdrawDate).toLocaleDateString('th-TH')}</div>
                   <div>{o.requestedBy || '-'}</div>
+                  <div>{(o.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง'}</div>
                   <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{o.requestedAddress || '-'}</div>
                   <div>
                     <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingCarrier) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingCarrier: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
@@ -156,8 +199,8 @@ export default function AdminOrdersPage() {
                     <input disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.trackingNumber) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], trackingNumber: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} placeholder="เช่น EX123456789TH" style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, width:'100%' }} />
                   </div>
                   <div>
-                    <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
-                      {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                    <select value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
+                      {((o.deliveryMethod || 'shipping') === 'pickup' ? pickupStatuses : statuses).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div style={{ display:'flex', justifyContent:'center' }}>
@@ -170,46 +213,194 @@ export default function AdminOrdersPage() {
             </>
           ) : (
             <>
-              <div style={{ display:'grid', gridTemplateColumns:'1.1fr 1.1fr 1.1fr 1.6fr 1.1fr 1.1fr 1fr 0.8fr', gap:8, padding:'12px 16px', background:'#f8f9fa', fontWeight:600 }}>
-                <div>วันที่</div>
-                <div>ผู้เบิก</div>
-                <div>ผู้รับ</div>
-                <div>ที่อยู่</div>
-                <div>ขนส่ง</div>
-                <div>Tracking</div>
-                <div>สถานะ</div>
-                <div style={{ textAlign:'center' }}>บันทึก</div>
-              </div>
-              {filtered.map(o => {
-                const address = o.receivedAddress || '-';
+              {(() => {
+                const hideShippingFields = sourceFilter === 'staff' && deliveryFilter === 'pickup';
                 return (
-                  <div key={o.id} style={{ display:'grid', gridTemplateColumns:'1.1fr 1.1fr 1.1fr 1.6fr 1.1fr 1.1fr 1fr 0.8fr', gap:8, padding:'12px 16px', borderTop:'1px solid #eee', alignItems:'center' }}>
-                    <div>{new Date(o.withdrawDate?.seconds ? o.withdrawDate.seconds*1000 : o.withdrawDate).toLocaleDateString('th-TH')}</div>
-                    <div>{o.requestedBy || '-'}</div>
-                    <div>{o.receivedBy || ((o.createdSource||'')==='customer' ? '-' : '-')}</div>
-                    <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{address}</div>
-                    <div>
-                      <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingCarrier) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingCarrier: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
-                        <option value="">เลือกผู้ให้บริการ</option>
-                        {carriers.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                  <>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: hideShippingFields
+                          ? '1.1fr 1.1fr 1.1fr 1fr 0.8fr'
+                          : '1.1fr 1.1fr 1.1fr 1.1fr 1.4fr 1.1fr 1.1fr 1fr 0.8fr',
+                        gap: 8,
+                        padding: '12px 16px',
+                        background: '#f8f9fa',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <div>วันที่</div>
+                      <div>ผู้เบิก</div>
+                      <div>ผู้รับ</div>
+                      {!hideShippingFields && <div>วิธีรับ</div>}
+                      {!hideShippingFields && <div>ที่อยู่</div>}
+                      {!hideShippingFields && <div>ขนส่ง</div>}
+                      {!hideShippingFields && <div>Tracking</div>}
+                      {hideShippingFields && <div>สถานะ</div>}
+                      {hideShippingFields && <div style={{ textAlign: 'center' }}>บันทึก</div>}
+                      {!hideShippingFields && <div>สถานะ</div>}
+                      {!hideShippingFields && <div style={{ textAlign: 'center' }}>บันทึก</div>}
                     </div>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <input disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.trackingNumber) ?? ''} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], trackingNumber: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} placeholder="เช่น EX123456789TH" style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, width:'100%' }} />
-                    </div>
-                    <div>
-                      <select disabled={(o.deliveryMethod||'shipping')==='pickup'} value={(edits[o.id]?.shippingStatus) ?? 'รอดำเนินการ'} onChange={(e)=>{ setEdits(s=>({ ...s, [o.id]: { ...s[o.id], shippingStatus: e.target.value } })); setSavedOk(prev=>({ ...prev, [o.id]: false })); }} style={{ padding:'6px 8px', border:'1px solid #ddd', borderRadius:6 }}>
-                        {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'center' }}>
-                      <button onClick={()=>saveRow(o.id)} disabled={savingId===o.id || !canSave(o.id)} style={{ padding:'8px 14px', minWidth:96, background: savedOk[o.id] ? '#4CAF50' : (canSave(o.id) ? '#2196F3' : '#9e9e9e'), color:'#fff', border:'none', borderRadius:6, cursor: savingId===o.id || !canSave(o.id) ? 'not-allowed' : 'pointer' }}>
-                        {savingId===o.id ? 'กำลังบันทึก...' : (savedOk[o.id] ? 'บันทึกแล้ว' : 'บันทึก')}
-                      </button>
-                    </div>
-                  </div>
+                    {filtered.map((o) => {
+                      const address = o.receivedAddress || '-';
+                      const isPickupRow = (o.deliveryMethod || 'shipping') === 'pickup';
+                      const showCompactPickup = hideShippingFields && isPickupRow;
+                      return (
+                        <div
+                          key={o.id}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: showCompactPickup
+                              ? '1.1fr 1.1fr 1.1fr 1fr 0.8fr'
+                              : '1.1fr 1.1fr 1.1fr 1.1fr 1.4fr 1.1fr 1.1fr 1fr 0.8fr',
+                            gap: 8,
+                            padding: '12px 16px',
+                            borderTop: '1px solid #eee',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            {new Date(
+                              o.withdrawDate?.seconds
+                                ? o.withdrawDate.seconds * 1000
+                                : o.withdrawDate
+                            ).toLocaleDateString('th-TH')}
+                          </div>
+                          <div>{o.requestedBy || '-'}</div>
+                          <div>
+                            {o.receivedBy ||
+                              ((o.createdSource || '') === 'customer' ? '-' : '-')}
+                          </div>
+                          {!showCompactPickup && (
+                            <div>
+                              {(o.deliveryMethod || 'shipping') === 'pickup'
+                                ? 'รับเอง'
+                                : 'จัดส่ง'}
+                            </div>
+                          )}
+                          {!showCompactPickup && (
+                            <div style={{ whiteSpace: 'pre-wrap', color: '#555' }}>
+                              {address}
+                            </div>
+                          )}
+                          {!showCompactPickup && (
+                            <div>
+                              <select
+                                disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
+                                value={edits[o.id]?.shippingCarrier ?? ''}
+                                onChange={(e) => {
+                                  setEdits((s) => ({
+                                    ...s,
+                                    [o.id]: {
+                                      ...s[o.id],
+                                      shippingCarrier: e.target.value,
+                                    },
+                                  }));
+                                  setSavedOk((prev) => ({ ...prev, [o.id]: false }));
+                                }}
+                                style={{
+                                  padding: '6px 8px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: 6,
+                                }}
+                              >
+                                <option value="">เลือกผู้ให้บริการ</option>
+                                {carriers.map((c) => (
+                                  <option key={c} value={c}>
+                                    {c}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          {!showCompactPickup && (
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <input
+                                disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
+                                value={edits[o.id]?.trackingNumber ?? ''}
+                                onChange={(e) => {
+                                  setEdits((s) => ({
+                                    ...s,
+                                    [o.id]: {
+                                      ...s[o.id],
+                                      trackingNumber: e.target.value,
+                                    },
+                                  }));
+                                  setSavedOk((prev) => ({ ...prev, [o.id]: false }));
+                                }}
+                                placeholder="เช่น EX123456789TH"
+                                style={{
+                                  padding: '6px 8px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: 6,
+                                  width: '100%',
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <select
+                              value={edits[o.id]?.shippingStatus ?? 'รอดำเนินการ'}
+                              onChange={(e) => {
+                                setEdits((s) => ({
+                                  ...s,
+                                  [o.id]: {
+                                    ...s[o.id],
+                                    shippingStatus: e.target.value,
+                                  },
+                                }));
+                                setSavedOk((prev) => ({ ...prev, [o.id]: false }));
+                              }}
+                              style={{
+                                padding: '6px 8px',
+                                border: '1px solid #ddd',
+                                borderRadius: 6,
+                              }}
+                            >
+                              {((o.deliveryMethod || 'shipping') === 'pickup'
+                                ? pickupStatuses
+                                : statuses
+                              ).map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => saveRow(o.id)}
+                              disabled={savingId === o.id || !canSave(o.id)}
+                              style={{
+                                padding: '8px 14px',
+                                minWidth: 96,
+                                background: savedOk[o.id]
+                                  ? '#4CAF50'
+                                  : canSave(o.id)
+                                  ? '#2196F3'
+                                  : '#9e9e9e',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                cursor:
+                                  savingId === o.id || !canSave(o.id)
+                                    ? 'not-allowed'
+                                    : 'pointer',
+                              }}
+                            >
+                              {savingId === o.id
+                                ? 'กำลังบันทึก...'
+                                : savedOk[o.id]
+                                ? 'บันทึกแล้ว'
+                                : 'บันทึก'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
                 );
-              })}
+              })()}
             </>
           )}
         </div>

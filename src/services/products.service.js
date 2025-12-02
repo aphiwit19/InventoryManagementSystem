@@ -28,6 +28,7 @@ export async function addProduct(productData) {
       quantity: parseInt(productData.quantity),
       initialQuantity: parseInt(productData.quantity),
       reserved: 0,
+      staffReserved: 0, // Added staffReserved field with initial value of 0
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };

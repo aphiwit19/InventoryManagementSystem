@@ -360,7 +360,7 @@ export default function StaffDashboard() {
                   คงเหลือพร้อมขาย:{" "}
                   {Math.max(
                     0,
-                    (product.quantity || 0) - (product.reserved || 0)
+                    (product.quantity || 0) - (product.reserved || 0) - (product.staffReserved || 0)
                   )}{" "}
                   ชิ้น
                 </div>
@@ -484,7 +484,8 @@ export default function StaffDashboard() {
                     {Math.max(
                       0,
                       (detailProduct.quantity || 0) -
-                        (detailProduct.reserved || 0)
+                        (detailProduct.reserved || 0) -
+                        (detailProduct.staffReserved || 0)
                     )}{" "}
                     ชิ้น
                   </div>
@@ -649,7 +650,7 @@ export default function StaffDashboard() {
               min={1}
               max={Math.max(
                 0,
-                (promptProduct.quantity || 0) - (promptProduct.reserved || 0)
+                (promptProduct.quantity || 0) - (promptProduct.reserved || 0) - (promptProduct.staffReserved || 0)
               )}
               value={promptQty}
               onChange={(e) => setPromptQty(e.target.value)}
@@ -699,7 +700,8 @@ export default function StaffDashboard() {
                   const available = Math.max(
                     0,
                     (promptProduct.quantity || 0) -
-                      (promptProduct.reserved || 0)
+                      (promptProduct.reserved || 0) -
+                      (promptProduct.staffReserved || 0)
                   );
                   const qty = Math.max(
                     1,

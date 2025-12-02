@@ -65,7 +65,9 @@ export default function WithdrawPage() {
     if (!user?.uid) return;
     const qtyTotal = productsById[id]?.quantity ?? 0;
     const qtyReserved = productsById[id]?.reserved ?? 0;
-    const stock = Math.max(0, qtyTotal - qtyReserved);
+    const qtyStaffReserved = productsById[id]?.staffReserved ?? 0;
+    const stock = Math.max(0, qtyTotal - qtyReserved - qtyStaffReserved);
+    
     const value = Math.max(1, Math.min(parseInt(qty || 1), stock));
     
     try {
@@ -148,11 +150,11 @@ export default function WithdrawPage() {
                 <div key={it.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', gap: 12, alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 600 }}>{it.productName}</div>
-                    <div style={{ color: '#777', fontSize: 12 }}>คงเหลือพร้อมขาย: {Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0))} ชิ้น</div>
+                    <div style={{ color: '#777', fontSize: 12 }}>คงเหลือพร้อมขาย: {Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0) - (productsById[it.id]?.staffReserved ?? 0))} ชิ้น</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>฿{(it.price).toLocaleString()}</div>
                   <div>
-                    <input type="number" min={1} max={Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0))} value={it.quantity} onChange={(e)=>updateQty(it.id, e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8 }} />
+                    <input type="number" min={1} max={Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0) - (productsById[it.id]?.staffReserved ?? 0))} value={it.quantity} onChange={(e)=>updateQty(it.id, e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8 }} />
                   </div>
                   <div style={{ textAlign: 'right', fontWeight: 600 }}>฿{(it.price * it.quantity).toLocaleString()}</div>
                   <button onClick={()=>removeItem(it.id)} style={{ gridColumn: '1 / -1', justifySelf: 'end', background: 'transparent', border: 'none', color: '#f44336', cursor: 'pointer' }}>ลบ</button>
