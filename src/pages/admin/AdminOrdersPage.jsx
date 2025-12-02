@@ -1,18 +1,40 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getAllWithdrawals, updateWithdrawalShipping } from '../../services';
 
 const carriers = ['EMS', 'ไปรษณีย์ไทย', 'Kerry', 'J&T', 'Flash'];
 const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
 
 export default function AdminOrdersPage() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const initialSource = params.get('source') || 'all';
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sourceFilter, setSourceFilter] = useState('customer'); // customer | staff
+  const [sourceFilter, setSourceFilter] = useState(initialSource); // all | customer | staff
   const [edits, setEdits] = useState({}); // { [id]: { shippingCarrier, trackingNumber, shippingStatus } }
   const [savedOk, setSavedOk] = useState({}); // { [id]: true when last save succeeded }
+
+  const headingTitle = sourceFilter === 'customer'
+    ? 'จัดการคำสั่งซื้อ'
+    : sourceFilter === 'staff'
+      ? 'จัดการคำสั่งเบิก'
+      : 'จัดการคำสั่งซื้อ/การจัดส่ง';
+
+  const searchPlaceholder = sourceFilter === 'customer'
+    ? 'ค้นหา (ชื่อผู้สั่งซื้อ/ที่อยู่/Tracking)'
+    : sourceFilter === 'staff'
+      ? 'ค้นหา (ชื่อผู้เบิก/ผู้รับ/Tracking)'
+      : 'ค้นหา (ชื่อผู้เบิก/ผู้รับ/Tracking)';
+
+  // ซิงก์ sourceFilter เมื่อ query string เปลี่ยน (เช่น คลิกเมนู Sidebar คนละประเภท)
+  useEffect(() => {
+    setSourceFilter(initialSource);
+  }, [initialSource]);
 
   // (UX revert) remove badge styling helper
 
@@ -48,7 +70,7 @@ export default function AdminOrdersPage() {
       o.receivedBy?.toLowerCase().includes(search.toLowerCase())
     );
     const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
-    const sourceOk = (o.createdSource || '') === sourceFilter;
+    const sourceOk = sourceFilter === 'all' || (o.createdSource || '') === sourceFilter;
     return hit && statusOk && sourceOk;
   });
 
@@ -86,16 +108,19 @@ export default function AdminOrdersPage() {
         background: '#fff', padding: 20, borderRadius: 8, marginBottom: 20,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
-        <h1 style={{ margin: 0, color: '#333' }}>จัดการคำสั่งซื้อ/การจัดส่ง</h1>
+        <h1 style={{ margin: 0, color: '#333' }}>{headingTitle}</h1>
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ position: 'relative' }}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ค้นหา (ชื่อผู้เบิก/ผู้รับ/Tracking)" style={{ padding: '10px 40px 10px 12px', borderRadius: 20, border: '1px solid #ddd', width: 220 }}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={searchPlaceholder} style={{ padding: '10px 40px 10px 12px', borderRadius: 20, border: '1px solid #ddd', width: 220 }}/>
             <span style={{ position:'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color:'#999' }}>🔍</span>
           </div>
-          <select value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)} style={{ padding: '10px 12px', borderRadius: 20, border: '1px solid #ddd' }}>
-            <option value="customer">ผู้ซื้อ</option>
-            <option value="staff">ผู้เบิก</option>
-          </select>
+          {initialSource === 'all' && (
+            <select value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)} style={{ padding: '10px 12px', borderRadius: 20, border: '1px solid #ddd' }}>
+              <option value="all">ทั้งหมด</option>
+              <option value="customer">ผู้ซื้อ</option>
+              <option value="staff">ผู้เบิก</option>
+            </select>
+          )}
         </div>
       </div>
 

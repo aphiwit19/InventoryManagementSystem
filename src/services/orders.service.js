@@ -112,7 +112,15 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
     if (!curr.exists()) throw new Error('ไม่พบคำสั่งซื้อ');
     const currentData = curr.data();
 
-    if (updates.shippingStatus === 'ส่งสำเร็จ' && currentData.shippingStatus !== 'ส่งสำเร็จ') {
+    // ตัดสต็อกเมื่อเปลี่ยนจาก "รอดำเนินการ" ไปเป็น "กำลังดำเนินการส่ง" หรือ "ส่งสำเร็จ" ครั้งแรก
+    // (ย้ายจากเดิมที่ตัดสต็อกตอนเปลี่ยนเป็น "ส่งสำเร็จ")
+    const isPickup = (currentData.deliveryMethod || 'shipping') === 'pickup';
+    const isNewShippingProgressStatus =
+      (updates.shippingStatus === 'กำลังดำเนินการส่ง' || updates.shippingStatus === 'ส่งสำเร็จ');
+
+    if (!isPickup &&
+        isNewShippingProgressStatus &&
+        currentData.shippingStatus === 'รอดำเนินการ') {
       await runTransaction(db, async (tx) => {
         const items = currentData.items || [];
         const states = [];
@@ -151,7 +159,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
         tx.update(ref, {
           ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
           ...(updates.trackingNumber !== undefined ? { trackingNumber: updates.trackingNumber } : {}),
-          shippingStatus: 'ส่งสำเร็จ',
+          ...(updates.shippingStatus !== undefined ? { shippingStatus: updates.shippingStatus } : {}),
           updatedAt: Timestamp.now(),
         });
       });

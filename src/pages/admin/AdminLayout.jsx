@@ -8,6 +8,9 @@ const AdminLayout = () => {
   const { profile } = useAuth();
   const location = useLocation();
 
+  const params = new URLSearchParams(location.search);
+  const currentOrdersSource = params.get('source') || 'customer';
+
   const isActiveLink = (path) => {
     // Special handling for the dashboard route
     if (path === '/admin/dashboard') {
@@ -60,17 +63,17 @@ const AdminLayout = () => {
           <span>รายการสินค้า</span>
         </Link>
         <Link
-          to="/admin/orders"
+          to="/admin/orders?source=customer"
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/orders') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/orders') ? 'white' : '#333',
+            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? '#4CAF50' : '#f0f0f0',
+            color: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? 'white' : '#333',
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            fontWeight: isActiveLink('/admin/orders') ? 'bold' : 'normal'
+            fontWeight: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? 'bold' : 'normal'
           }}
         >
           <span style={{
@@ -78,9 +81,32 @@ const AdminLayout = () => {
             width: 10,
             height: 10,
             borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/orders') ? 'white' : '#888'
+            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? 'white' : '#888'
           }} />
-          <span>รายการคำสั่งซื้อ / เบิก</span>
+          <span>รายการคำสั่งซื้อ</span>
+        </Link>
+        <Link
+          to="/admin/orders?source=staff"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? '#4CAF50' : '#f0f0f0',
+            color: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? 'white' : '#333',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? 'bold' : 'normal'
+          }}
+        >
+          <span style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? 'white' : '#888'
+          }} />
+          <span>รายการคำสั่งเบิก</span>
         </Link>
         <Link
           to="/admin/users"
