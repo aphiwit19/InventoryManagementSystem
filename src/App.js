@@ -8,6 +8,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import StaffLayout from './pages/staff/StaffLayout';
 import StaffOrdersPage from './pages/staff/StaffOrdersPage';
+import StaffProfilePage from './pages/staff/ProfilePage';
 import AdminLayout from './pages/admin/AdminLayout';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerLayout from './pages/customer/CustomerLayout';
@@ -59,6 +60,7 @@ function App() {
               <Route index element={<StaffDashboard />} />
               <Route path="orders" element={<StaffOrdersPage />} />
               <Route path="withdraw" element={<WithdrawPage />} />
+              <Route path="profile" element={<StaffProfilePage />} />
             </Route>
           </Route>
 
