@@ -13,6 +13,7 @@ import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerLayout from './pages/customer/CustomerLayout';
 import CustomerWithdrawPage from './pages/customer/CustomerWithdrawPage';
 import CustomerOrdersPage from './pages/customer/CustomerOrdersPage';
+import CustomerProfilePage from './pages/customer/ProfilePage';
 import WithdrawPage from './pages/staff/WithdrawPage';
 import UsersPage from './pages/admin/UsersPage';
 import ProductsPage from './pages/admin/ProductsPage';
@@ -66,6 +67,7 @@ function App() {
               <Route index element={<CustomerDashboard />} />
               <Route path="orders" element={<CustomerOrdersPage />} />
               <Route path="withdraw" element={<CustomerWithdrawPage />} />
+              <Route path="profile" element={<CustomerProfilePage />} />
             </Route>
           </Route>
 

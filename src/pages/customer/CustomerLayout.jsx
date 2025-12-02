@@ -72,6 +72,21 @@ const CustomerLayout = () => {
         >
           ติดตามสถานะ
         </Link>
+        <Link
+          to="/customer/profile"
+          style={{
+            marginTop: 8,
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: location.pathname === '/customer/profile' ? '#e0e0e0' : '#f0f0f0',
+            color: '#333',
+            textDecoration: 'none',
+            display: 'block',
+            fontWeight: 'bold'
+          }}
+        >
+          โปรไฟล์
+        </Link>
         {/* logout moved to header snackbar */}
       </div>
 
