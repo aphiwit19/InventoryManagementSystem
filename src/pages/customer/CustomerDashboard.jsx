@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useAuth } from '../../auth/AuthContext';
-import { getAllProducts } from '../../services';
+import { getAllProducts, addToCart as addToCartService, migrateLocalStorageCart } from '../../services';
 
 export default function CustomerDashboard() {
   const { user, profile } = useAuth();
@@ -18,7 +18,8 @@ export default function CustomerDashboard() {
   const [showDetail, setShowDetail] = useState(false);
   const [detailProduct, setDetailProduct] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
-  const cartKey = (uid) => `customerCart_${uid || 'guest'}`;
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartError, setCartError] = useState('');
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -33,18 +34,24 @@ export default function CustomerDashboard() {
     loadProducts();
   }, []);
 
-  // migrate legacy key 'customerCart' to per-user key one time
+  // Migrate localStorage cart to Firebase (one-time migration)
   useEffect(() => {
-    try {
-      const uid = user?.uid || 'guest';
-      const newKey = cartKey(uid);
-      const legacy = localStorage.getItem('customerCart');
-      const current = localStorage.getItem(newKey);
-      if (legacy && !current) {
-        localStorage.setItem(newKey, legacy);
-        localStorage.removeItem('customerCart');
+    const migrateCart = async () => {
+      if (!user?.uid) return;
+      try {
+        // Try to migrate from both legacy and per-user localStorage keys
+        const legacyKey = 'customerCart';
+        const perUserKey = `customerCart_${user.uid}`;
+        
+        // Try legacy first
+        await migrateLocalStorageCart(user.uid, legacyKey, 'customer');
+        // Try per-user key
+        await migrateLocalStorageCart(user.uid, perUserKey, 'customer');
+      } catch (error) {
+        console.warn('Cart migration failed:', error);
       }
-    } catch {}
+    };
+    migrateCart();
   }, [user?.uid]);
 
   useEffect(() => {
@@ -69,23 +76,31 @@ export default function CustomerDashboard() {
     setShowQtyPrompt(true);
   };
 
-  const confirmAddToCart = () => {
-    if (!promptProduct) return;
+  const confirmAddToCart = async () => {
+    if (!promptProduct || !user?.uid) {
+      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      return;
+    }
     const available = Math.max(0, (promptProduct.quantity || 0) - (promptProduct.reserved || 0));
     const qty = Math.max(1, Math.min(parseInt(promptQty || 1), available));
+    
+    setCartLoading(true);
+    setCartError('');
     try {
-      const raw = localStorage.getItem(cartKey(user?.uid));
-      const cart = raw ? JSON.parse(raw) : [];
-      const exists = cart.find(it => it.id === promptProduct.id);
-      if (exists) {
-        exists.quantity = Math.min((exists.quantity || 0) + qty, available);
-      } else {
-        cart.push({ id: promptProduct.id, productName: promptProduct.productName, price: promptProduct.price ?? promptProduct.costPrice ?? 0, quantity: qty, image: promptProduct.image || null, stock: available });
-      }
-      localStorage.setItem(cartKey(user?.uid), JSON.stringify(cart));
+      await addToCartService(user.uid, {
+        id: promptProduct.id,
+        productName: promptProduct.productName,
+        price: promptProduct.price ?? promptProduct.costPrice ?? 0,
+        quantity: qty,
+        image: promptProduct.image || null,
+        stock: available
+      }, 'customer');
       setShowQtyPrompt(false);
-    } catch {
-      setShowQtyPrompt(false);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      setCartError('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setCartLoading(false);
     }
   };
 
@@ -398,10 +413,35 @@ export default function CustomerDashboard() {
           <div style={{ background: '#fff', borderRadius: 12, width: 420, maxWidth: '100%', padding: 20 }} onClick={(e)=>e.stopPropagation()}>
             <h3 style={{ marginTop: 0 }}>ระบุจำนวนสินค้า</h3>
             <p style={{ marginTop: 0, color: '#666' }}>{promptProduct.productName}</p>
-            <input type="number" min={1} max={Math.max(0, (promptProduct.quantity || 0) - (promptProduct.reserved || 0))} value={promptQty} onChange={(e)=>setPromptQty(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
+            <input 
+              type="number" 
+              min={1} 
+              max={Math.max(0, (promptProduct.quantity || 0) - (promptProduct.reserved || 0))} 
+              value={promptQty} 
+              onChange={(e)=>setPromptQty(e.target.value)} 
+              disabled={cartLoading}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} 
+            />
+            {cartError && (
+              <div style={{ marginTop: 12, padding: '10px', backgroundColor: '#ffebee', color: '#c62828', borderRadius: 8, fontSize: '14px' }}>
+                {cartError}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button onClick={()=>setShowQtyPrompt(false)} style={{ padding: '10px 16px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>ยกเลิก</button>
-              <button onClick={confirmAddToCart} style={{ padding: '10px 16px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>เพิ่มลงตะกร้า</button>
+              <button 
+                onClick={()=>{ setShowQtyPrompt(false); setCartError(''); }} 
+                disabled={cartLoading}
+                style={{ padding: '10px 16px', background: cartLoading ? '#ccc' : '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: cartLoading ? 'not-allowed' : 'pointer' }}
+              >
+                ยกเลิก
+              </button>
+              <button 
+                onClick={confirmAddToCart} 
+                disabled={cartLoading}
+                style={{ padding: '10px 16px', background: cartLoading ? '#ccc' : '#4CAF50', color: '#fff', border: 'none', borderRadius: 8, cursor: cartLoading ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+              >
+                {cartLoading ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
+              </button>
             </div>
           </div>
         </div>
