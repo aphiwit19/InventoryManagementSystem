@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createWithdrawal, getAllProducts, getCart, updateCartItem, removeFromCart, clearCart, migrateLocalStorageCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
+import { db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function CustomerWithdrawPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [productsById, setProductsById] = useState({});
   const [items, setItems] = useState([]);
   const [requestedBy, setRequestedBy] = useState('');
@@ -13,6 +15,7 @@ export default function CustomerWithdrawPage() {
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
   const [submitting, setSubmitting] = useState(false);
   const [cartLoading, setCartLoading] = useState(true);
+  const [userDataLoading, setUserDataLoading] = useState(true);
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
 
   useEffect(() => {
@@ -28,6 +31,53 @@ export default function CustomerWithdrawPage() {
     };
     load();
   }, []);
+
+  // Load user data from Firebase
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.uid) {
+        setUserDataLoading(false);
+        return;
+      }
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          // Auto-fill form with user data
+          if (data.displayName) {
+            setRequestedBy(data.displayName);
+          } else if (profile?.displayName) {
+            setRequestedBy(profile.displayName);
+          } else if (user?.email) {
+            setRequestedBy(user.email);
+          }
+          
+          if (data.address) {
+            setRequestedAddress(data.address);
+          }
+        } else {
+          // Fallback to profile data
+          if (profile?.displayName) {
+            setRequestedBy(profile.displayName);
+          } else if (user?.email) {
+            setRequestedBy(user.email);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to profile data
+        if (profile?.displayName) {
+          setRequestedBy(profile.displayName);
+        } else if (user?.email) {
+          setRequestedBy(user.email);
+        }
+      } finally {
+        setUserDataLoading(false);
+      }
+    };
+    loadUserData();
+  }, [user?.uid, profile]);
 
   // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {

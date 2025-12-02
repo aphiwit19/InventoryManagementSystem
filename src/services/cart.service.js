@@ -61,12 +61,16 @@ export async function addToCart(uid, product, role = 'customer') {
     
     let updatedCart;
     if (existingIndex >= 0) {
-      // Update existing item quantity
+      // Update existing item quantity - add to existing quantity
       updatedCart = [...currentCart];
+      const existingItem = updatedCart[existingIndex];
+      const newQuantity = (existingItem.quantity || 0) + (product.quantity || 1);
+      const maxQuantity = Math.min(newQuantity, product.stock || existingItem.stock || 0);
+      
       updatedCart[existingIndex] = {
-        ...updatedCart[existingIndex],
-        quantity: product.quantity,
-        stock: product.stock // Update stock info
+        ...existingItem,
+        quantity: maxQuantity,
+        stock: product.stock || existingItem.stock // Update stock info
       };
     } else {
       // Add new item

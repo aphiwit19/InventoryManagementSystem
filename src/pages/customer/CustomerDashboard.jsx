@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useAuth } from '../../auth/AuthContext';
-import { getAllProducts, addToCart as addToCartService, migrateLocalStorageCart } from '../../services';
+import { getAllProducts, addToCart as addToCartService, migrateLocalStorageCart, getCart } from '../../services';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function CustomerDashboard() {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -18,8 +20,9 @@ export default function CustomerDashboard() {
   const [showDetail, setShowDetail] = useState(false);
   const [detailProduct, setDetailProduct] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [cartLoading, setCartLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState({}); // { productId: true/false }
   const [cartError, setCartError] = useState('');
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -34,9 +37,9 @@ export default function CustomerDashboard() {
     loadProducts();
   }, []);
 
-  // Migrate localStorage cart to Firebase (one-time migration)
+  // Migrate localStorage cart to Firebase and load cart count
   useEffect(() => {
-    const migrateCart = async () => {
+    const loadCartData = async () => {
       if (!user?.uid) return;
       try {
         // Try to migrate from both legacy and per-user localStorage keys
@@ -47,11 +50,16 @@ export default function CustomerDashboard() {
         await migrateLocalStorageCart(user.uid, legacyKey, 'customer');
         // Try per-user key
         await migrateLocalStorageCart(user.uid, perUserKey, 'customer');
+        
+        // Load cart count
+        const cartItems = await getCart(user.uid, 'customer');
+        const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        setCartCount(totalItems);
       } catch (error) {
-        console.warn('Cart migration failed:', error);
+        console.warn('Cart migration/load failed:', error);
       }
     };
-    migrateCart();
+    loadCartData();
   }, [user?.uid]);
 
   useEffect(() => {
@@ -69,6 +77,44 @@ export default function CustomerDashboard() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const addToCartDirectly = async (product) => {
+    if (!user?.uid) {
+      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      return;
+    }
+    
+    const available = Math.max(0, (product.quantity || 0) - (product.reserved || 0));
+    if (available <= 0) {
+      alert('สินค้าหมดสต็อก');
+      return;
+    }
+    
+    // Set loading state for this specific product
+    setCartLoading(prev => ({ ...prev, [product.id]: true }));
+    
+    try {
+      await addToCartService(user.uid, {
+        id: product.id,
+        productName: product.productName,
+        price: product.price ?? product.costPrice ?? 0,
+        quantity: 1,
+        image: product.image || null,
+        stock: available
+      }, 'customer');
+      
+      // Update cart count
+      const cartItems = await getCart(user.uid, 'customer');
+      const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      setCartCount(totalItems);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      // Clear loading state for this specific product
+      setCartLoading(prev => ({ ...prev, [product.id]: false }));
+    }
+  };
 
   const openQtyPrompt = (product) => {
     setPromptProduct(product);
@@ -95,6 +141,12 @@ export default function CustomerDashboard() {
         image: promptProduct.image || null,
         stock: available
       }, 'customer');
+      
+      // Update cart count
+      const cartItems = await getCart(user.uid, 'customer');
+      const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      setCartCount(totalItems);
+      
       setShowQtyPrompt(false);
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -110,89 +162,214 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* Header */}
+    <div style={{ padding: 0, backgroundColor: '#f0f7ff', minHeight: '100vh' }}>
+      {/* Top Header - Blue */}
       <div style={{
-        backgroundColor: '#fff',
-        padding: '20px',
-        borderRadius: '8px',
+        background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+        padding: '20px 30px',
+        borderRadius: '0 0 20px 20px',
         marginBottom: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
       }}>
-        <h1 style={{ margin: 0, color: '#333' }}>All Products</h1>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', position: 'relative' }}>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text"
-              placeholder="Search by name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: '10px 40px 10px 15px',
-                borderRadius: '20px',
-                border: '1px solid #ddd',
-                fontSize: '14px',
-                width: '250px'
-              }}
-            />
-            <span style={{
-              position: 'absolute',
-              right: '15px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#999'
-            }}>🔍</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ color: '#666' }}>{profile?.displayName || user?.email || 'Customer'}</span>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          {/* Left: Logo and Store Name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#4CAF50',
+              width: '50px',
+              height: '50px',
+              backgroundColor: '#fff',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }} onClick={() => setShowMenu(v => !v)} title={profile?.displayName || 'Customer'} role="button" aria-label="profile-menu" tabIndex={0}>
-              {(profile?.displayName || user?.email || 'C')[0].toUpperCase()}
+              fontSize: '28px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}>
+              🏪
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold', marginBottom: '4px' }}>
+                ร้านค้าออนไลน์
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '14px' }}>
+                สินค้าคุณภาพ ราคาย่อมเยา
+              </div>
             </div>
           </div>
-          {showMenu && (
-            <div style={{ position:'absolute', right: 0, top: 'calc(100% + 8px)', background:'#323232', color:'#fff', borderRadius:8, padding:'10px 12px', minWidth:160, boxShadow:'0 4px 10px rgba(0,0,0,0.25)', zIndex: 3000 }}>
-              <div style={{ paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.15)', marginBottom: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{profile?.displayName || user?.email || 'Customer'}</div>
-              </div>
-              <button onClick={() => signOut(auth)} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#f44336', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13 }}>ออกจากระบบ</button>
-            </div>
-          )}
+
+          {/* Right: Cart, Profile, Logout */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* Cart Icon */}
+            <Link
+              to="/customer/withdraw"
+              style={{
+                position: 'relative',
+                width: '45px',
+                height: '45px',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: '24px',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              🛒
+              {cartCount > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  right: '-5px',
+                  backgroundColor: '#f44336',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  width: '22px',
+                  height: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                }}>
+                  {cartCount > 99 ? '99+' : cartCount}
+                </div>
+              )}
+            </Link>
+
+            {/* Profile Icon */}
+            <Link
+              to="/customer/profile"
+              style={{
+                width: '45px',
+                height: '45px',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: '24px',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              👤
+            </Link>
+
+            {/* Logout Button */}
+            <button
+              onClick={() => signOut(auth)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                borderRadius: '12px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'rgba(255,255,255,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'rgba(255,255,255,0.2)';
+              }}
+            >
+              <span>🚪</span>
+              <span>ออกจากระบบ</span>
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div style={{
+        backgroundColor: '#fff',
+        padding: '20px 30px',
+        borderRadius: '12px',
+        margin: '0 20px 30px 20px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '12px'
+        }}>
+          <span style={{ fontSize: '20px' }}>🔍</span>
+          <span style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>ค้นหาสินค้า</span>
+        </div>
+        <input
+          type="text"
+          placeholder="พิมพ์ชื่อสินค้า หรือคำที่เกี่ยวข้อง..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '14px 18px',
+            fontSize: '15px',
+            border: '2px solid #e0e0e0',
+            borderRadius: '10px',
+            outline: 'none',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.3s ease'
+          }}
+          onFocus={(e) => e.target.style.borderColor = '#4A90E2'}
+          onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+        />
+      </div>
+
       {/* Products Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <p>Loading products...</p>
-        </div>
-      ) : currentProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '8px' }}>
-          <p style={{ color: '#999', fontSize: '18px' }}>
-            {searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้า'}
-          </p>
-        </div>
-      ) : (
-        <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '20px',
-            marginBottom: '30px'
-          }}>
+      <div style={{ padding: '0 20px 20px 20px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '12px' }}>
+            <p>กำลังโหลดสินค้า...</p>
+          </div>
+        ) : currentProducts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '12px' }}>
+            <p style={{ color: '#999', fontSize: '18px' }}>
+              {searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้า'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '20px',
+              marginBottom: '30px'
+            }}>
             {currentProducts.map((product) => (
               <div
                 key={product.id}
@@ -302,12 +479,17 @@ export default function CustomerDashboard() {
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
+                      cursor: cartLoading[product.id] ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      opacity: cartLoading[product.id] ? 0.6 : 1
                     }}
-                    onClick={(e) => { e.stopPropagation(); openQtyPrompt(product); }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      addToCartDirectly(product); 
+                    }}
+                    disabled={cartLoading[product.id] || Math.max(0, (product.quantity || 0) - (product.reserved || 0)) <= 0}
                   >
-                    เพิ่มลงตะกร้า
+                    {cartLoading[product.id] ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
                   </button>
                 </div>
               </div>
@@ -373,8 +555,9 @@ export default function CustomerDashboard() {
               </button>
             </div>
           )}
-        </>
-      )}
+          </>
+        )}
+      </div>
       {/* Product Detail Modal */}
       {showDetail && detailProduct && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2100, padding: 20 }} onClick={() => setShowDetail(false)}>
@@ -398,7 +581,24 @@ export default function CustomerDashboard() {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:12 }}>
                 <span style={{ fontSize:22, fontWeight:'bold', color:'#4CAF50' }}>฿{(detailProduct.price ?? detailProduct.costPrice ?? 0).toLocaleString()}</span>
                 <div style={{ display:'flex', gap:8 }}>
-                  <button onClick={() => { setShowDetail(false); openQtyPrompt(detailProduct); }} style={{ padding:'8px 14px', background:'#673AB7', color:'#fff', border:'none', borderRadius:6, cursor:'pointer' }}>เพิ่มลงตะกร้า</button>
+                  <button 
+                    onClick={() => { 
+                      setShowDetail(false); 
+                      addToCartDirectly(detailProduct); 
+                    }} 
+                    disabled={cartLoading[detailProduct?.id] || Math.max(0, (detailProduct.quantity || 0) - (detailProduct.reserved || 0)) <= 0}
+                    style={{ 
+                      padding:'8px 14px', 
+                      background: cartLoading[detailProduct?.id] ? '#ccc' : '#673AB7', 
+                      color:'#fff', 
+                      border:'none', 
+                      borderRadius:6, 
+                      cursor: cartLoading[detailProduct?.id] ? 'not-allowed' : 'pointer',
+                      opacity: cartLoading[detailProduct?.id] ? 0.6 : 1
+                    }}
+                  >
+                    {cartLoading[detailProduct?.id] ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
+                  </button>
                   <button onClick={() => setShowDetail(false)} style={{ padding:'8px 14px', background:'#6c757d', color:'#fff', border:'none', borderRadius:6, cursor:'pointer' }}>ปิด</button>
                 </div>
               </div>

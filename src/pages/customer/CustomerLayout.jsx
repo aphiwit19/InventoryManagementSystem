@@ -55,7 +55,7 @@ const CustomerLayout = () => {
             fontWeight: 'bold'
           }}
         >
-          คำสั่งซื้อ
+          ตะกร้าคำสั่งซื้อ
         </Link>
         <Link
           to="/customer/orders"
