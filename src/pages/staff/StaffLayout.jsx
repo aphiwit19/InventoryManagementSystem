@@ -61,7 +61,7 @@ const StaffLayout = () => {
             STAFF SPACE
           </div>
           <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
-            แผงควบคุมสตาฟ
+            STAFF
           </div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
             {profile?.displayName || 'ผู้ใช้งานสตาฟ'}
@@ -165,7 +165,32 @@ const StaffLayout = () => {
           โปรไฟล์
         </Link>
 
-        {/* logout moved to header snackbar */}
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <button
+            onClick={() => signOut(auth)}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: 999,
+              border: 'none',
+              background:
+                'linear-gradient(135deg, #f97373 0%, #ef4444 40%, #b91c1c 100%)',
+              color: '#fef2f2',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 8px 18px rgba(248,113,113,0.55)',
+            }}
+          >
+            <span>🚪</span>
+            <span>ออกจากระบบ</span>
+          </button>
+        </div>
+
       </div>
 
       {/* Main Content */}

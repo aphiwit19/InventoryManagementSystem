@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
-import { signOut } from "firebase/auth";
-import { auth } from "../../firebase";
 import { getAllProducts, addToCart as addToCartService, getCart, migrateLocalStorageCart } from "../../services";
 import { Link } from "react-router-dom";
 
@@ -94,8 +92,8 @@ export default function StaffDashboard() {
   // Note: Cart management is now handled in WithdrawPage
   // These functions are kept for potential future use
 
-  const total = cartItems.reduce(
-    (sum, it) => sum + it.price * (it.quantity || 0),
+  const cartCount = cartItems.reduce(
+    (sum, it) => sum + (it.quantity || 0),
     0
   );
 
@@ -137,20 +135,21 @@ export default function StaffDashboard() {
                 letterSpacing: "0.03em",
               }}
             >
-              จัดการรายการสินค้า
+              รายการสินค้า
             </h1>
             <div style={{ fontSize: 13, opacity: 0.9 }}>
-              ดูและจัดการสต็อกสินค้าเพื่อเตรียมการเบิกและจัดส่ง
+              ทำรายการสินค้า
             </div>
           </div>
           <div
             style={{
               display: "flex",
-              gap: 15,
+              gap: 14,
               alignItems: "center",
               position: "relative",
             }}
           >
+            {/* Search */}
             <div style={{ position: "relative" }}>
               <input
                 type="text"
@@ -162,7 +161,7 @@ export default function StaffDashboard() {
                   borderRadius: 999,
                   border: "1px solid rgba(255,255,255,0.4)",
                   background: "rgba(15,23,42,0.4)",
-                  color: "#E5E7EB",
+                  color: "#ffffffff",
                   fontSize: 13,
                   width: "240px",
                 }}
@@ -179,42 +178,91 @@ export default function StaffDashboard() {
                 🔍
               </span>
             </div>
-            <div
+            {/* Cart Icon */}
+            <Link
+              to="/staff/withdraw"
               style={{
+                position: "relative",
+                width: 44,
+                height: 44,
+                backgroundColor: "rgba(255,255,255,0.18)",
+                borderRadius: 999,
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                background: "rgba(15,23,42,0.55)",
-                padding: "6px 10px",
-                borderRadius: 999,
+                justifyContent: "center",
+                color: "#F9FAFB",
+                fontSize: 22,
+                textDecoration: "none",
+                cursor: "pointer",
+                transition: "all 0.25s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.28)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)";
+                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
-              <span style={{ color: "#D1D5DB", fontSize: 12 }}>
-                {profile?.displayName || user?.email || "Staff"}
-              </span>
-              <div
+              🛒
+              {cartCount > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -4,
+                    backgroundColor: "#f97316",
+                    color: "#fff",
+                    borderRadius: 999,
+                    minWidth: 18,
+                    height: 18,
+                    padding: "0 4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 10,
+                    fontWeight: "bold",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+                  }}
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </div>
+              )}
+            </Link>
+            {/* Profile Icon Button (like customer) */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setShowMenu((v) => !v)}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "999px",
-                  background:
-                    "radial-gradient(circle at 30% 20%, #FFFFFF 0%, #4ADE80 45%, #16A34A 90%)",
+                  width: 44,
+                  height: 44,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  borderRadius: 999,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#052E16",
-                  fontWeight: "bold",
+                  color: "#fff",
+                  fontSize: 24,
                   cursor: "pointer",
-                  boxShadow: "0 4px 10px rgba(22,163,74,0.6)",
+                  transition: "all 0.25s ease",
+                  border: "none",
+                  padding: 0,
                 }}
-                onClick={() => setShowMenu((v) => !v)}
-                title={profile?.displayName || "Staff"}
-                role="button"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.32)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+                title={profile?.displayName || user?.email || "Staff"}
                 aria-label="profile-menu"
-                tabIndex={0}
               >
-                {(profile?.displayName || user?.email || "S")[0].toUpperCase()}
-              </div>
+                👤
+              </button>
             </div>
             {showMenu && (
               <div
@@ -242,23 +290,23 @@ export default function StaffDashboard() {
                     {profile?.displayName || user?.email || "Staff"}
                   </div>
                 </div>
-                <button
-                  onClick={() => signOut(auth)}
+                <Link
+                  to="/staff/profile"
+                  onClick={() => setShowMenu(false)}
                   style={{
-                    width: "100%",
+                    display: "block",
                     padding: "8px 10px",
-                    borderRadius: 8,
-                    background:
-                      "linear-gradient(135deg,#EF4444,#DC2626)",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
+                    borderRadius: 6,
+                    background: "rgba(31,41,55,0.9)",
+                    color: "#E5E7EB",
+                    textDecoration: "none",
                     fontSize: 13,
-                    fontWeight: 600,
+                    fontWeight: 500,
+                    textAlign: "center",
                   }}
                 >
-                  ออกจากระบบ
-                </button>
+                  ไปที่โปรไฟล์
+                </Link>
               </div>
             )}
           </div>
