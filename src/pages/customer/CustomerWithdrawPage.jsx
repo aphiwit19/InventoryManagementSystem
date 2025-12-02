@@ -1,61 +1,88 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createWithdrawal, getAllProducts } from '../../services';
+import { createWithdrawal, getAllProducts, getCart, updateCartItem, removeFromCart, clearCart, migrateLocalStorageCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 
 export default function CustomerWithdrawPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const cartKey = (uid) => `customerCart_${uid || 'guest'}`;
   const [productsById, setProductsById] = useState({});
   const [items, setItems] = useState([]);
   const [requestedBy, setRequestedBy] = useState('');
   const [requestedAddress, setRequestedAddress] = useState('');
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
   const [submitting, setSubmitting] = useState(false);
+  const [cartLoading, setCartLoading] = useState(true);
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
 
   useEffect(() => {
     const load = async () => {
-      const list = await getAllProducts();
-      const map = {};
-      list.forEach(p => { map[p.id] = p; });
-      setProductsById(map);
+      try {
+        const list = await getAllProducts();
+        const map = {};
+        list.forEach(p => { map[p.id] = p; });
+        setProductsById(map);
+      } catch (error) {
+        console.error('Error loading products:', error);
+      }
     };
     load();
   }, []);
 
-  // migrate and load cart for this user
+  // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {
-    try {
-      const uid = user?.uid || 'guest';
-      const key = cartKey(uid);
-      const legacy = localStorage.getItem('customerCart');
-      if (legacy && !localStorage.getItem(key)) {
-        localStorage.setItem(key, legacy);
-        localStorage.removeItem('customerCart');
+    const loadCart = async () => {
+      if (!user?.uid) {
+        setCartLoading(false);
+        return;
       }
-      const raw = localStorage.getItem(key);
-      setItems(raw ? JSON.parse(raw) : []);
-    } catch {
-      setItems([]);
-    }
+      
+      setCartLoading(true);
+      try {
+        // Try to migrate localStorage cart first (one-time)
+        const legacyKey = 'customerCart';
+        const perUserKey = `customerCart_${user.uid}`;
+        await migrateLocalStorageCart(user.uid, legacyKey, 'customer');
+        await migrateLocalStorageCart(user.uid, perUserKey, 'customer');
+        
+        // Load cart from Firebase
+        const cartItems = await getCart(user.uid, 'customer');
+        setItems(cartItems);
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        setItems([]);
+      } finally {
+        setCartLoading(false);
+      }
+    };
+    loadCart();
   }, [user?.uid]);
 
-  const updateQty = (id, qty) => {
+  const updateQty = async (id, qty) => {
+    if (!user?.uid) return;
     const qtyTotal = productsById[id]?.quantity ?? 0;
     const qtyReserved = productsById[id]?.reserved ?? 0;
     const stock = Math.max(0, qtyTotal - qtyReserved);
     const value = Math.max(1, Math.min(parseInt(qty || 1), stock));
-    const next = items.map(it => it.id === id ? { ...it, quantity: value } : it);
-    setItems(next);
-    localStorage.setItem(cartKey(user?.uid), JSON.stringify(next));
+    
+    try {
+      await updateCartItem(user.uid, id, value, stock, 'customer');
+      setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: value, stock } : it));
+    } catch (error) {
+      console.error('Error updating cart item:', error);
+      alert('ไม่สามารถอัปเดตจำนวนสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
-  const removeItem = (id) => {
-    const next = items.filter(it => it.id !== id);
-    setItems(next);
-    localStorage.setItem(cartKey(user?.uid), JSON.stringify(next));
+  const removeItem = async (id) => {
+    if (!user?.uid) return;
+    try {
+      await removeFromCart(user.uid, id, 'customer');
+      setItems(prev => prev.filter(it => it.id !== id));
+    } catch (error) {
+      console.error('Error removing cart item:', error);
+      alert('ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
   const submit = async () => {
@@ -64,6 +91,11 @@ export default function CustomerWithdrawPage() {
       alert('กรุณากรอกข้อมูลให้ครบ');
       return;
     }
+    if (!user?.uid) {
+      alert('กรุณาเข้าสู่ระบบก่อน');
+      return;
+    }
+    
     setSubmitting(true);
     try {
       await createWithdrawal({
@@ -72,14 +104,19 @@ export default function CustomerWithdrawPage() {
         requestedAddress: requestedAddress.trim(),
         withdrawDate,
         total,
-        createdByUid: user?.uid || null,
-        createdByEmail: user?.email || null,
+        createdByUid: user.uid,
+        createdByEmail: user.email || null,
         createdSource: 'customer'
       });
-      localStorage.setItem(cartKey(user?.uid), JSON.stringify([]));
+      
+      // Clear cart after successful order
+      await clearCart(user.uid, 'customer');
+      setItems([]);
+      
       alert('บันทึกคำสั่งเบิกสำเร็จ');
       navigate('/customer');
     } catch (e) {
+      console.error('Error creating withdrawal:', e);
       alert('ไม่สามารถบันทึกคำสั่งเบิกได้: ' + (e?.message || ''));
     } finally {
       setSubmitting(false);
@@ -95,7 +132,9 @@ export default function CustomerWithdrawPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
         <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: 16 }}>
-          {items.length === 0 ? (
+          {cartLoading ? (
+            <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>กำลังโหลดตะกร้า...</p>
+          ) : items.length === 0 ? (
             <p style={{ color: '#999' }}>ยังไม่มีรายการในคำสั่งเบิก</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

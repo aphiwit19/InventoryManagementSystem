@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
-import { getAllProducts } from "../../services";
+import { getAllProducts, addToCart as addToCartService, getCart, migrateLocalStorageCart } from "../../services";
 import { Link } from "react-router-dom";
 
 export default function StaffDashboard() {
@@ -15,7 +15,8 @@ export default function StaffDashboard() {
   const itemsPerPage = 12;
   // cart state
   const [cartItems, setCartItems] = useState([]); // {id, productName, price, quantity, image}
-  const cartKey = (uid) => `staffCart_${uid || "guest"}`;
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartError, setCartError] = useState('');
 
   const [showQtyPrompt, setShowQtyPrompt] = useState(false);
   const [promptProduct, setPromptProduct] = useState(null);
@@ -39,25 +40,27 @@ export default function StaffDashboard() {
     loadProducts();
   }, []);
 
-  // cart persistence (localStorage)
+  // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {
-    try {
-      const uid = user?.uid || "guest";
-      const newKey = cartKey(uid);
-      const legacy = localStorage.getItem("staffCart");
-      const current = localStorage.getItem(newKey);
-      if (legacy && !current) {
-        localStorage.setItem(newKey, legacy);
-        localStorage.removeItem("staffCart");
+    const loadCart = async () => {
+      if (!user?.uid) return;
+      try {
+        // Try to migrate localStorage cart first (one-time)
+        const legacyKey = 'staffCart';
+        const perUserKey = `staffCart_${user.uid}`;
+        await migrateLocalStorageCart(user.uid, legacyKey, 'staff');
+        await migrateLocalStorageCart(user.uid, perUserKey, 'staff');
+        
+        // Load cart from Firebase
+        const cartItems = await getCart(user.uid, 'staff');
+        setCartItems(cartItems);
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        setCartItems([]);
       }
-      const raw = localStorage.getItem(newKey);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) setCartItems(parsed);
-    } catch {}
+    };
+    loadCart();
   }, [user?.uid]);
-
-  const saveCart = (next) =>
-    localStorage.setItem(cartKey(user?.uid), JSON.stringify(next));
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -88,22 +91,8 @@ export default function StaffDashboard() {
     setShowQtyPrompt(true);
   };
 
-  const updateCartQty = (id, qty, stock) => {
-    const value = Math.max(1, Math.min(parseInt(qty || 1), stock || 0));
-    setCartItems((prev) => {
-      const next = prev.map((it) =>
-        it.id === id ? { ...it, quantity: value } : it
-      );
-      saveCart(next);
-      return next;
-    });
-  };
-
-  const removeFromCart = (id) => setCartItems(prev => {
-    const next = prev.filter(it => it.id !== id);
-    saveCart(next);
-    return next;
-  });
+  // Note: Cart management is now handled in WithdrawPage
+  // These functions are kept for potential future use
 
   const total = cartItems.reduce(
     (sum, it) => sum + it.price * (it.quantity || 0),
@@ -664,6 +653,7 @@ export default function StaffDashboard() {
               )}
               value={promptQty}
               onChange={(e) => setPromptQty(e.target.value)}
+              disabled={cartLoading}
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -671,6 +661,11 @@ export default function StaffDashboard() {
                 borderRadius: 8,
               }}
             />
+            {cartError && (
+              <div style={{ marginTop: 12, padding: '10px', backgroundColor: '#ffebee', color: '#c62828', borderRadius: 8, fontSize: '14px' }}>
+                {cartError}
+              </div>
+            )}
 
             <div
               style={{
@@ -681,20 +676,26 @@ export default function StaffDashboard() {
               }}
             >
               <button
-                onClick={() => setShowQtyPrompt(false)}
+                onClick={() => { setShowQtyPrompt(false); setCartError(''); }}
+                disabled={cartLoading}
                 style={{
                   padding: "10px 16px",
-                  background: "#6c757d",
+                  background: cartLoading ? "#ccc" : "#6c757d",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
-                  cursor: "pointer",
+                  cursor: cartLoading ? "not-allowed" : "pointer",
                 }}
               >
                 ยกเลิก
               </button>
-              <button
-                onClick={() => {
+                <button
+                onClick={async () => {
+                  if (!user?.uid) {
+                    alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+                    return;
+                  }
+                  
                   const available = Math.max(
                     0,
                     (promptProduct.quantity || 0) -
@@ -704,47 +705,57 @@ export default function StaffDashboard() {
                     1,
                     Math.min(parseInt(promptQty || 1), available)
                   );
-                  setCartItems((prev) => {
-                    const exists = prev.find(
-                      (it) => it.id === promptProduct.id
-                    );
-                    let next;
-                    if (exists) {
-                      next = prev.map((it) =>
-                        it.id === promptProduct.id
-                          ? { ...it, quantity: qty }
-                          : it
-                      );
-                    } else {
-                      next = [
-                        ...prev,
-                        {
+                  
+                  setCartLoading(true);
+                  setCartError('');
+                  try {
+                    await addToCartService(user.uid, {
+                      id: promptProduct.id,
+                      productName: promptProduct.productName,
+                      price: promptProduct.price ?? promptProduct.costPrice ?? 0,
+                      quantity: qty,
+                      image: promptProduct.image || null,
+                      stock: available
+                    }, 'staff');
+                    setCartItems(prev => {
+                      const exists = prev.find(it => it.id === promptProduct.id);
+                      if (exists) {
+                        return prev.map(it =>
+                          it.id === promptProduct.id
+                            ? { ...it, quantity: qty, stock: available }
+                            : it
+                        );
+                      } else {
+                        return [...prev, {
                           id: promptProduct.id,
                           productName: promptProduct.productName,
-                          price:
-                            promptProduct.price ?? promptProduct.costPrice ?? 0,
+                          price: promptProduct.price ?? promptProduct.costPrice ?? 0,
                           quantity: qty,
                           image: promptProduct.image || null,
-                          stock: available,
-                        },
-                      ];
-                    }
-                    saveCart(next);
-                    return next;
-                  });
-                  setShowQtyPrompt(false);
+                          stock: available
+                        }];
+                      }
+                    });
+                    setShowQtyPrompt(false);
+                  } catch (error) {
+                    console.error('Error adding to cart:', error);
+                    setCartError('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
+                  } finally {
+                    setCartLoading(false);
+                  }
                 }}
+                disabled={cartLoading}
                 style={{
                   padding: "10px 16px",
-                  background: "#4CAF50",
+                  background: cartLoading ? "#ccc" : "#4CAF50",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
-                  cursor: "pointer",
+                  cursor: cartLoading ? "not-allowed" : "pointer",
                   fontWeight: 600,
                 }}
               >
-                เพิ่มลงตะกร้า
+                {cartLoading ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
               </button>
             </div>
           </div>
