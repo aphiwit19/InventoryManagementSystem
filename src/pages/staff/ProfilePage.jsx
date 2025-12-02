@@ -135,7 +135,18 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <div
+        style={{
+          padding: '24px',
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background:
+            'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+          boxSizing: 'border-box',
+        }}
+      >
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '50px',
@@ -154,53 +165,45 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* Header */}
-      <div style={{
-        backgroundColor: '#fff',
-        padding: '20px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div>
-          <h1 style={{ margin: 0, color: '#333', fontSize: '28px', fontWeight: '700' }}>
-            โปรไฟล์ของฉัน
-          </h1>
-          <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
-            จัดการข้อมูลส่วนตัวของคุณ
-          </p>
+    <div
+      style={{
+        padding: '24px',
+        minHeight: '100vh',
+        background:
+          'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{
+          backgroundColor: '#fff',
+          padding: '20px',
+          borderRadius: '12px',
+          marginBottom: '20px',
+          boxShadow: '0 4px 18px rgba(15,23,42,0.12)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h1 style={{ margin: 0, color: '#111827', fontSize: '26px', fontWeight: '700', letterSpacing: '0.03em' }}>
+              โปรไฟล์พนักงาน
+            </h1>
+            <p style={{ margin: '8px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
+              จัดการข้อมูลผู้ใช้งานสำหรับพนักงาน
+            </p>
+          </div>
         </div>
-        {!isEditing && (
-          <button
-            onClick={handleEditClick}
-            style={{
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#fff',
-              backgroundColor: '#4CAF50',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            แก้ไขข้อมูล
-          </button>
-        )}
-      </div>
 
-      {/* Profile Card */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        padding: '30px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        marginBottom: '20px'
-      }}>
+        {/* Profile Card */}
+        <div style={{
+          backgroundColor: '#fff',
+          borderRadius: '16px',
+          padding: '30px',
+          boxShadow: '0 10px 30px rgba(15,23,42,0.15)',
+          marginBottom: '20px'
+        }}>
         {/* Avatar Section */}
         <div style={{
           display: 'flex',
@@ -214,13 +217,15 @@ export default function ProfilePage() {
             width: '100px',
             height: '100px',
             borderRadius: '50%',
-            backgroundColor: '#4CAF50',
+            background: 'radial-gradient(circle at 30% 20%, #ffffff 0%, #38bdf8 45%, #1d4ed8 90%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'white',
+            color: '#0b1120',
             fontSize: '40px',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            boxShadow: '0 10px 25px rgba(15,23,42,0.35)',
+            border: '3px solid rgba(255,255,255,0.9)'
           }}>
             {(displayName || email || 'S')[0].toUpperCase()}
           </div>
@@ -244,6 +249,33 @@ export default function ProfilePage() {
 
         {/* Information Display */}
         {!isEditing ? (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: 18,
+              }}
+            >
+              <button
+                onClick={handleEditClick}
+                style={{
+                  padding: '10px 22px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#eff6ff',
+                  background:
+                    'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
+                  border: 'none',
+                  borderRadius: 999,
+                  cursor: 'pointer',
+                  boxShadow: '0 10px 20px rgba(37,99,235,0.45)',
+                  letterSpacing: '0.03em',
+                }}
+              >
+                แก้ไขข้อมูล
+              </button>
+            </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
@@ -339,6 +371,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+          </>
         ) : (
           /* Edit Form */
           <div>
@@ -480,11 +513,15 @@ export default function ProfilePage() {
                     padding: '12px 24px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: '#666',
-                    backgroundColor: '#f5f5f5',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    cursor: saving ? 'not-allowed' : 'pointer'
+                    color: '#374151',
+                    background: saving
+                      ? '#e5e7eb'
+                      : 'linear-gradient(135deg, #f9fafb 0%, #e5e7eb 45%, #d1d5db 100%)',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '999px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    boxShadow: saving ? 'none' : '0 6px 14px rgba(107,114,128,0.35)',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   ยกเลิก
@@ -496,11 +533,15 @@ export default function ProfilePage() {
                     padding: '12px 24px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: '#fff',
-                    backgroundColor: saving ? '#ccc' : '#4CAF50',
+                    color: '#eff6ff',
+                    background: saving
+                      ? '#9ca3af'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
                     border: 'none',
-                    borderRadius: '8px',
-                    cursor: saving ? 'not-allowed' : 'pointer'
+                    borderRadius: '999px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    boxShadow: saving ? 'none' : '0 10px 20px rgba(37,99,235,0.45)',
+                    letterSpacing: '0.03em',
                   }}
                 >
                   {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
@@ -509,54 +550,6 @@ export default function ProfilePage() {
             </form>
           </div>
         )}
-      </div>
-
-      {/* Account Info Card */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        padding: '20px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <h3 style={{
-          margin: '0 0 16px 0',
-          fontSize: '18px',
-          color: '#333',
-          fontWeight: '600'
-        }}>
-          ข้อมูลบัญชี
-        </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '16px'
-        }}>
-          <div>
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>User ID</div>
-            <div style={{
-              padding: '8px 12px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#333',
-              fontFamily: 'monospace',
-              wordBreak: 'break-all'
-            }}>
-              {user?.uid || '-'}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>Provider</div>
-            <div style={{
-              padding: '8px 12px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#333'
-            }}>
-              Email/Password
-            </div>
-          </div>
         </div>
       </div>
     </div>

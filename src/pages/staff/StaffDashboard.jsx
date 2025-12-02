@@ -11,14 +11,9 @@ export default function StaffDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
-  // cart state
+  // cart state (loaded from Firebase, used for badge count)
   const [cartItems, setCartItems] = useState([]); // {id, productName, price, quantity, image}
-  const [cartLoading, setCartLoading] = useState(false);
-  const [cartError, setCartError] = useState('');
 
-  const [showQtyPrompt, setShowQtyPrompt] = useState(false);
-  const [promptProduct, setPromptProduct] = useState(null);
-  const [promptQty, setPromptQty] = useState("1");
   const [showDetail, setShowDetail] = useState(false);
   const [detailProduct, setDetailProduct] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -83,10 +78,45 @@ export default function StaffDashboard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const addToCart = (product) => {
-    setPromptProduct(product);
-    setPromptQty("1");
-    setShowQtyPrompt(true);
+  const addToCart = async (product) => {
+    if (!user?.uid) {
+      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      return;
+    }
+
+    const available = Math.max(
+      0,
+      (product.quantity || 0) -
+        (product.reserved || 0) -
+        (product.staffReserved || 0)
+    );
+
+    if (available <= 0) {
+      alert('สินค้าหมดสต็อกสำหรับสตาฟ');
+      return;
+    }
+
+    try {
+      await addToCartService(
+        user.uid,
+        {
+          id: product.id,
+          productName: product.productName,
+          price: product.price ?? product.costPrice ?? 0,
+          quantity: 1,
+          image: product.image || null,
+          stock: available,
+        },
+        'staff'
+      );
+
+      // reload cart to update badge count
+      const updatedCart = await getCart(user.uid, 'staff');
+      setCartItems(updatedCart);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
   // Note: Cart management is now handled in WithdrawPage
@@ -666,26 +696,23 @@ export default function StaffDashboard() {
               >
                 Previous
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    style={{
-                      padding: "8px 16px",
-                      border: "1px solid #ddd",
-                      borderRadius: "6px",
-                      backgroundColor:
-                        currentPage === page ? "#4CAF50" : "#fff",
-                      color: currentPage === page ? "white" : "#333",
-                      cursor: "pointer",
-                      fontWeight: currentPage === page ? "bold" : "normal",
-                    }}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  style={{
+                    padding: "8px 16px",
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                    backgroundColor: currentPage === page ? "#4CAF50" : "#fff",
+                    color: currentPage === page ? "white" : "#333",
+                    cursor: "pointer",
+                    fontWeight: currentPage === page ? "bold" : "normal",
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -693,10 +720,8 @@ export default function StaffDashboard() {
                   padding: "8px 16px",
                   border: "1px solid #ddd",
                   borderRadius: "6px",
-                  backgroundColor:
-                    currentPage === totalPages ? "#f5f5f5" : "#fff",
-                  cursor:
-                    currentPage === totalPages ? "not-allowed" : "pointer",
+                  backgroundColor: currentPage === totalPages ? "#f5f5f5" : "#fff",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                   color: currentPage === totalPages ? "#999" : "#333",
                 }}
               >
@@ -705,153 +730,6 @@ export default function StaffDashboard() {
             </div>
           )}
         </>
-      )}
-      {/* Quantity Prompt Modal */}
-      {showQtyPrompt && promptProduct && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-            padding: 20,
-          }}
-          onClick={() => setShowQtyPrompt(false)}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              width: 420,
-              maxWidth: "100%",
-              padding: 20,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ marginTop: 0 }}>ระบุจำนวนสินค้า</h3>
-            <p style={{ marginTop: 0, color: "#666" }}>
-              {promptProduct.productName}
-            </p>
-            <input
-              type="number"
-              min={1}
-              max={Math.max(
-                0,
-                (promptProduct.quantity || 0) - (promptProduct.reserved || 0) - (promptProduct.staffReserved || 0)
-              )}
-              value={promptQty}
-              onChange={(e) => setPromptQty(e.target.value)}
-              disabled={cartLoading}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid #ddd",
-                borderRadius: 8,
-              }}
-            />
-            {cartError && (
-              <div style={{ marginTop: 12, padding: '10px', backgroundColor: '#ffebee', color: '#c62828', borderRadius: 8, fontSize: '14px' }}>
-                {cartError}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                justifyContent: "flex-end",
-                marginTop: 16,
-              }}
-            >
-              <button
-                onClick={() => { setShowQtyPrompt(false); setCartError(''); }}
-                disabled={cartLoading}
-                style={{
-                  padding: "10px 16px",
-                  background: cartLoading ? "#ccc" : "#6c757d",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: cartLoading ? "not-allowed" : "pointer",
-                }}
-              >
-                ยกเลิก
-              </button>
-                <button
-                onClick={async () => {
-                  if (!user?.uid) {
-                    alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
-                    return;
-                  }
-                  
-                  const available = Math.max(
-                    0,
-                    (promptProduct.quantity || 0) -
-                      (promptProduct.reserved || 0) -
-                      (promptProduct.staffReserved || 0)
-                  );
-                  const qty = Math.max(
-                    1,
-                    Math.min(parseInt(promptQty || 1), available)
-                  );
-                  
-                  setCartLoading(true);
-                  setCartError('');
-                  try {
-                    await addToCartService(user.uid, {
-                      id: promptProduct.id,
-                      productName: promptProduct.productName,
-                      price: promptProduct.price ?? promptProduct.costPrice ?? 0,
-                      quantity: qty,
-                      image: promptProduct.image || null,
-                      stock: available
-                    }, 'staff');
-                    setCartItems(prev => {
-                      const exists = prev.find(it => it.id === promptProduct.id);
-                      if (exists) {
-                        return prev.map(it =>
-                          it.id === promptProduct.id
-                            ? { ...it, quantity: qty, stock: available }
-                            : it
-                        );
-                      } else {
-                        return [...prev, {
-                          id: promptProduct.id,
-                          productName: promptProduct.productName,
-                          price: promptProduct.price ?? promptProduct.costPrice ?? 0,
-                          quantity: qty,
-                          image: promptProduct.image || null,
-                          stock: available
-                        }];
-                      }
-                    });
-                    setShowQtyPrompt(false);
-                  } catch (error) {
-                    console.error('Error adding to cart:', error);
-                    setCartError('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
-                  } finally {
-                    setCartLoading(false);
-                  }
-                }}
-                disabled={cartLoading}
-                style={{
-                  padding: "10px 16px",
-                  background: cartLoading ? "#ccc" : "#4CAF50",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: cartLoading ? "not-allowed" : "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                {cartLoading ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
       </div>
     </div>
