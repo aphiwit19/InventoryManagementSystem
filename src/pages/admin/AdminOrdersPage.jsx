@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getAllWithdrawals, updateWithdrawalShipping } from '../../services';
 
 const carriers = ['EMS', 'ไปรษณีย์ไทย', 'Kerry', 'J&T', 'Flash'];
@@ -8,6 +8,7 @@ const pickupStatuses = ['รอดำเนินการ', 'รับของ
 
 export default function AdminOrdersPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const initialSource = params.get('source') || 'all';
 
@@ -63,7 +64,8 @@ export default function AdminOrdersPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // โหลดข้อมูลใหม่เมื่อเข้าหน้านี้ครั้งแรกหรือเมื่อกลับมาหน้าด้วย history (location.key เปลี่ยน)
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [location.key]);
 
   const filtered = orders.filter(o => {
     const hit = (
@@ -107,6 +109,11 @@ export default function AdminOrdersPage() {
   };
 
   // (UX revert) no counters in filters
+
+  const goDetail = (order) => {
+    if (!order?.id) return;
+    navigate(`/admin/orders/${order.id}`, { state: { order } });
+  };
 
   return (
     <div style={{ padding: 20 }}>
@@ -218,6 +225,7 @@ export default function AdminOrdersPage() {
                 return (
                   <div
                     key={o.id}
+                    onClick={(e) => { e.stopPropagation(); goDetail(o); }}
                     style={{
                       display: 'grid',
                       gridTemplateColumns:
@@ -227,6 +235,7 @@ export default function AdminOrdersPage() {
                       borderTop: '1px solid #eee',
                       alignItems: 'flex-start',
                       fontSize: 13,
+                      cursor: 'pointer',
                     }}
                   >
                     <div>{dateText}</div>
@@ -252,6 +261,7 @@ export default function AdminOrdersPage() {
                         disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
                         value={edits[o.id]?.shippingCarrier || ''}
                         onChange={(e) => {
+                          e.stopPropagation();
                           setEdits((s) => ({
                             ...s,
                             [o.id]: {
@@ -279,6 +289,7 @@ export default function AdminOrdersPage() {
                       <input
                         disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
                         value={edits[o.id]?.trackingNumber || ''}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           setEdits((s) => ({
                             ...s,
@@ -324,14 +335,12 @@ export default function AdminOrdersPage() {
                         ))}
                       </select>
                     </div>
-                    <div
-                      style={{ display: 'flex', justifyContent: 'center' }}
-                    >
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <button
-                        onClick={() => saveRow(o.id)}
+                        onClick={(e) => { e.stopPropagation(); saveRow(o.id); }}
                         disabled={savingId === o.id || !canSave(o.id)}
                         style={{
-                          padding: '8px 14px',
+                          padding: '8px 10px',
                           minWidth: 88,
                           background: savedOk[o.id]
                             ? '#4CAF50'
@@ -396,6 +405,7 @@ export default function AdminOrdersPage() {
                       return (
                         <div
                           key={o.id}
+                          onClick={() => goDetail(o)}
                           style={{
                             display: 'grid',
                             gridTemplateColumns: showCompactPickup
@@ -405,6 +415,7 @@ export default function AdminOrdersPage() {
                             padding: '12px 16px',
                             borderTop: '1px solid #eee',
                             alignItems: 'center',
+                            cursor: 'pointer',
                           }}
                         >
                           <div>
@@ -436,6 +447,7 @@ export default function AdminOrdersPage() {
                               <select
                                 disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
                                 value={edits[o.id]?.shippingCarrier ?? ''}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => {
                                   setEdits((s) => ({
                                     ...s,
@@ -466,6 +478,7 @@ export default function AdminOrdersPage() {
                               <input
                                 disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
                                 value={edits[o.id]?.trackingNumber ?? ''}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => {
                                   setEdits((s) => ({
                                     ...s,
@@ -489,6 +502,7 @@ export default function AdminOrdersPage() {
                           <div>
                             <select
                               value={edits[o.id]?.shippingStatus ?? 'รอดำเนินการ'}
+                              onClick={(e) => e.stopPropagation()}
                               onChange={(e) => {
                                 setEdits((s) => ({
                                   ...s,
@@ -517,7 +531,7 @@ export default function AdminOrdersPage() {
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <button
-                              onClick={() => saveRow(o.id)}
+                              onClick={(e) => { e.stopPropagation(); saveRow(o.id); }}
                               disabled={savingId === o.id || !canSave(o.id)}
                               style={{
                                 padding: '8px 14px',

@@ -24,6 +24,7 @@ import EditProductPage from './pages/admin/EditProductPage';
 import InventoryHistoryPage from './pages/admin/InventoryHistoryPage';
 import InventoryHistoryIndex from './pages/admin/inventory_history';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
 import ProfilePage from './pages/admin/ProfilePage';
 
 function HomeRouter() {
@@ -48,6 +49,7 @@ function App() {
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<ProductsPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="orders/:id" element={<AdminOrderDetailPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="addproduct" element={<AdminDashboard />} />
               <Route path="products/:id/edit" element={<EditProductPage />} />
