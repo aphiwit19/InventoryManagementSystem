@@ -13,6 +13,8 @@ import AdminLayout from './pages/admin/AdminLayout';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerLayout from './pages/customer/CustomerLayout';
 import CustomerWithdrawPage from './pages/customer/CustomerWithdrawPage';
+import CustomerPaymentPage from './pages/customer/CustomerPaymentPage';
+import CustomerOrderSuccessPage from './pages/customer/CustomerOrderSuccessPage';
 import CustomerOrdersPage from './pages/customer/CustomerOrdersPage';
 import CustomerProfilePage from './pages/customer/ProfilePage';
 import WithdrawPage from './pages/staff/WithdrawPage';
@@ -69,6 +71,8 @@ function App() {
               <Route index element={<CustomerDashboard />} />
               <Route path="orders" element={<CustomerOrdersPage />} />
               <Route path="withdraw" element={<CustomerWithdrawPage />} />
+              <Route path="payment" element={<CustomerPaymentPage />} />
+              <Route path="payment/success" element={<CustomerOrderSuccessPage />} />
               <Route path="profile" element={<CustomerProfilePage />} />
             </Route>
           </Route>

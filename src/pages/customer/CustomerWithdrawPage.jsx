@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createWithdrawal, getAllProducts, getCart, updateCartItem, removeFromCart, clearCart, migrateLocalStorageCart } from '../../services';
+import { getAllProducts, getCart, updateCartItem, removeFromCart, migrateLocalStorageCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -13,7 +13,6 @@ export default function CustomerWithdrawPage() {
   const [requestedBy, setRequestedBy] = useState('');
   const [requestedAddress, setRequestedAddress] = useState('');
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
-  const [submitting, setSubmitting] = useState(false);
   const [cartLoading, setCartLoading] = useState(true);
   const [userDataLoading, setUserDataLoading] = useState(true);
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
@@ -135,99 +134,291 @@ export default function CustomerWithdrawPage() {
     }
   };
 
-  const submit = async () => {
-    if (items.length === 0) return;
-    if (!requestedBy.trim() || !requestedAddress.trim() || !withdrawDate) {
-      alert('กรุณากรอกข้อมูลให้ครบ');
-      return;
-    }
+  const goToPayment = () => {
     if (!user?.uid) {
       alert('กรุณาเข้าสู่ระบบก่อน');
       return;
     }
-    
-    setSubmitting(true);
-    try {
-      await createWithdrawal({
-        items: items.map(it => ({ productId: it.id, productName: it.productName, price: it.price, quantity: it.quantity, subtotal: it.price * it.quantity })),
-        requestedBy: requestedBy.trim(),
-        requestedAddress: requestedAddress.trim(),
-        withdrawDate,
-        total,
-        createdByUid: user.uid,
-        createdByEmail: user.email || null,
-        createdSource: 'customer'
-      });
-      
-      // Clear cart after successful order
-      await clearCart(user.uid, 'customer');
-      setItems([]);
-      
-      alert('บันทึกคำสั่งเบิกสำเร็จ');
-      navigate('/customer');
-    } catch (e) {
-      console.error('Error creating withdrawal:', e);
-      alert('ไม่สามารถบันทึกคำสั่งเบิกได้: ' + (e?.message || ''));
-    } finally {
-      setSubmitting(false);
+    if (items.length === 0) {
+      alert('ยังไม่มีสินค้าในตะกร้า');
+      return;
     }
+    navigate('/customer/payment');
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>คำสั่งซื้อ</h2>
-        <Link to="/customer" style={{ color: '#667eea', textDecoration: 'none' }}>← กลับไปเลือกสินค้า</Link>
+    <div style={{ padding: '30px', background: '#f0f4ff', minHeight: '100vh' }}>
+      {/* Step indicator */}
+      <div
+        style={{
+          maxWidth: 960,
+          margin: '0 auto 20px',
+          background: '#fff',
+          borderRadius: 16,
+          padding: '16px 24px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: 14,
+            fontWeight: 600
+          }}
+        >
+          <span style={{ color: '#2e7d32', borderBottom: '2px solid #2e7d32', paddingBottom: 4 }}>
+            1 ตะกร้า
+          </span>
+          <span style={{ color: '#9e9e9e' }}>2 ชำระเงิน</span>
+          <span style={{ color: '#9e9e9e' }}>3 เสร็จสิ้น</span>
+        </div>
+        <div
+          style={{
+            marginTop: 10,
+            height: 4,
+            borderRadius: 999,
+            background: 'linear-gradient(90deg,#4CAF50 0%,#4CAF50 33%,#e0e0e0 33%)'
+          }}
+        />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: 16 }}>
-          {cartLoading ? (
-            <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>กำลังโหลดตะกร้า...</p>
-          ) : items.length === 0 ? (
-            <p style={{ color: '#999' }}>ยังไม่มีรายการในคำสั่งเบิก</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {items.map(it => (
-                <div key={it.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', gap: 12, alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{it.productName}</div>
-                    <div style={{ color: '#777', fontSize: 12 }}>คงเหลือพร้อมขาย: {Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0))} ชิ้น</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>฿{(it.price).toLocaleString()}</div>
-                  <div>
-                    <input type="number" min={1} max={Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0))} value={it.quantity} onChange={(e)=>updateQty(it.id, e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8 }} />
-                  </div>
-                  <div style={{ textAlign: 'right', fontWeight: 600 }}>฿{(it.price * it.quantity).toLocaleString()}</div>
-                  <button onClick={()=>removeItem(it.id)} style={{ gridColumn: '1 / -1', justifySelf: 'end', background: 'transparent', border: 'none', color: '#f44336', cursor: 'pointer' }}>ลบ</button>
-                </div>
-              ))}
-            </div>
-          )}
+      <div
+        style={{
+          maxWidth: 960,
+          margin: '0 auto',
+          background: '#fff',
+          borderRadius: 24,
+          padding: '24px 28px 28px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 20
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 22 }}>ตะกร้าสินค้า</h2>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: 16 }}>
-          <h3 style={{ marginTop: 0 }}>รายละเอียดผู้สั่งซื้อ</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ผู้สั่งซื้อ</div>
-              <input value={requestedBy} onChange={(e)=>setRequestedBy(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.6fr 1fr',
+            gap: 20,
+            alignItems: 'flex-start'
+          }}
+        >
+          {/* Cart list */}
+          <div
+            style={{
+              background: '#f9fafb',
+              borderRadius: 20,
+              padding: 18,
+              border: '1px solid #e5e7eb',
+              minHeight: 120
+            }}
+          >
+            {cartLoading ? (
+              <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>กำลังโหลดตะกร้า...</p>
+            ) : items.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 10px' }}>
+                <p style={{ color: '#999', marginBottom: 12 }}>ยังไม่มีรายการในตะกร้า</p>
+                <Link
+                  to="/customer"
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 999,
+                    background: '#4A90E2',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    fontSize: 13,
+                    fontWeight: 600
+                  }}
+                >
+                  ไปเลือกสินค้า
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {items.map((it) => (
+                  <div
+                    key={it.id}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 120px 110px 110px',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '8px 4px',
+                      borderBottom: '1px dashed #e5e7eb'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{it.productName}</div>
+                      <div style={{ color: '#777', fontSize: 12 }}>
+                        คงเหลือพร้อมขาย:{' '}
+                        {Math.max(
+                          0,
+                          (productsById[it.id]?.quantity ?? 0) -
+                            (productsById[it.id]?.reserved ?? 0)
+                        )}{' '}
+                        ชิ้น
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: 14 }}>
+                      ฿{it.price.toLocaleString()}
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min={1}
+                        max={Math.max(
+                          0,
+                          (productsById[it.id]?.quantity ?? 0) -
+                            (productsById[it.id]?.reserved ?? 0)
+                        )}
+                        value={it.quantity}
+                        onChange={(e) => updateQty(it.id, e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: 999,
+                          fontSize: 13,
+                          textAlign: 'center'
+                        }}
+                      />
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 14,
+                          marginBottom: 4
+                        }}
+                      >
+                        ฿{(it.price * it.quantity).toLocaleString()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(it.id)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#f44336',
+                          cursor: 'pointer',
+                          fontSize: 12
+                        }}
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Summary & basic info */}
+          <div
+            style={{
+              background: '#f9fafb',
+              borderRadius: 20,
+              padding: 18,
+              border: '1px solid #e5e7eb'
+            }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>
+              รายละเอียดผู้สั่งซื้อ
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    marginBottom: 6,
+                    color: '#374151'
+                  }}
+                >
+                  ผู้สั่งซื้อ
+                </div>
+                <input
+                  value={requestedBy}
+                  onChange={(e) => setRequestedBy(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 999,
+                    fontSize: 14
+                  }}
+                />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    marginBottom: 6,
+                    color: '#374151'
+                  }}
+                >
+                  ที่อยู่ผู้สั่งซื้อ
+                </div>
+                <textarea
+                  value={requestedAddress}
+                  onChange={(e) => setRequestedAddress(e.target.value)}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 16,
+                    resize: 'vertical',
+                    fontSize: 14,
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginTop: 8
+                }}
+              >
+                <span style={{ color: '#666' }}>ราคารวม</span>
+                <strong>฿{total.toLocaleString()}</strong>
+              </div>
+              <button
+                disabled={items.length === 0}
+                onClick={goToPayment}
+                style={{
+                  padding: '12px',
+                  background:
+                    items.length === 0
+                      ? '#9ca3af'
+                      : 'linear-gradient(90deg,#2563EB,#1D4ED8)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 999,
+                  cursor: items.length === 0 ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  marginTop: 4,
+                  boxShadow:
+                    items.length === 0
+                      ? 'none'
+                      : '0 4px 10px rgba(37,99,235,0.35)'
+                }}
+              >
+                ดำเนินการชำระเงิน
+              </button>
             </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่ผู้สั่งซื้อ</div>
-              <textarea value={requestedAddress} onChange={(e)=>setRequestedAddress(e.target.value)} rows={3} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>วันที่สั่งซื้อ</div>
-              <input type="date" value={withdrawDate} onChange={(e)=>setWithdrawDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8 }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-              <span style={{ color: '#666' }}>ราคารวม</span>
-              <strong>฿{total.toLocaleString()}</strong>
-            </div>
-            <button disabled={submitting || items.length===0} onClick={submit} style={{ padding: '12px', background: submitting || items.length===0 ? '#ccc' : '#4CAF50', color: '#fff', border: 'none', borderRadius: 8, cursor: submitting || items.length===0 ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
-              {submitting ? 'กำลังบันทึก...' : 'บันทึกคำสั่งซื้อ'}
-            </button>
           </div>
         </div>
       </div>
