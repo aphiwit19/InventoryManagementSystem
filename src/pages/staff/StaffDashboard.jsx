@@ -130,23 +130,37 @@ export default function StaffDashboard() {
   // no direct checkout here; use WithdrawPage for final confirmation
 
   return (
-    <div style={{ flex: 1, padding: "24px", boxSizing: "border-box" }}>
+    <div style={{ flex: 1, padding: "24px 24px 20px", boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 1200, margin: "0 auto" }}>
         {/* Header */}
         <div
           style={{
+            width: "100%",
             background:
-              "linear-gradient(135deg, #1D4ED8 0%, #2563EB 35%, #38BDF8 75%, #4F46E5 100%)",
-            padding: "18px 24px",
-            borderRadius: 20,
+              "linear-gradient(135deg, #1D4ED8 0%, #2563EB 28%, #22c1f1 60%, #4F46E5 100%)",
+            padding: "22px 36px",
+            borderRadius: 24,
             marginBottom: 18,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            boxShadow: "0 14px 32px rgba(15,23,42,0.38)",
+            boxShadow:
+              "0 18px 40px rgba(15,23,42,0.45), 0 0 0 1px rgba(255,255,255,0.12)",
             color: "#fff",
+            position: "relative",
+            overflow: "visible",
           }}
         >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at 0% 0%, rgba(255,255,255,0.22) 0, transparent 55%)," +
+                "radial-gradient(circle at 80% 0%, rgba(255,255,255,0.12) 0, transparent 50%)",
+              pointerEvents: "none",
+            }}
+          />
           <div>
             <div
               style={{
@@ -732,6 +746,160 @@ export default function StaffDashboard() {
         </>
       )}
       </div>
+
+      {/* Footer - store information (only on staff dashboard) */}
+      <footer
+        style={{
+          marginTop: 32,
+          background:
+            'linear-gradient(135deg, #020617 0%, #0f172a 40%, #020617 100%)',
+          color: '#e5e7eb',
+          padding: '32px 24px 24px',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            display: 'grid',
+            gridTemplateColumns: '2fr 1.2fr 1.2fr 1.4fr',
+            gap: 32,
+          }}
+        >
+          {/* About store */}
+          <div>
+            <h3
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 20,
+                fontWeight: 700,
+                color: '#f9fafb',
+              }}
+            >
+              ร้านค้าของเรา
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.6,
+              }}
+            >
+              พบกับสินค้าคุณภาพพร้อมจัดส่งอย่างรวดเร็ว เพื่อการช็อปที่สะดวกและปลอดภัย
+              เรามุ่งมั่นให้ความพึงพอใจสูงสุดแก่ลูกค้าทุกท่าน
+            </p>
+          </div>
+
+          {/* Menu */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#e5e7eb',
+              }}
+            >
+              เมนูหลัก
+            </h4>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.8,
+              }}
+            >
+              <li>หน้าหลัก</li>
+              <li>รายการสินค้า</li>
+              <li>ประวัติคำสั่งซื้อ</li>
+              <li>โปรไฟล์</li>
+            </ul>
+          </div>
+
+          {/* Customer services */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#e5e7eb',
+              }}
+            >
+              บริการลูกค้า
+            </h4>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.8,
+              }}
+            >
+              <li>วิธีการสั่งซื้อ</li>
+              <li>การจัดส่งสินค้า</li>
+              <li>นโยบายการคืนสินค้า</li>
+              <li>คำถามที่พบบ่อย</li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#e5e7eb',
+              }}
+            >
+              ติดต่อเรา
+            </h4>
+            <div
+              style={{
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.8,
+              }}
+            >
+              <div>โทร: 084-922-3468</div>
+              <div>อีเมล: hr@vannessplus.com</div>
+              <div>
+                ที่อยู่: 98 Sathorn Square Building, North Sathorn Road,
+                Silom,Bangrak,Bangkok 10500
+              </div>
+              <div>วันทำการ: จันทร์ - เสาร์ 8:30 - 17:30 น.</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '18px auto 0',
+            borderTop: '1px solid rgba(148,163,184,0.25)',
+            paddingTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12,
+            color: '#6b7280',
+          }}
+        >
+          <div>ร้านค้าของเรา สงวนลิขสิทธิ์ทั้งหมด</div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <span>นโยบายความเป็นส่วนตัว</span>
+            <span>เงื่อนไขการใช้งาน</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

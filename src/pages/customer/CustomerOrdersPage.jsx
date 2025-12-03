@@ -55,139 +55,116 @@ export default function CustomerOrdersPage() {
           background:
             'linear-gradient(135deg, #1D4ED8 0%, #2563EB 40%, #1D9BF0 75%, #4F46E5 100%)',
           borderRadius: 28,
-          padding: '22px 28px',
+          padding: '18px 24px 18px',
           boxShadow: '0 12px 28px rgba(15,23,42,0.28)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          color: '#fff'
+          color: '#fff',
         }}
       >
-        <div>
-          <div
-            style={{
-              fontSize: 12,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              opacity: 0.85
-            }}
-          >
-            MY ORDERS
-          </div>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: '0.03em',
-              marginTop: 4
-            }}
-          >
-            คำสั่งซื้อของฉัน
-          </div>
-          <div style={{ fontSize: 14, opacity: 0.9, marginTop: 6 }}>
-            ดูสถานะการจัดส่งและรายละเอียดคำสั่งซื้อทั้งหมดของคุณ
-          </div>
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            padding: '6px 12px',
-            borderRadius: 999,
-            background: 'rgba(15,23,42,0.25)',
-            border: '1px solid rgba(255,255,255,0.25)'
-          }}
-        >
-          รวม {orders.length} รายการ
-        </div>
-      </div>
-
-      {/* Filters bar */}
-      <div
-        style={{
-          maxWidth: 920,
-          margin: '0 auto 12px',
-          background: '#fff',
-          borderRadius: 18,
-          padding: '10px 20px',
-          boxShadow: '0 3px 10px rgba(15,23,42,0.06)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 20,
-          flexWrap: 'wrap'
-        }}
-      >
-        <div style={{ paddingTop: 2, flex: '0 0 auto' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', letterSpacing: '0.06em' }}>
-            ตัวกรองรายการ
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>ค้นหาจากขนส่งหรือเลข Tracking และกรองตามสถานะคำสั่งซื้อ</div>
-        </div>
         <div
           style={{
             display: 'flex',
-            flex: 1,
-            maxWidth: 520,
             alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 28
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
           }}
         >
-          <div
-            style={{
-              position: 'relative',
-              flex: '1 1 200px',
-              maxWidth: 220,
-              marginRight: 24
-            }}
-          >
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหา (ขนส่ง / Tracking)"
+          <div style={{ minWidth: 220 }}>
+            <div
               style={{
-                width: '100%',
-                padding: '8px 34px 8px 14px',
-                borderRadius: 999,
-                border: '1px solid #e5e7eb',
-                fontSize: 13,
-                outline: 'none',
-                background: '#F9FAFB'
-              }}
-            />
-            <span
-              style={{
-                position: 'absolute',
-                right: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6366F1',
-                fontSize: 15
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                opacity: 0.85,
               }}
             >
-              🔍
-            </span>
+              MY ORDERS
+            </div>
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: '0.03em',
+                marginTop: 4,
+              }}
+            >
+              คำสั่งซื้อของฉัน
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 6 }}>
+              ดูสถานะการจัดส่งและรายละเอียดคำสั่งซื้อทั้งหมดของคุณ
+            </div>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+
+          <div
             style={{
-              padding: '8px 16px',
-              borderRadius: 999,
-              border: '1px solid #e5e7eb',
-              fontSize: 13,
-              minWidth: 150,
-              background: '#F9FAFB',
-              color: '#111827'
+              display: 'flex',
+              flex: '1 1 260px',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 18,
+              flexWrap: 'wrap',
             }}
           >
-            <option value="all">สถานะทั้งหมด</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+            <div
+              style={{
+                position: 'relative',
+                flex: '2 1 260px',
+                minWidth: 220,
+                maxWidth: 360,
+              }}
+            >
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ค้นหา (ขนส่ง / Tracking)"
+                style={{
+                  width: '100%',
+                  padding: '8px 34px 8px 14px',
+                  borderRadius: 999,
+                  border: '1px solid rgba(15,23,42,0.12)',
+                  fontSize: 13,
+                  outline: 'none',
+                  background: '#F9FAFB',
+                  color: '#0F172A',
+                  boxShadow: '0 2px 6px rgba(15,23,42,0.18)',
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#4B5563',
+                  fontSize: 15,
+                }}
+              >
+                🔍
+              </span>
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 999,
+                border: '1px solid rgba(255,255,255,0.7)',
+                fontSize: 13,
+                minWidth: 150,
+                background: 'rgba(15,23,42,0.18)',
+                color: '#F9FAFB',
+                flexShrink: 0,
+                marginLeft: 'auto',
+              }}
+            >
+              <option value="all">สถานะทั้งหมด</option>
+              {statuses.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -201,6 +178,28 @@ export default function CustomerOrdersPage() {
             boxShadow: '0 10px 30px rgba(15,23,42,0.06)'
           }}
         >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: '#fff',
+                border: '1px solid #E5E7EB',
+                color: '#111827',
+                boxShadow: '0 2px 6px rgba(15,23,42,0.08)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              รวม {orders.length} รายการ
+            </div>
+          </div>
           {loading ? (
             <div
               style={{

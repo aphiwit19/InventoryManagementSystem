@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { db } from '../../firebase';
+import { db, storage } from '../../firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
@@ -18,6 +19,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [photoURL, setPhotoURL] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [photoPreview, setPhotoPreview] = useState('');
 
   // Form states for editing
   const [editForm, setEditForm] = useState({
@@ -29,11 +34,12 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user || !profile) return;
-      
+
       setDisplayName(profile.displayName || '');
       setEmail(profile.email || user.email || '');
       setRole(profile.role || '');
-      
+      setPhotoURL(profile.photoURL || user.photoURL || '');
+
       // Load additional data from Firestore
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -41,7 +47,9 @@ export default function ProfilePage() {
           const data = userDoc.data();
           setPhone(data.phone || '');
           setAddress(data.address || '');
-          
+          if (data.photoURL && !profile.photoURL && !user.photoURL) {
+            setPhotoURL(data.photoURL);
+          }
           if (data.createdAt) {
             setCreatedAt(data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt));
           }
@@ -62,6 +70,8 @@ export default function ProfilePage() {
       phone: phone,
       address: address
     });
+    setPhotoPreview('');
+    setUploadError('');
     setIsEditing(true);
     setError('');
     setSuccess('');
@@ -87,18 +97,19 @@ export default function ProfilePage() {
     setSuccess('');
     
     try {
-      // Update Firebase Auth profile
-      if (editForm.displayName.trim() !== displayName) {
-        await updateProfile(auth.currentUser, {
-          displayName: editForm.displayName.trim()
-        });
-      }
-      
+      const finalPhoto = (photoPreview || photoURL || '').trim() || null;
+      // Update Firebase Auth profile (name + photo)
+      await updateProfile(auth.currentUser, {
+        displayName: editForm.displayName.trim(),
+        photoURL: finalPhoto,
+      });
+
       // Update Firestore
       await updateDoc(doc(db, 'users', user.uid), {
         displayName: editForm.displayName.trim() || null,
         phone: editForm.phone.trim() || null,
         address: editForm.address.trim() || null,
+        photoURL: finalPhoto,
         updatedAt: new Date()
       });
       
@@ -106,6 +117,7 @@ export default function ProfilePage() {
       setDisplayName(editForm.displayName.trim());
       setPhone(editForm.phone.trim());
       setAddress(editForm.address.trim());
+      setPhotoURL(finalPhoto || '');
       
       setSuccess('อัพเดตข้อมูลโปรไฟล์สำเร็จ!');
       setIsEditing(false);
@@ -150,7 +162,18 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <div
+        style={{
+          padding: '24px',
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background:
+            'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+          boxSizing: 'border-box',
+        }}
+      >
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '50px',
@@ -169,194 +192,414 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* Header */}
-      <div style={{
-        backgroundColor: '#fff',
-        padding: '20px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div>
-          <h1 style={{ margin: 0, color: '#333', fontSize: '28px', fontWeight: '700' }}>
-            โปรไฟล์ของฉัน
-          </h1>
-          <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
-            จัดการข้อมูลส่วนตัวของคุณ
-          </p>
-        </div>
-        {!isEditing && (
-          <button
-            onClick={handleEditClick}
+    <div
+      style={{
+        padding: '32px 24px',
+        minHeight: '100vh',
+        background:
+          'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 1180, margin: '0 auto' }}>
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 20,
+            gap: 12,
+          }}
+        >
+          <div
             style={{
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#fff',
-              backgroundColor: '#4CAF50',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
+              backgroundColor: '#fff',
+              padding: '18px 22px',
+              borderRadius: '16px',
+              boxShadow: '0 4px 16px rgba(15,23,42,0.10)',
+              flex: 1,
             }}
           >
-            แก้ไขข้อมูล
-          </button>
-        )}
-      </div>
-
-      {/* Profile Card */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        padding: '30px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        marginBottom: '20px'
-      }}>
-        {/* Avatar Section */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '20px',
-          marginBottom: '30px',
-          paddingBottom: '30px',
-          borderBottom: '2px solid #f0f0f0'
-        }}>
-          <div style={{
-            width: '100px',
-            height: '100px',
-            borderRadius: '50%',
-            backgroundColor: '#4CAF50',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '40px',
-            fontWeight: 'bold'
-          }}>
-            {(displayName || email || 'A')[0].toUpperCase()}
-          </div>
-          <div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', color: '#333' }}>
-              {displayName || 'ไม่ระบุชื่อ'}
-            </h2>
-            <div style={{
-              display: 'inline-block',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: roleInfo.color,
-              backgroundColor: roleInfo.bg
-            }}>
-              {roleInfo.label}
-            </div>
+            <h1
+              style={{
+                margin: 0,
+                color: '#0f172a',
+                fontSize: '26px',
+                fontWeight: '700',
+                letterSpacing: '0.03em',
+              }}
+            >
+              โปรไฟล์ลูกค้า
+            </h1>
+            <p
+              style={{
+                margin: '8px 0 0 0',
+                color: '#6b7280',
+                fontSize: '14px',
+              }}
+            >
+              ตรวจสอบและจัดการข้อมูลส่วนตัวในระบบของคุณ
+            </p>
           </div>
         </div>
 
-        {/* Information Display */}
-        {!isEditing ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '20px'
-          }}>
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#666'
-              }}>
-                อีเมล
-              </label>
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                fontSize: '15px',
-                color: '#333',
-                border: '1px solid #e0e0e0'
-              }}>
+        {/* Profile Card */}
+        <div
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: '18px',
+            padding: '26px 28px 30px 28px',
+            boxShadow: '0 16px 40px rgba(15,23,42,0.16)',
+            marginBottom: '20px',
+          }}
+        >
+          {/* Avatar + summary */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '20px',
+              marginBottom: '28px',
+              paddingBottom: '24px',
+              borderBottom: '1px solid #e5e7eb',
+            }}
+          >
+            <div
+              style={{
+                width: '96px',
+                height: '96px',
+                borderRadius: '999px',
+                background:
+                  'radial-gradient(circle at 30% 15%, #ffffff 0%, #bae6fd 25%, #38bdf8 55%, #1d4ed8 98%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#0b1120',
+                fontSize: '40px',
+                fontWeight: '800',
+                boxShadow: '0 14px 30px rgba(15,23,42,0.35)',
+                border: '3px solid rgba(255,255,255,0.95)',
+              }}
+            >
+              {(photoPreview || photoURL) ? (
+                <img
+                  src={photoPreview || photoURL}
+                  alt="avatar"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 'inherit',
+                    objectFit: 'cover',
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                (displayName || email || 'A')[0].toUpperCase()
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <h2
+                style={{
+                  margin: '0 0 4px 0',
+                  fontSize: '24px',
+                  color: '#111827',
+                  fontWeight: 700,
+                }}
+              >
+                {displayName || 'ไม่ระบุชื่อ'}
+              </h2>
+              <div
+                style={{
+                  marginBottom: 8,
+                  fontSize: 14,
+                  color: '#6b7280',
+                }}
+              >
                 {email || '-'}
               </div>
-            </div>
-
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#666'
-              }}>
-                เบอร์โทรศัพท์
-              </label>
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                fontSize: '15px',
-                color: '#333',
-                border: '1px solid #e0e0e0'
-              }}>
-                {phone || '-'}
-              </div>
-            </div>
-
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#666'
-              }}>
-                ที่อยู่
-              </label>
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                fontSize: '15px',
-                color: '#333',
-                border: '1px solid #e0e0e0',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
-                {address || '-'}
-              </div>
-            </div>
-
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#666'
-              }}>
-                วันที่สร้างบัญชี
-              </label>
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                fontSize: '15px',
-                color: '#333',
-                border: '1px solid #e0e0e0'
-              }}>
-                {formatDate(createdAt)}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '6px 15px',
+                    borderRadius: '999px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: roleInfo.color,
+                    backgroundColor: roleInfo.bg,
+                  }}
+                >
+                  {roleInfo.label}
+                </span>
+                {createdAt && (
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: '#9ca3af',
+                    }}
+                  >
+                    สร้างบัญชีเมื่อ {formatDate(createdAt)}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-        ) : (
-          /* Edit Form */
-          <div>
+
+          {/* Information Display / Edit */}
+          {!isEditing ? (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 18,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#6b7280',
+                  }}
+                >
+                  ตรวจสอบข้อมูลส่วนตัวของคุณ หากข้อมูลไม่ถูกต้องสามารถกดปุ่ม
+                  "แก้ไขข้อมูล" ที่มุมขวาเพื่ออัพเดตได้ทันที
+                </div>
+                <button
+                  onClick={handleEditClick}
+                  style={{
+                    padding: '10px 22px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#eff6ff',
+                    background:
+                      'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
+                    border: 'none',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    boxShadow: '0 10px 20px rgba(37,99,235,0.45)',
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  แก้ไขข้อมูล
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(260px, 0.95fr) minmax(320px, 1.1fr)',
+                  gap: '22px',
+                }}
+              >
+                {/* Left: account info */}
+                <div
+                  style={{
+                    backgroundColor: '#f9fafb',
+                    borderRadius: 14,
+                    padding: '16px 18px 18px 18px',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#4b5563',
+                      marginBottom: 10,
+                    }}
+                  >
+                    ข้อมูลบัญชี
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: 5,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#6b7280',
+                        }}
+                      >
+                        อีเมล
+                      </label>
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          color: '#111827',
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        {email || '-'}
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: 5,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#6b7280',
+                        }}
+                      >
+                        ประเภทผู้ใช้งาน
+                      </label>
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          color: '#111827',
+                          border: '1px solid #e5e7eb',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: roleInfo.color,
+                            backgroundColor: roleInfo.bg,
+                          }}
+                        >
+                          {roleInfo.label}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: 5,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#6b7280',
+                        }}
+                      >
+                        วันที่สร้างบัญชี
+                      </label>
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          color: '#111827',
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        {formatDate(createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: contact info */}
+                <div
+                  style={{
+                    backgroundColor: '#f9fafb',
+                    borderRadius: 14,
+                    padding: '16px 18px 18px 18px',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#4b5563',
+                      marginBottom: 10,
+                    }}
+                  >
+                    ข้อมูลติดต่อ
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: 14,
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: 5,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#6b7280',
+                        }}
+                      >
+                        เบอร์โทรศัพท์
+                      </label>
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          color: '#111827',
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        {phone || '-'}
+                      </div>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: 5,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#6b7280',
+                        }}
+                      >
+                        ที่อยู่
+                      </label>
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          color: '#111827',
+                          border: '1px solid #e5e7eb',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {address || '-'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Edit Form */
+            <div>
             {error && (
               <div style={{
                 padding: '12px 16px',
@@ -387,9 +630,126 @@ export default function ProfilePage() {
 
             <form onSubmit={handleUpdateProfile}>
               <div style={{
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+              }}>
+                <div
+                  style={{
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '999px',
+                    overflow: 'hidden',
+                    backgroundColor: '#e5e7eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#4b5563',
+                  }}
+                >
+                  {(photoPreview || photoURL) ? (
+                    <img
+                      src={photoPreview || photoURL}
+                      alt="preview-avatar"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    (displayName || email || 'A')[0].toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <label
+                    htmlFor="profileImage"
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: '#111827',
+                    }}
+                  >
+                    รูปโปรไฟล์
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label
+                      htmlFor="profileImage"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px 16px',
+                        borderRadius: 999,
+                        border: '1px solid #2563eb',
+                        background:
+                          uploadingPhoto || saving
+                            ? '#9ca3af'
+                            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 60%, #1d4ed8 100%)',
+                        color: '#eff6ff',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: uploadingPhoto || saving ? 'not-allowed' : 'pointer',
+                        boxShadow:
+                          uploadingPhoto || saving
+                            ? 'none'
+                            : '0 6px 14px rgba(37,99,235,0.45)',
+                        letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {uploadingPhoto ? 'กำลังเลือกรูป...' : 'เลือกไฟล์รูปภาพ'}
+                    </label>
+                    <input
+                      id="profileImage"
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingPhoto || saving}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        setUploadError('');
+                        if (!file || !user) return;
+                        try {
+                          setUploadingPhoto(true);
+                          const path = `profile/${user.uid}_${Date.now()}_${file.name}`;
+                          const ref = storageRef(storage, path);
+                          await uploadBytes(ref, file);
+                          const url = await getDownloadURL(ref);
+                          setPhotoPreview(url);
+                          setPhotoURL(url);
+                        } catch (err) {
+                          console.error('Error uploading profile image:', err);
+                          setUploadError('อัพโหลดรูปโปรไฟล์ล้มเหลว');
+                        } finally {
+                          setUploadingPhoto(false);
+                        }
+                      }}
+                      style={{
+                        display: 'none',
+                      }}
+                    />
+                  </div>
+                  {uploadingPhoto && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                      กำลังอัพโหลดรูปโปรไฟล์...
+                    </div>
+                  )}
+                  {uploadError && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#b91c1c' }}>
+                      {uploadError}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '20px',
+                gridTemplateColumns: 'minmax(260px, 0.9fr) minmax(320px, 1.1fr)',
+                gap: '22px',
                 marginBottom: '24px'
               }}>
                 <div>
@@ -495,11 +855,15 @@ export default function ProfilePage() {
                     padding: '12px 24px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: '#666',
-                    backgroundColor: '#f5f5f5',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    cursor: saving ? 'not-allowed' : 'pointer'
+                    color: '#374151',
+                    background: saving
+                      ? '#e5e7eb'
+                      : 'linear-gradient(135deg, #f9fafb 0%, #e5e7eb 45%, #d1d5db 100%)',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '999px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    boxShadow: saving ? 'none' : '0 6px 14px rgba(107,114,128,0.35)',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   ยกเลิก
@@ -511,11 +875,15 @@ export default function ProfilePage() {
                     padding: '12px 24px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: '#fff',
-                    backgroundColor: saving ? '#ccc' : '#4CAF50',
+                    color: '#eff6ff',
+                    background: saving
+                      ? '#9ca3af'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
                     border: 'none',
-                    borderRadius: '8px',
-                    cursor: saving ? 'not-allowed' : 'pointer'
+                    borderRadius: '999px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    boxShadow: saving ? 'none' : '0 10px 20px rgba(37,99,235,0.45)',
+                    letterSpacing: '0.03em',
                   }}
                 >
                   {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
@@ -525,56 +893,8 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-
-      {/* Account Info Card */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        padding: '20px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <h3 style={{
-          margin: '0 0 16px 0',
-          fontSize: '18px',
-          color: '#333',
-          fontWeight: '600'
-        }}>
-          ข้อมูลบัญชี
-        </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '16px'
-        }}>
-          <div>
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>User ID</div>
-            <div style={{
-              padding: '8px 12px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#333',
-              fontFamily: 'monospace',
-              wordBreak: 'break-all'
-            }}>
-              {user?.uid || '-'}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>Provider</div>
-            <div style={{
-              padding: '8px 12px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#333'
-            }}>
-              Email/Password
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
+  </div>
   );
 }
 
