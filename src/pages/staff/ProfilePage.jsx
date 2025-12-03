@@ -192,19 +192,18 @@ export default function ProfilePage() {
         {/* Header */}
         <div
           style={{
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-            padding: '20px 24px',
+            background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #0ea5e9 100%)',
+            padding: '24px 28px',
             borderRadius: 18,
             marginBottom: 20,
-            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
-            border: '1px solid rgba(255,255,255,0.9)',
+            boxShadow: '0 10px 40px rgba(30,64,175,0.3)',
           }}
         >
           <h1
             style={{
-              margin: 0,
-              color: '#1e40af',
-              fontSize: 24,
+              margin: '0 0 6px',
+              color: '#fff',
+              fontSize: 26,
               fontWeight: 700,
             }}
           >
@@ -213,8 +212,7 @@ export default function ProfilePage() {
           <div
             style={{
               fontSize: 14,
-              color: '#3b82f6',
-              marginTop: 6,
+              color: 'rgba(255,255,255,0.85)',
             }}
           >
             ตรวจสอบและจัดการข้อมูลบัญชีของพนักงานในระบบ
