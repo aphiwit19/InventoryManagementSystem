@@ -184,7 +184,7 @@ export default function AdminOrdersPage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns:
-                    '0.9fr 1fr 1.6fr 0.8fr 1fr 1fr 0.9fr 0.7fr 0.8fr',
+                    '0.9fr 1fr 1.6fr 0.9fr 1.4fr 0.7fr',
                   gap: 8,
                   padding: '12px 16px',
                   background: '#f8f9fa',
@@ -197,10 +197,7 @@ export default function AdminOrdersPage() {
                 <div>สินค้า / จำนวน</div>
                 <div>ยอดรวม</div>
                 <div>ที่อยู่</div>
-                <div>ขนส่ง</div>
-                <div>Tracking</div>
-                <div>สถานะ</div>
-                <div style={{ textAlign: 'center' }}>บันทึก</div>
+                <div style={{ textAlign: 'center' }}>จัดการ</div>
               </div>
               {filtered.map((o) => {
                 const dateText = new Date(
@@ -221,15 +218,16 @@ export default function AdminOrdersPage() {
                       )
                       .join('\n')
                   : '-';
+                const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
 
                 return (
                   <div
                     key={o.id}
-                    onClick={(e) => { e.stopPropagation(); goDetail(o); }}
+                    onClick={() => goDetail(o)}
                     style={{
                       display: 'grid',
                       gridTemplateColumns:
-                        '0.9fr 1fr 1.6fr 0.8fr 1fr 1fr 0.9fr 0.7fr 0.8fr',
+                        '0.9fr 1fr 1.6fr 0.9fr 1.4fr 0.7fr',
                       gap: 8,
                       padding: '12px 16px',
                       borderTop: '1px solid #eee',
@@ -256,112 +254,22 @@ export default function AdminOrdersPage() {
                     >
                       {o.requestedAddress || '-'}
                     </div>
-                    <div>
-                      <select
-                        disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
-                        value={edits[o.id]?.shippingCarrier || ''}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setEdits((s) => ({
-                            ...s,
-                            [o.id]: {
-                              ...s[o.id],
-                              shippingCarrier: e.target.value,
-                            },
-                          }));
-                          setSavedOk((prev) => ({ ...prev, [o.id]: false }));
-                        }}
-                        style={{
-                          padding: '6px 8px',
-                          border: '1px solid #ddd',
-                          borderRadius: 6,
-                        }}
-                      >
-                        <option value="">เลือกผู้ให้บริการ</option>
-                        {carriers.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
-                        value={edits[o.id]?.trackingNumber || ''}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          setEdits((s) => ({
-                            ...s,
-                            [o.id]: {
-                              ...s[o.id],
-                              trackingNumber: e.target.value,
-                            },
-                          }));
-                          setSavedOk((prev) => ({ ...prev, [o.id]: false }));
-                        }}
-                        placeholder="เช่น EX123456789TH"
-                        style={{
-                          padding: '6px 8px',
-                          border: '1px solid #ddd',
-                          borderRadius: 6,
-                          width: '100%',
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <select
-                        value={edits[o.id]?.shippingStatus || 'รอดำเนินการ'}
-                        onChange={(e) => {
-                          setEdits((s) => ({
-                            ...s,
-                            [o.id]: {
-                              ...s[o.id],
-                              shippingStatus: e.target.value,
-                            },
-                          }));
-                          setSavedOk((prev) => ({ ...prev, [o.id]: false }));
-                        }}
-                        style={{
-                          padding: '6px 8px',
-                          border: '1px solid #ddd',
-                          borderRadius: 6,
-                        }}
-                      >
-                        {statuses.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center' }}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); saveRow(o.id); }}
-                        disabled={savingId === o.id || !canSave(o.id)}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); goDetail(o); }}
                         style={{
-                          padding: '8px 10px',
-                          minWidth: 88,
-                          background: savedOk[o.id]
-                            ? '#4CAF50'
-                            : canSave(o.id)
-                            ? '#2196F3'
-                            : '#9e9e9e',
-                          color: '#fff',
-                          border: 'none',
+                          padding: '6px 12px',
                           borderRadius: 6,
-                          cursor:
-                            savingId === o.id || !canSave(o.id)
-                              ? 'not-allowed'
-                              : 'pointer',
-                          fontSize: 12,
+                          border: '1px solid #2563EB',
+                          background: isProcessed ? '#4CAF50' : '#2563EB',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          width: 88,
                         }}
                       >
-                        {savingId === o.id
-                          ? 'กำลังบันทึก...'
-                          : savedOk[o.id]
-                          ? 'บันทึกแล้ว'
-                          : 'บันทึก'}
+                        {isProcessed ? 'จัดการแล้ว' : 'จัดการ'}
                       </button>
                     </div>
                   </div>
@@ -370,199 +278,91 @@ export default function AdminOrdersPage() {
             </>
           ) : (
             <>
-              {(() => {
-                const hideShippingFields = sourceFilter === 'staff' && deliveryFilter === 'pickup';
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '0.9fr 1fr 1.4fr 1.4fr 1.2fr 1.4fr 1.3fr 0.7fr',
+                  gap: 8,
+                  padding: '12px 16px',
+                  background: '#f8f9fa',
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                <div>วันที่</div>
+                <div>ผู้เบิก</div>
+                <div>ผู้รับ</div>
+                <div>สินค้า / จำนวน</div>
+                <div>วิธีรับ</div>
+                <div>ที่อยู่</div>
+                <div>หมายเหตุ</div>
+                <div style={{ textAlign: 'center' }}>จัดการ</div>
+              </div>
+              {filtered.map((o) => {
+                // filter ตาม deliveryFilter แต่ตารางเรียบง่ายขึ้น ไม่มี inline shipping fields แล้ว
+                if (deliveryFilter === 'shipping' && (o.deliveryMethod || 'shipping') !== 'shipping') return null;
+                if (deliveryFilter === 'pickup' && (o.deliveryMethod || 'shipping') !== 'pickup') return null;
+
+                const address = o.receivedAddress || '-';
+                const note = o.note || '-';
+                const deliveryText = (o.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง';
+                const items = o.items || [];
+                const itemsText = items.length
+                  ? items
+                      .map((it) => `${it.productName || ''} x${it.quantity || 0}`)
+                      .join('\n')
+                  : '-';
+                const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
+
                 return (
-                  <>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: hideShippingFields
-                          ? '1.1fr 1.1fr 1.1fr 1fr 0.8fr'
-                          : '1.1fr 1.1fr 1.1fr 1.1fr 1.4fr 1.1fr 1.1fr 1fr 0.8fr',
-                        gap: 8,
-                        padding: '12px 16px',
-                        background: '#f8f9fa',
-                        fontWeight: 600,
-                      }}
-                    >
-                      <div>วันที่</div>
-                      <div>ผู้เบิก</div>
-                      <div>ผู้รับ</div>
-                      {!hideShippingFields && <div>วิธีรับ</div>}
-                      {!hideShippingFields && <div>ที่อยู่</div>}
-                      {!hideShippingFields && <div>ขนส่ง</div>}
-                      {!hideShippingFields && <div>Tracking</div>}
-                      {hideShippingFields && <div>สถานะ</div>}
-                      {hideShippingFields && <div style={{ textAlign: 'center' }}>บันทึก</div>}
-                      {!hideShippingFields && <div>สถานะ</div>}
-                      {!hideShippingFields && <div style={{ textAlign: 'center' }}>บันทึก</div>}
+                  <div
+                    key={o.id}
+                    onClick={() => goDetail(o)}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '0.9fr 1fr 1.4fr 1.4fr 1.2fr 1.4fr 1.3fr 0.7fr',
+                      gap: 8,
+                      padding: '12px 16px',
+                      borderTop: '1px solid #eee',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                    }}
+                  >
+                    <div>
+                      {new Date(
+                        o.withdrawDate?.seconds
+                          ? o.withdrawDate.seconds * 1000
+                          : o.withdrawDate
+                      ).toLocaleDateString('th-TH')}
                     </div>
-                    {filtered.map((o) => {
-                      const address = o.receivedAddress || '-';
-                      const isPickupRow = (o.deliveryMethod || 'shipping') === 'pickup';
-                      const showCompactPickup = hideShippingFields && isPickupRow;
-                      return (
-                        <div
-                          key={o.id}
-                          onClick={() => goDetail(o)}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: showCompactPickup
-                              ? '1.1fr 1.1fr 1.1fr 1fr 0.8fr'
-                              : '1.1fr 1.1fr 1.1fr 1.1fr 1.4fr 1.1fr 1.1fr 1fr 0.8fr',
-                            gap: 8,
-                            padding: '12px 16px',
-                            borderTop: '1px solid #eee',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <div>
-                            {new Date(
-                              o.withdrawDate?.seconds
-                                ? o.withdrawDate.seconds * 1000
-                                : o.withdrawDate
-                            ).toLocaleDateString('th-TH')}
-                          </div>
-                          <div>{o.requestedBy || '-'}</div>
-                          <div>
-                            {o.receivedBy ||
-                              ((o.createdSource || '') === 'customer' ? '-' : '-')}
-                          </div>
-                          {!showCompactPickup && (
-                            <div>
-                              {(o.deliveryMethod || 'shipping') === 'pickup'
-                                ? 'รับเอง'
-                                : 'จัดส่ง'}
-                            </div>
-                          )}
-                          {!showCompactPickup && (
-                            <div style={{ whiteSpace: 'pre-wrap', color: '#555' }}>
-                              {address}
-                            </div>
-                          )}
-                          {!showCompactPickup && (
-                            <div>
-                              <select
-                                disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
-                                value={edits[o.id]?.shippingCarrier ?? ''}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  setEdits((s) => ({
-                                    ...s,
-                                    [o.id]: {
-                                      ...s[o.id],
-                                      shippingCarrier: e.target.value,
-                                    },
-                                  }));
-                                  setSavedOk((prev) => ({ ...prev, [o.id]: false }));
-                                }}
-                                style={{
-                                  padding: '6px 8px',
-                                  border: '1px solid #ddd',
-                                  borderRadius: 6,
-                                }}
-                              >
-                                <option value="">เลือกผู้ให้บริการ</option>
-                                {carriers.map((c) => (
-                                  <option key={c} value={c}>
-                                    {c}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                          {!showCompactPickup && (
-                            <div style={{ display: 'flex', gap: 8 }}>
-                              <input
-                                disabled={(o.deliveryMethod || 'shipping') === 'pickup'}
-                                value={edits[o.id]?.trackingNumber ?? ''}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  setEdits((s) => ({
-                                    ...s,
-                                    [o.id]: {
-                                      ...s[o.id],
-                                      trackingNumber: e.target.value,
-                                    },
-                                  }));
-                                  setSavedOk((prev) => ({ ...prev, [o.id]: false }));
-                                }}
-                                placeholder="เช่น EX123456789TH"
-                                style={{
-                                  padding: '6px 8px',
-                                  border: '1px solid #ddd',
-                                  borderRadius: 6,
-                                  width: '100%',
-                                }}
-                              />
-                            </div>
-                          )}
-                          <div>
-                            <select
-                              value={edits[o.id]?.shippingStatus ?? 'รอดำเนินการ'}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => {
-                                setEdits((s) => ({
-                                  ...s,
-                                  [o.id]: {
-                                    ...s[o.id],
-                                    shippingStatus: e.target.value,
-                                  },
-                                }));
-                                setSavedOk((prev) => ({ ...prev, [o.id]: false }));
-                              }}
-                              style={{
-                                padding: '6px 8px',
-                                border: '1px solid #ddd',
-                                borderRadius: 6,
-                              }}
-                            >
-                              {((o.deliveryMethod || 'shipping') === 'pickup'
-                                ? pickupStatuses
-                                : statuses
-                              ).map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); saveRow(o.id); }}
-                              disabled={savingId === o.id || !canSave(o.id)}
-                              style={{
-                                padding: '8px 14px',
-                                minWidth: 96,
-                                background: savedOk[o.id]
-                                  ? '#4CAF50'
-                                  : canSave(o.id)
-                                  ? '#2196F3'
-                                  : '#9e9e9e',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 6,
-                                cursor:
-                                  savingId === o.id || !canSave(o.id)
-                                    ? 'not-allowed'
-                                    : 'pointer',
-                              }}
-                            >
-                              {savingId === o.id
-                                ? 'กำลังบันทึก...'
-                                : savedOk[o.id]
-                                ? 'บันทึกแล้ว'
-                                : 'บันทึก'}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </>
+                    <div>{o.requestedBy || '-'}</div>
+                    <div>{o.receivedBy || '-'}</div>
+                    <div style={{ whiteSpace: 'pre-wrap', color: '#555' }}>{itemsText}</div>
+                    <div>{deliveryText}</div>
+                    <div style={{ whiteSpace: 'pre-wrap', color: '#555' }}>{address}</div>
+                    <div style={{ whiteSpace: 'pre-wrap', color: '#555' }}>{note}</div>
+                    <div style={{ textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); goDetail(o); }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 6,
+                          border: '1px solid #2563EB',
+                          background: isProcessed ? '#4CAF50' : '#2563EB',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          width: 88,
+                        }}
+                      >
+                        {isProcessed ? 'จัดการแล้ว' : 'จัดการ'}
+                      </button>
+                    </div>
+                  </div>
                 );
-              })()}
+              })}
             </>
           )}
         </div>

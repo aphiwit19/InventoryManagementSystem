@@ -8,6 +8,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import StaffLayout from './pages/staff/StaffLayout';
 import StaffOrdersPage from './pages/staff/StaffOrdersPage';
+import StaffOrderDetailPage from './pages/staff/StaffOrderDetailPage';
 import StaffProfilePage from './pages/staff/ProfilePage';
 import AdminLayout from './pages/admin/AdminLayout';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
@@ -16,6 +17,7 @@ import CustomerWithdrawPage from './pages/customer/CustomerWithdrawPage';
 import CustomerPaymentPage from './pages/customer/CustomerPaymentPage';
 import CustomerOrderSuccessPage from './pages/customer/CustomerOrderSuccessPage';
 import CustomerOrdersPage from './pages/customer/CustomerOrdersPage';
+import CustomerOrderDetailPage from './pages/customer/CustomerOrderDetailPage';
 import CustomerProfilePage from './pages/customer/ProfilePage';
 import WithdrawPage from './pages/staff/WithdrawPage';
 import UsersPage from './pages/admin/UsersPage';
@@ -63,6 +65,7 @@ function App() {
             <Route element={<StaffLayout />}> 
               <Route index element={<StaffDashboard />} />
               <Route path="orders" element={<StaffOrdersPage />} />
+              <Route path="orders/:id" element={<StaffOrderDetailPage />} />
               <Route path="withdraw" element={<WithdrawPage />} />
               <Route path="profile" element={<StaffProfilePage />} />
             </Route>
@@ -72,6 +75,7 @@ function App() {
             <Route element={<CustomerLayout />}> 
               <Route index element={<CustomerDashboard />} />
               <Route path="orders" element={<CustomerOrdersPage />} />
+              <Route path="orders/:id" element={<CustomerOrderDetailPage />} />
               <Route path="withdraw" element={<CustomerWithdrawPage />} />
               <Route path="payment" element={<CustomerPaymentPage />} />
               <Route path="payment/success" element={<CustomerOrderSuccessPage />} />

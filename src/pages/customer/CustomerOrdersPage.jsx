@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
 
@@ -6,6 +7,7 @@ const statuses = ['รอดำเนินการ', 'กำลังดำเ
 
 export default function CustomerOrdersPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -248,6 +250,7 @@ export default function CustomerOrdersPage() {
               return (
                 <div
                   key={o.id}
+                  onClick={() => navigate(`/customer/orders/${o.id}`, { state: { order: o } })}
                   style={{
                     background: '#fff',
                     borderRadius: 18,
@@ -258,7 +261,8 @@ export default function CustomerOrdersPage() {
                     justifyContent: 'space-between',
                     gap: 16,
                     alignItems: 'stretch',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    cursor: 'pointer',
                   }}
                 >
                   <div style={{ flex: '1 1 220px', minWidth: 0 }}>

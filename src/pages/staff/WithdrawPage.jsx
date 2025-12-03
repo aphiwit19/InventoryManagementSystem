@@ -12,10 +12,12 @@ export default function WithdrawPage() {
   const [requestedBy, setRequestedBy] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [receivedAddress, setReceivedAddress] = useState('');
+  const [note, setNote] = useState('');
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
   const [deliveryMethod, setDeliveryMethod] = useState('shipping');
   const [submitting, setSubmitting] = useState(false);
   const [cartLoading, setCartLoading] = useState(true);
+
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function WithdrawPage() {
         requestedBy: requestedBy.trim(),
         receivedBy: receivedBy.trim(),
         receivedAddress: receivedAddress.trim(),
+        note: note.trim(),
         withdrawDate,
         total,
         createdByUid: user.uid,
@@ -242,13 +245,22 @@ export default function WithdrawPage() {
                 />
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่ผู้รับ {deliveryMethod==='pickup' ? '(ไม่บังคับเมื่อรับเอง)' : ''}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่รับของ {deliveryMethod==='pickup' ? '(ไม่บังคับเมื่อรับเอง)' : ''}</div>
                 <textarea
                   value={receivedAddress}
                   onChange={(e)=>setReceivedAddress(e.target.value)}
                   rows={3}
                   disabled={deliveryMethod==='pickup'}
                   style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical', background: deliveryMethod==='pickup' ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>หมายเหตุ (ถ้ามี)</div>
+                <textarea
+                  value={note}
+                  onChange={(e)=>setNote(e.target.value)}
+                  rows={2}
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical', boxSizing: 'border-box' }}
                 />
               </div>
               <div>

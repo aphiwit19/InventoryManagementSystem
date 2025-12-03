@@ -189,6 +189,11 @@ export default function AdminOrderDetailPage() {
                   ที่อยู่รับของ: {order.receivedAddress}
                 </div>
               )}
+              {order.note && (
+                <div style={{ fontSize: 13, color: '#4B5563', marginTop: 6, whiteSpace: 'pre-wrap' }}>
+                  หมายเหตุ: {order.note}
+                </div>
+              )}
             </div>
           </div>
 

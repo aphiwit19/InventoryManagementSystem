@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
 
@@ -6,6 +7,7 @@ const statuses = ['รอดำเนินการ', 'กำลังดำเ
 
 export default function StaffOrdersPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -55,28 +57,48 @@ export default function StaffOrdersPage() {
         <div style={{ background:'#fff', padding:40, borderRadius:8, textAlign:'center', color:'#777' }}>ไม่พบรายการ</div>
       ) : (
         <div style={{ background:'#fff', borderRadius:8, overflow:'hidden', boxShadow:'0 2px 4px rgba(0,0,0,0.1)' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1.1fr 1fr 1fr 1.6fr 1fr 1fr 1fr 1fr', padding:'12px 16px', background:'#f8f9fa', fontWeight:600 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'0.9fr 1fr 1.4fr 1.4fr 1.6fr 1.1fr 1.1fr 1fr 0.9fr', padding:'12px 16px', background:'#f8f9fa', fontWeight:600, fontSize:13 }}>
             <div>วันที่เบิก</div>
             <div>ผู้เบิก</div>
             <div>ผู้รับ</div>
-            <div>ที่อยู่ผู้รับ</div>
+            <div>สินค้า / จำนวน</div>
+            <div>ที่อยู่รับของ</div>
             <div>ขนส่ง</div>
             <div>Tracking</div>
             <div>สถานะ</div>
             <div>ราคารวม</div>
           </div>
-          {filtered.map(o => (
-            <div key={o.id} style={{ display:'grid', gridTemplateColumns:'1.1fr 1fr 1fr 1.6fr 1fr 1fr 1fr 1fr', padding:'12px 16px', borderTop:'1px solid #eee', alignItems:'center' }}>
-              <div>{new Date(o.withdrawDate?.seconds ? o.withdrawDate.seconds*1000 : o.withdrawDate).toLocaleDateString('th-TH')}</div>
-              <div>{o.requestedBy || '-'}</div>
-              <div>{o.receivedBy || '-'}</div>
-              <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{o.receivedAddress || '-'}</div>
-              <div>{o.shippingCarrier || '-'}</div>
-              <div style={{ fontFamily:'monospace' }}>{o.trackingNumber || '-'}</div>
-              <div>{o.shippingStatus || 'รอดำเนินการ'}</div>
-              <div>฿{(o.total || 0).toLocaleString()}</div>
-            </div>
-          ))}
+          {filtered.map(o => {
+            const items = o.items || [];
+            const itemsText = items.length
+              ? items.map(it => `${it.productName || ''} x${it.quantity || 0}`).join('\n')
+              : '-';
+            return (
+              <div
+                key={o.id}
+                onClick={() => navigate(`/staff/orders/${o.id}`, { state: { order: o } })}
+                style={{
+                  display:'grid',
+                  gridTemplateColumns:'0.9fr 1fr 1.4fr 1.4fr 1.6fr 1.1fr 1.1fr 1fr 0.9fr',
+                  padding:'12px 16px',
+                  borderTop:'1px solid #eee',
+                  alignItems:'center',
+                  cursor:'pointer',
+                  fontSize:13,
+                }}
+              >
+                <div>{new Date(o.withdrawDate?.seconds ? o.withdrawDate.seconds*1000 : o.withdrawDate).toLocaleDateString('th-TH')}</div>
+                <div>{o.requestedBy || '-'}</div>
+                <div>{o.receivedBy || '-'}</div>
+                <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{itemsText}</div>
+                <div style={{ whiteSpace:'pre-wrap', color:'#555' }}>{o.receivedAddress || '-'}</div>
+                <div>{o.shippingCarrier || '-'}</div>
+                <div style={{ fontFamily:'monospace' }}>{o.trackingNumber || '-'}</div>
+                <div>{o.shippingStatus || 'รอดำเนินการ'}</div>
+                <div>฿{(o.total || 0).toLocaleString()}</div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
