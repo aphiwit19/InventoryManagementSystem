@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getAllWithdrawals, updateWithdrawalShipping } from '../../services';
-
-const carriers = ['EMS', 'ไปรษณีย์ไทย', 'Kerry', 'J&T', 'Flash'];
-const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
-const pickupStatuses = ['รอดำเนินการ', 'รับของแล้ว'];
+import { getAllWithdrawals } from '../../services';
 
 export default function AdminOrdersPage() {
   const location = useLocation();
@@ -14,13 +10,10 @@ export default function AdminOrdersPage() {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState(initialSource); // all | customer | staff
   const [deliveryFilter, setDeliveryFilter] = useState('all'); // all | shipping | pickup
-  const [edits, setEdits] = useState({}); // { [id]: { shippingCarrier, trackingNumber, shippingStatus } }
-  const [savedOk, setSavedOk] = useState({}); // { [id]: true when last save succeeded }
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -49,18 +42,6 @@ export default function AdminOrdersPage() {
       const list = await getAllWithdrawals();
       setOrders(list);
       // initialize edit state
-      const init = {};
-      const savedInit = {};
-      list.forEach(o => {
-        init[o.id] = {
-          shippingCarrier: o.shippingCarrier || '',
-          trackingNumber: o.trackingNumber || '',
-          shippingStatus: o.shippingStatus || 'รอดำเนินการ',
-        };
-        savedInit[o.id] = !!(o.shippingCarrier && o.trackingNumber && o.shippingStatus);
-      });
-      setEdits(init);
-      setSavedOk(savedInit);
     } finally {
       setLoading(false);
     }
@@ -116,35 +97,6 @@ export default function AdminOrdersPage() {
     }
 
     return pages;
-  };
-
-  const canSave = (id) => {
-    const order = orders.find(o => o.id === id);
-    const e = edits[id] || {};
-    const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';
-    if (isPickup) {
-      return !!e.shippingStatus;
-    }
-    return (e.shippingCarrier && e.trackingNumber && e.shippingStatus);
-  };
-
-  const saveRow = async (id) => {
-    if (!canSave(id)) return;
-    const e = edits[id];
-    const order = orders.find(o => o.id === id);
-    setSavingId(id);
-    try {
-      await updateWithdrawalShipping(id, {
-        shippingCarrier: e.shippingCarrier,
-        trackingNumber: e.trackingNumber.trim(),
-        shippingStatus: e.shippingStatus,
-      }, order?.createdByUid);
-      // optimistic update without reload
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, ...e } : o));
-      setSavedOk(prev => ({ ...prev, [id]: true }));
-    } finally {
-      setSavingId(null);
-    }
   };
 
   // (UX revert) no counters in filters

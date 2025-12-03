@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
 import { useAuth } from '../../auth/AuthContext';
-import { getAllProducts, addToCart as addToCartService, migrateLocalStorageCart, getCart } from '../../services';
-import { Link, useNavigate } from 'react-router-dom';
+import { getAllProducts, addToCart as addToCartService, migrateLocalStorageCart } from '../../services';
 
 export default function CustomerDashboard() {
-  const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,14 +11,12 @@ export default function CustomerDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
   const [showQtyPrompt, setShowQtyPrompt] = useState(false);
-  const [promptProduct, setPromptProduct] = useState(null);
+  const [promptProduct] = useState(null);
   const [promptQty, setPromptQty] = useState('1');
   const [showDetail, setShowDetail] = useState(false);
   const [detailProduct, setDetailProduct] = useState(null);
-  const [showMenu, setShowMenu] = useState(false);
   const [cartLoading, setCartLoading] = useState({}); // { productId: true/false }
   const [cartError, setCartError] = useState('');
-  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -52,9 +46,6 @@ export default function CustomerDashboard() {
         await migrateLocalStorageCart(user.uid, perUserKey, 'customer');
         
         // Load cart count
-        const cartItems = await getCart(user.uid, 'customer');
-        const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        setCartCount(totalItems);
       } catch (error) {
         console.warn('Cart migration/load failed:', error);
       }
@@ -103,10 +94,7 @@ export default function CustomerDashboard() {
         stock: available
       }, 'customer');
       
-      // Update cart count
-      const cartItems = await getCart(user.uid, 'customer');
-      const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      setCartCount(totalItems);
+      // Notify layout to update cart count
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('customer-cart-updated'));
       }
@@ -117,12 +105,6 @@ export default function CustomerDashboard() {
       // Clear loading state for this specific product
       setCartLoading(prev => ({ ...prev, [product.id]: false }));
     }
-  };
-
-  const openQtyPrompt = (product) => {
-    setPromptProduct(product);
-    setPromptQty('1');
-    setShowQtyPrompt(true);
   };
 
   const confirmAddToCart = async () => {
@@ -145,11 +127,7 @@ export default function CustomerDashboard() {
         stock: available
       }, 'customer');
       
-      // Update cart count
-      const cartItems = await getCart(user.uid, 'customer');
-      const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      setCartCount(totalItems);
-      
+      // Close prompt; cart count will be updated via event in finally
       setShowQtyPrompt(false);
     } catch (error) {
       console.error('Error adding to cart:', error);

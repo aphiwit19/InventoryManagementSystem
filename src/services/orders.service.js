@@ -1,6 +1,5 @@
 // Orders service layer
 import { db, collection, doc, Timestamp, runTransaction, collectionGroup, getDocs, query, orderBy, getDoc, updateDoc } from '../repositories/firestore';
-import { addInventoryHistory } from './inventory.service';
 
 export async function createWithdrawal(payload) {
   try {

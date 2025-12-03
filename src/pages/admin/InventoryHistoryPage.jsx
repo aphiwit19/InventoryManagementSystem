@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getProductById, getInventoryHistory } from '../../services';
 
 export default function InventoryHistoryPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,18 +26,6 @@ export default function InventoryHistoryPage() {
     };
     loadData();
   }, [id]);
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('th-TH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const formatDateOnly = (timestamp) => {
     if (!timestamp) return '';

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
@@ -30,7 +30,7 @@ export default function StaffOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user?.uid) return;
     setLoading(true);
     try {
@@ -39,9 +39,11 @@ export default function StaffOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user?.uid]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = orders.filter(o => {
     const hit = (

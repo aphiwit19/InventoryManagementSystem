@@ -12,9 +12,7 @@ export default function CustomerWithdrawPage() {
   const [items, setItems] = useState([]);
   const [requestedBy, setRequestedBy] = useState('');
   const [requestedAddress, setRequestedAddress] = useState('');
-  const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
   const [cartLoading, setCartLoading] = useState(true);
-  const [userDataLoading, setUserDataLoading] = useState(true);
   const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
 
   useEffect(() => {
@@ -35,7 +33,6 @@ export default function CustomerWithdrawPage() {
   useEffect(() => {
     const loadUserData = async () => {
       if (!user?.uid) {
-        setUserDataLoading(false);
         return;
       }
       
@@ -72,11 +69,11 @@ export default function CustomerWithdrawPage() {
           setRequestedBy(user.email);
         }
       } finally {
-        setUserDataLoading(false);
+        // no-op
       }
     };
     loadUserData();
-  }, [user?.uid, profile]);
+  }, [user?.uid, user?.email, profile]);
 
   // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {

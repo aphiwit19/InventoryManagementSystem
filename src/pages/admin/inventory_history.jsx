@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { getAllProducts, getInventoryHistory } from '../../services';
 
 export default function InventoryHistoryIndex() {
-  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [history, setHistory] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -19,7 +18,6 @@ export default function InventoryHistoryIndex() {
       setLoadingHistory(true);
       try {
         const list = await getAllProducts();
-        setProducts(list);
         // load inventory history for all products
         const allRows = [];
         for (const p of list) {

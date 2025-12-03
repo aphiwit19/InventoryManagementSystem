@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 import { addProduct } from '../../services';
 
 import { storage } from '../../firebase';
@@ -11,11 +9,10 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile } = useAuth();
-  
+
   // ตรวจสอบว่าเป็นหน้าเพิ่มสินค้าหรือไม่
   const isAddProductPage = location.pathname === '/admin/addproduct';
-  
+
   // State สำหรับฟอร์มเพิ่มสินค้า
   const [formData, setFormData] = useState({
     productName: '',

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProductById, updateProduct } from '../../services';
-import { Link } from 'react-router-dom';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 

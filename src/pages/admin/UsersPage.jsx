@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../auth/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
 import { getAllUsers, updateUserRole } from '../../services';
-import { Link, useLocation } from 'react-router-dom';
 
 export default function UsersPage() {
-  const location = useLocation();
-  const { user, profile } = useAuth();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,12 +74,7 @@ export default function UsersPage() {
     }
   };
 
-  const isActiveLink = (path) => location.pathname === path;
-
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;

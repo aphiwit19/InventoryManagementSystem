@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-
-import { useAuth } from '../../auth/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
-import { getAllProducts, deleteProduct, updateProductQuantity, getInventoryHistory, isLowStock } from '../../services';
-import { Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { getAllProducts, deleteProduct, updateProductQuantity, isLowStock } from '../../services';
 
 export default function ProductsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const { user, profile } = useAuth();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +16,6 @@ export default function ProductsPage() {
   const [quantityChange, setQuantityChange] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-  const [detailProduct, setDetailProduct] = useState(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyRows, setHistoryRows] = useState([]);
   const lowStock = filteredProducts.filter(p => isLowStock(p));
 
   useEffect(() => {
@@ -127,18 +114,6 @@ export default function ProductsPage() {
     setSelectedProduct(product);
     setQuantityChange('');
     setShowQuantityModal(true);
-  };
-
-  const openHistory = async (product) => {
-    setSelectedProduct(product);
-    setShowHistory(true);
-    setHistoryLoading(true);
-    try {
-      const rows = await getInventoryHistory(product.id);
-      setHistoryRows(rows);
-    } finally {
-      setHistoryLoading(false);
-    }
   };
 
   const handleUpdateQuantity = async () => {

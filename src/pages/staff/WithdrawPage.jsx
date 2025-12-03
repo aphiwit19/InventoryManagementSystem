@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 import { createWithdrawal, getAllProducts, getCart, updateCartItem, removeFromCart, clearCart, migrateLocalStorageCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 

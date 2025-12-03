@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
@@ -15,7 +15,7 @@ export default function CustomerOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user?.uid) return;
     setLoading(true);
     try {
@@ -34,9 +34,11 @@ export default function CustomerOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user?.uid]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = orders.filter(o => {
     const hit = (
