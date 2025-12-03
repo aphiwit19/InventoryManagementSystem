@@ -118,49 +118,162 @@ export default function InventoryHistoryIndex() {
   useEffect(() => { setPage(1); }, [typeFilter, fromDate, toDate, search]);
 
   return (
-    <div style={{ padding: 20 }}>
-      <div style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>ประวัติสินค้าเข้า–ออกคลัง (ทั้งหมด)</h1>
+    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
+      {/* Header */}
+      <div
+        style={{
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+          padding: '20px 24px',
+          borderRadius: 18,
+          marginBottom: 20,
+          boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+          border: '1px solid rgba(255,255,255,0.9)',
+        }}
+      >
+        <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>ประวัติสินค้าเข้า–ออกคลัง</h1>
+        <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>ดูประวัติการเคลื่อนไหวสินค้าทั้งหมด</div>
       </div>
 
       {/* Filters */}
-      <div style={{ background:'#fff', borderRadius: 8, padding: 16, boxShadow:'0 1px 3px rgba(0,0,0,0.08)', marginBottom: 16 }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 160px 160px 160px', gap:12, alignItems:'center' }}>
-          <div style={{ display:'flex', gap:8 }}>
+      <div
+        style={{
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: 18,
+          padding: '20px 24px',
+          boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+          border: '1px solid rgba(255,255,255,0.9)',
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto auto', gap: 14, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="ค้นหาชื่อสินค้า"
-              style={{ flex:1, padding:'10px 12px', border:'1px solid #ddd', borderRadius:6 }}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '2px solid #e2e8f0',
+                borderRadius: 12,
+                fontSize: 14,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
-            <button
-              onClick={() => { setSearch(''); setFromDate(''); setToDate(''); setTypeFilter('all'); }}
-              style={{ padding:'10px 12px', border:'1px solid #ddd', background:'#fff', borderRadius:6, cursor:'pointer', whiteSpace:'nowrap' }}
-            >ล้าง</button>
           </div>
-          <input type="date" value={fromDate} onChange={e=>setFromDate(e.target.value)} style={{ padding:'10px 12px', border:'1px solid #ddd', borderRadius:6 }} />
-          <input type="date" value={toDate} onChange={e=>setToDate(e.target.value)} style={{ padding:'10px 12px', border:'1px solid #ddd', borderRadius:6 }} />
-          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:'10px 12px', border:'1px solid #ddd', borderRadius:6 }}>
+          <button
+            onClick={() => { setSearch(''); setFromDate(''); setToDate(''); setTypeFilter('all'); }}
+            style={{
+              padding: '12px 20px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+              color: '#fff',
+              borderRadius: 12,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(100,116,139,0.3)',
+            }}
+          >
+            ล้าง
+          </button>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={e => setFromDate(e.target.value)}
+            style={{
+              padding: '12px 16px',
+              border: '2px solid #e2e8f0',
+              borderRadius: 12,
+              fontSize: 14,
+              outline: 'none',
+              color: '#1e40af',
+              fontWeight: 500,
+            }}
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={e => setToDate(e.target.value)}
+            style={{
+              padding: '12px 16px',
+              border: '2px solid #e2e8f0',
+              borderRadius: 12,
+              fontSize: 14,
+              outline: 'none',
+              color: '#1e40af',
+              fontWeight: 500,
+            }}
+          />
+          <select
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+            style={{
+              padding: '12px 16px',
+              border: '2px solid #e2e8f0',
+              borderRadius: 12,
+              fontSize: 14,
+              outline: 'none',
+              color: '#1e40af',
+              fontWeight: 500,
+              background: '#fff',
+              cursor: 'pointer',
+              minWidth: 140,
+            }}
+          >
             <option value="all">ทุกประเภท</option>
             <option value="in">เข้า (IN)</option>
             <option value="out">ออก (OUT)</option>
           </select>
         </div>
         {loadingProducts && (
-          <div style={{ marginTop:8, color:'#666' }}>กำลังโหลดสินค้า...</div>
+          <div style={{ marginTop: 12, color: '#64748b', fontSize: 14 }}>กำลังโหลดสินค้า...</div>
         )}
       </div>
 
       {/* Summary */}
       {!loadingHistory && filteredHistory.length > 0 && (
-        <div style={{ display:'flex', gap:8, marginBottom: 12, flexWrap:'wrap' }}>
-          <span style={{ background:'#e8f5e9', color:'#2e7d32', padding:'6px 10px', borderRadius:14, fontWeight:600 }}>IN ฿{totalIn.toLocaleString()}</span>
-          <span style={{ background:'#fdecea', color:'#c62828', padding:'6px 10px', borderRadius:14, fontWeight:600 }}>OUT ฿{totalOut.toLocaleString()}</span>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <span
+            style={{
+              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              color: '#fff',
+              padding: '10px 20px',
+              borderRadius: 12,
+              fontWeight: 600,
+              fontSize: 14,
+              boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
+            }}
+          >
+            📥 IN ฿{totalIn.toLocaleString()}
+          </span>
+          <span
+            style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: '#fff',
+              padding: '10px 20px',
+              borderRadius: 12,
+              fontWeight: 600,
+              fontSize: 14,
+              boxShadow: '0 2px 8px rgba(239,68,68,0.3)',
+            }}
+          >
+            📤 OUT ฿{totalOut.toLocaleString()}
+          </span>
         </div>
       )}
 
       {/* List */}
-      <div style={{ background:'#fff', borderRadius: 8, padding: 8, boxShadow:'0 1px 3px rgba(0,0,0,0.08)' }}>
+      <div
+        style={{
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: 18,
+          boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
+          border: '1px solid rgba(255,255,255,0.9)',
+          overflow: 'hidden',
+        }}
+      >
         {loadingHistory ? (
           <div style={{ padding: 20, color:'#666' }}>กำลังโหลดประวัติ...</div>
         ) : pageItems.length === 0 ? (
@@ -192,17 +305,82 @@ export default function InventoryHistoryIndex() {
               })}
             </div>
 
-            {/* Pagination */}
-            <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, padding:'8px 0 12px' }}>
-              <button disabled={currentPage === 1} onClick={()=>setPage(p=>Math.max(1,p-1))} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #ddd', background: currentPage===1?'#eee':'#fff', cursor: currentPage===1?'not-allowed':'pointer' }}>Previous</button>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button key={i} onClick={()=>setPage(i+1)} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #ddd', background: currentPage===i+1?'#1976d2':'#fff', color: currentPage===i+1?'#fff':'#111' }}>{i+1}</button>
-              ))}
-              <button disabled={currentPage === totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #ddd', background: currentPage===totalPages?'#eee':'#fff', cursor: currentPage===totalPages?'not-allowed':'pointer' }}>Next</button>
-            </div>
           </>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 8,
+            padding: '20px 24px',
+            marginTop: 16,
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            borderRadius: 18,
+            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+            border: '1px solid rgba(255,255,255,0.9)',
+          }}
+        >
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            style={{
+              padding: '10px 18px',
+              border: '2px solid #e2e8f0',
+              borderRadius: 10,
+              background: currentPage === 1 ? '#f1f5f9' : '#fff',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              color: currentPage === 1 ? '#94a3b8' : '#1e40af',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Previous
+          </button>
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i + 1)}
+              style={{
+                padding: '10px 16px',
+                border: currentPage === i + 1 ? 'none' : '2px solid #e2e8f0',
+                borderRadius: 10,
+                background: currentPage === i + 1
+                  ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                  : '#fff',
+                color: currentPage === i + 1 ? '#fff' : '#374151',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600,
+                boxShadow: currentPage === i + 1 ? '0 2px 8px rgba(37,99,235,0.4)' : 'none',
+                minWidth: 44,
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            style={{
+              padding: '10px 18px',
+              border: '2px solid #e2e8f0',
+              borderRadius: 10,
+              background: currentPage === totalPages ? '#f1f5f9' : '#fff',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              color: currentPage === totalPages ? '#94a3b8' : '#1e40af',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -197,26 +197,28 @@ export default function StaffDashboard() {
             <div style={{ position: "relative" }}>
               <input
                 type="text"
-                placeholder="Search by name"
+                placeholder="ค้นหาชื่อสินค้า"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
-                  padding: "8px 32px 8px 12px",
+                  padding: "10px 40px 10px 16px",
                   borderRadius: 999,
-                  border: "1px solid rgba(255,255,255,0.4)",
-                  background: "rgba(15,23,42,0.4)",
-                  color: "#ffffffff",
-                  fontSize: 13,
+                  border: "2px solid #e2e8f0",
+                  background: "#fff",
+                  color: "#374151",
+                  fontSize: 14,
                   width: "240px",
+                  outline: "none",
                 }}
               />
               <span
                 style={{
                   position: "absolute",
-                  right: 10,
+                  right: 14,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#9CA3AF",
+                  color: "#3b82f6",
+                  fontSize: 16,
                 }}
               >
                 🔍

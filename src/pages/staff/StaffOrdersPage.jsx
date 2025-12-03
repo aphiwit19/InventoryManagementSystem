@@ -36,9 +36,12 @@ export default function StaffOrdersPage() {
   });
 
   return (
-    <div style={{ padding: 20 }}>
-      <div style={{ background:'#fff', padding:20, borderRadius:8, marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center', boxShadow:'0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ margin:0, color:'#333' }}>ติดตามสถานะคำสั่งเบิก</h1>
+    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>ติดตามสถานะคำสั่งเบิก</h1>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>ตรวจสอบสถานะการจัดส่งและติดตามคำสั่งเบิกของคุณ</div>
+        </div>
         <div style={{ display:'flex', gap:12, alignItems:'center' }}>
           <div style={{ position:'relative' }}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ค้นหา (ขนส่ง/Tracking)" style={{ padding:'10px 40px 10px 12px', borderRadius:20, border:'1px solid #ddd', width:280 }} />
@@ -52,12 +55,12 @@ export default function StaffOrdersPage() {
       </div>
 
       {loading ? (
-        <div style={{ background:'#fff', padding:40, borderRadius:8, textAlign:'center' }}>กำลังโหลด...</div>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 40, borderRadius: 18, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>กำลังโหลด...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ background:'#fff', padding:40, borderRadius:8, textAlign:'center', color:'#777' }}>ไม่พบรายการ</div>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 40, borderRadius: 18, textAlign: 'center', color: '#64748b', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>ไม่พบรายการ</div>
       ) : (
-        <div style={{ background:'#fff', borderRadius:8, overflow:'hidden', boxShadow:'0 2px 4px rgba(0,0,0,0.1)' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'0.9fr 1fr 1.4fr 1.4fr 1.6fr 1.1fr 1.1fr 1fr 0.9fr', padding:'12px 16px', background:'#f8f9fa', fontWeight:600, fontSize:13 }}>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1fr 1.4fr 1.4fr 1.6fr 1.1fr 1.1fr 1fr 0.9fr', padding: '14px 20px', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', fontWeight: 600, fontSize: 13, color: '#1e40af' }}>
             <div>วันที่เบิก</div>
             <div>ผู้เบิก</div>
             <div>ผู้รับ</div>

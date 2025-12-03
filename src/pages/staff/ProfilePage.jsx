@@ -192,42 +192,32 @@ export default function ProfilePage() {
         {/* Header */}
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            padding: '20px 24px',
+            borderRadius: 18,
             marginBottom: 20,
-            gap: 12,
+            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+            border: '1px solid rgba(255,255,255,0.9)',
           }}
         >
-          <div
+          <h1
             style={{
-              backgroundColor: '#fff',
-              padding: '18px 22px',
-              borderRadius: '16px',
-              boxShadow: '0 4px 16px rgba(15,23,42,0.10)',
-              flex: 1,
+              margin: 0,
+              color: '#1e40af',
+              fontSize: 24,
+              fontWeight: 700,
             }}
           >
-            <h1
-              style={{
-                margin: 0,
-                color: '#0f172a',
-                fontSize: '26px',
-                fontWeight: '700',
-                letterSpacing: '0.03em',
-              }}
-            >
-              โปรไฟล์พนักงาน
-            </h1>
-            <p
-              style={{
-                margin: '8px 0 0 0',
-                color: '#6b7280',
-                fontSize: '14px',
-              }}
-            >
-              ตรวจสอบและจัดการข้อมูลบัญชีของพนักงานในระบบ
-            </p>
+            โปรไฟล์พนักงาน
+          </h1>
+          <div
+            style={{
+              fontSize: 14,
+              color: '#3b82f6',
+              marginTop: 6,
+            }}
+          >
+            ตรวจสอบและจัดการข้อมูลบัญชีของพนักงานในระบบ
           </div>
         </div>
 
@@ -408,57 +398,69 @@ export default function ProfilePage() {
                   >
                     ข้อมูลบัญชี
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 5,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                        }}
-                      >
-                        อีเมล
-                      </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {/* อีเมล */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
                       <div
                         style={{
-                          padding: '10px 14px',
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          fontSize: '14px',
-                          color: '#111827',
-                          border: '1px solid #e5e7eb',
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
                         }}
                       >
-                        {email || '-'}
+                        📧
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>อีเมล</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{email || '-'}</div>
                       </div>
                     </div>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 5,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                        }}
-                      >
-                        Role ในระบบ
-                      </label>
+
+                    {/* Role */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
                       <div
                         style={{
-                          padding: '10px 14px',
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          fontSize: '14px',
-                          color: '#111827',
-                          border: '1px solid #e5e7eb',
-                          display: 'inline-flex',
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: 8,
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
                         }}
                       >
+                        🛡️
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>สิทธิ์การใช้งาน</div>
                         <span
                           style={{
                             display: 'inline-block',
@@ -474,29 +476,37 @@ export default function ProfilePage() {
                         </span>
                       </div>
                     </div>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 5,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                        }}
-                      >
-                        วันที่สร้างบัญชี
-                      </label>
+
+                    {/* วันที่สร้างบัญชี */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
                       <div
                         style={{
-                          padding: '10px 14px',
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          fontSize: '14px',
-                          color: '#111827',
-                          border: '1px solid #e5e7eb',
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
                         }}
                       >
-                        {formatDate(createdAt)}
+                        📅
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>วันที่สร้างบัญชี</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{formatDate(createdAt)}</div>
                       </div>
                     </div>
                   </div>
@@ -523,61 +533,74 @@ export default function ProfilePage() {
                   </div>
                   <div
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: 14,
                     }}
                   >
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 5,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                        }}
-                      >
-                        เบอร์โทรศัพท์
-                      </label>
+                    {/* เบอร์โทรศัพท์ */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
                       <div
                         style={{
-                          padding: '10px 14px',
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          fontSize: '14px',
-                          color: '#111827',
-                          border: '1px solid #e5e7eb',
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
                         }}
                       >
-                        {phone || '-'}
+                        📱
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>เบอร์โทรศัพท์</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{phone || '-'}</div>
                       </div>
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 5,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                        }}
-                      >
-                        ที่อยู่
-                      </label>
+
+                    {/* ที่อยู่ */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
                       <div
                         style={{
-                          padding: '10px 14px',
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          fontSize: '14px',
-                          color: '#111827',
-                          border: '1px solid #e5e7eb',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
                         }}
                       >
-                        {address || '-'}
+                        📍
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>ที่อยู่</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{address || '-'}</div>
                       </div>
                     </div>
                   </div>

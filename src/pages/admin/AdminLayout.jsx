@@ -18,215 +18,156 @@ const AdminLayout = () => {
     return location.pathname === path;
   };
 
+  const isOrdersActive = (source) => {
+    return location.pathname === '/admin/orders' && currentOrdersSource === source;
+  };
+
+  // Style สำหรับ Link ที่ active
+  const getLinkStyle = (isActive) => ({
+    marginTop: 4,
+    padding: '10px 14px',
+    borderRadius: 999,
+    background: isActive
+      ? 'linear-gradient(135deg, #2563eb, #4f46e5)'
+      : 'transparent',
+    color: isActive ? '#f9fafb' : '#111827',
+    textDecoration: 'none',
+    display: 'block',
+    fontWeight: 500,
+    fontSize: 14,
+    transition: 'background 0.18s ease, color 0.18s ease, transform 0.18s ease',
+    boxShadow: isActive
+      ? '0 8px 18px rgba(37,99,235,0.5)'
+      : 'none',
+  });
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      {/* Sidebar */}
-      <div style={{
-        width: '250px',
-        backgroundColor: '#fff',
-        padding: '20px',
-        boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
+    <div
+      style={{
         display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        position: 'sticky',
-        top: 0,
-        alignSelf: 'flex-start',
-        height: '100vh',
-        overflowY: 'auto',
-        flexShrink: 0
-      }}>
-        <h2 style={{ marginBottom: '30px', color: '#333' }}>Admin Panel</h2>
-        <Link
-          to="/admin/dashboard"
+        minHeight: '100vh',
+        background:
+          'radial-gradient(circle at top left, #ffffff 0%, #e5f0ff 40%, #d6e4ff 70%, #c7d2fe 100%)'
+      }}
+    >
+      {/* Sidebar */}
+      <div
+        style={{
+          width: '240px',
+          padding: '22px 18px 24px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          position: 'sticky',
+          top: 0,
+          alignSelf: 'flex-start',
+          height: '100vh',
+          overflowY: 'auto',
+          flexShrink: 0,
+          borderRight: '1px solid rgba(148,163,184,0.35)',
+          boxShadow: '6px 0 18px rgba(148,163,184,0.25)',
+          backgroundColor: 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(6px)',
+        }}
+      >
+        {/* Brand Header */}
+        <div
           style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/dashboard') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/dashboard') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/dashboard') ? 'bold' : 'normal'
+            background:
+              'linear-gradient(145deg, #1d4ed8 0%, #2563eb 35%, #38bdf8 80%, #4f46e5 100%)',
+            borderRadius: 20,
+            padding: '18px 16px',
+            marginBottom: 18,
+            boxShadow: '0 14px 28px rgba(15,23,42,0.35)',
+            color: '#f9fafb',
           }}
         >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/dashboard') ? 'white' : '#888'
-          }} />
-          <span>แดชบอร์ด</span>
+          <div
+            style={{
+              fontSize: 12,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              opacity: 0.9,
+              marginBottom: 4,
+            }}
+          >
+            ADMIN SPACE
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+            ADMIN
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>
+            {profile?.displayName || 'ผู้ดูแลระบบ'}
+          </div>
+        </div>
+
+        {/* Menu Links */}
+        <Link to="/admin/dashboard" style={getLinkStyle(isActiveLink('/admin/dashboard'))}>
+          แดชบอร์ด
         </Link>
-        <Link
-          to="/admin/alerts"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/alerts') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/alerts') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/alerts') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/alerts') ? 'white' : '#888'
-          }} />
-          <span>แจ้งเตือนสินค้า</span>
+        <Link to="/admin/alerts" style={getLinkStyle(isActiveLink('/admin/alerts'))}>
+          แจ้งเตือนสินค้า
         </Link>
-        <Link
-          to="/admin/products"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/products') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/products') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/products') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/products') ? 'white' : '#888'
-          }} />
-          <span>จัดการสินค้า</span>
+        <Link to="/admin/products" style={getLinkStyle(isActiveLink('/admin/products'))}>
+          จัดการสินค้า
         </Link>
-        <Link
-          to="/admin/orders?source=customer"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? '#4CAF50' : '#f0f0f0',
-            color: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'customer') ? 'white' : '#888'
-          }} />
-          <span>รายการคำสั่งซื้อ</span>
+        <Link to="/admin/orders?source=customer" style={getLinkStyle(isOrdersActive('customer'))}>
+          รายการคำสั่งซื้อ
         </Link>
-        <Link
-          to="/admin/orders?source=staff"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? '#4CAF50' : '#f0f0f0',
-            color: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: (location.pathname === '/admin/orders' && currentOrdersSource === 'staff') ? 'white' : '#888'
-          }} />
-          <span>รายการคำสั่งเบิก</span>
+        <Link to="/admin/orders?source=staff" style={getLinkStyle(isOrdersActive('staff'))}>
+          รายการคำสั่งเบิก
         </Link>
-        <Link
-          to="/admin/users"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/users') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/users') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/users') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/users') ? 'white' : '#888'
-          }} />
-          <span>จัดการสิทธิ์ผู้ใช้</span>
+        <Link to="/admin/users" style={getLinkStyle(isActiveLink('/admin/users'))}>
+          จัดการสิทธิ์ผู้ใช้
         </Link>
-        {/* เมนูเพิ่มสินค้าใหม่ถูกย้ายไปรวมในหน้า "จัดการสินค้า" ผ่านปุ่ม + เพิ่มสินค้าใหม่ */}
-        <Link
-          to="/admin/inventory_history"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/inventory_history') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/inventory_history') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/inventory_history') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/inventory_history') ? 'white' : '#888'
-          }} />
-          <span>จัดการสินค้าเข้า/ออก</span>
+        <Link to="/admin/inventory_history" style={getLinkStyle(isActiveLink('/admin/inventory_history'))}>
+          จัดการสินค้าเข้า/ออก
         </Link>
-        <Link
-          to="/admin/profile"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/profile') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/profile') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/profile') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/profile') ? 'white' : '#888'
-          }} />
-          <span>โปรไฟล์</span>
+        <Link to="/admin/profile" style={getLinkStyle(isActiveLink('/admin/profile'))}>
+          โปรไฟล์
         </Link>
-        {/* moved logout to profile menu */}
+
+        {/* Logout Button */}
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <button
+            onClick={() => signOut(auth)}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: 999,
+              border: 'none',
+              background:
+                'linear-gradient(135deg, #f97373 0%, #ef4444 40%, #b91c1c 100%)',
+              color: '#fef2f2',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 8px 18px rgba(248,113,113,0.55)',
+            }}
+          >
+            <span>🚪</span>
+            <span>ออกจากระบบ</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, height: '100vh', overflowY: 'auto' }}>
+      <div
+        style={{
+          flex: 1,
+          height: '100vh',
+          overflowY: 'auto',
+          padding: '0 20px 20px 20px',
+          boxSizing: 'border-box',
+          borderLeft: '1px solid rgba(229,231,235,0.7)',
+          boxShadow: 'inset 8px 0 18px rgba(148,163,184,0.18)',
+        }}
+      >
         <Outlet />
       </div>
     </div>

@@ -103,288 +103,313 @@ export default function EditProductPage() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '8px',
-        padding: '24px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <h2 style={{ marginBottom: '10px', fontSize: '28px', color: '#333' }}>แก้ไขข้อมูลสินค้า</h2>
-        <p style={{ marginBottom: '30px', color: '#666', fontSize: '14px' }}>อัพเดตข้อมูลสินค้าของคุณ</p>
-        
-        {error && (
-          <div style={{
-            padding: '12px',
-            backgroundColor: '#f8d7da',
-            color: '#721c24',
-            borderRadius: 4,
-            marginBottom: 16
-          }}>
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label htmlFor="productName" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-              ชื่อสินค้า *
-            </label>
-            <input
-              type="text"
-              id="productName"
-              name="productName"
-              value={formData.productName}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: 15,
-                border: '2px solid #e0e0e0',
-                borderRadius: 8,
-                outline: 'none',
-                transition: 'border-color 0.3s ease',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
-          </div>
+    <div
+      style={{
+        padding: '32px 24px',
+        background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+        minHeight: '100vh',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <div
+          style={{
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            borderRadius: 18,
+            padding: '28px 32px',
+            boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
+            border: '1px solid rgba(255,255,255,0.9)',
+          }}
+        >
+          <h2 style={{ marginBottom: 8, fontSize: 26, color: '#1e40af', fontWeight: 700 }}>แก้ไขข้อมูลสินค้า</h2>
+          <p style={{ marginBottom: 28, color: '#3b82f6', fontSize: 14 }}>อัพเดตข้อมูลสินค้าของคุณ</p>
 
-          <div>
-            <label htmlFor="description" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-              คำอธิบายสินค้า *
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              rows={4}
+          {error && (
+            <div
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: 15,
-                border: '2px solid #e0e0e0',
-                borderRadius: 8,
-                resize: 'vertical',
-                outline: 'none',
-                transition: 'border-color 0.3s ease',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit'
+                padding: '14px 18px',
+                background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                color: '#b91c1c',
+                borderRadius: 12,
+                marginBottom: 20,
+                border: '1px solid #fca5a5',
               }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
-          </div>
+            >
+              {error}
+            </div>
+          )}
 
-          <div>
-            <label htmlFor="purchaseLocation" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-              ที่ตั้งซื้อ / แหล่งที่ซื้อ
-            </label>
-            <input
-              type="text"
-              id="purchaseLocation"
-              name="purchaseLocation"
-              value={formData.purchaseLocation}
-              onChange={handleChange}
-              placeholder="เช่น ร้าน A สาขา B หรือแหล่งที่มา"
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: 15,
-                border: '2px solid #e0e0e0',
-                borderRadius: 8,
-                outline: 'none',
-                transition: 'border-color 0.3s ease',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <label htmlFor="costPrice" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-                ราคา (บาท) *
+          <form onSubmit={handleSubmit}>
+            {/* ชื่อสินค้า - เต็มแถว */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                ชื่อสินค้า *
               </label>
               <input
-                type="number"
-                id="costPrice"
-                name="costPrice"
-                value={formData.costPrice}
+                type="text"
+                name="productName"
+                value={formData.productName}
                 onChange={handleChange}
                 required
-                min="0"
-                step="0.01"
-                placeholder="กรอกราคาสินค้า"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   fontSize: 15,
-                  border: '2px solid #e0e0e0',
-                  borderRadius: 8,
+                  border: '2px solid #e2e8f0',
+                  borderRadius: 12,
                   outline: 'none',
-                  transition: 'border-color 0.3s ease',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
               />
             </div>
 
-            <div>
-              <label htmlFor="quantity" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-                จำนวนสินค้า *
+            {/* คำอธิบาย - เต็มแถว */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                คำอธิบายสินค้า *
               </label>
-              <input
-                type="number"
-                id="quantity"
-                name="quantity"
-                value={formData.quantity}
+              <textarea
+                name="description"
+                value={formData.description}
                 onChange={handleChange}
                 required
-                min="0"
+                rows={4}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   fontSize: 15,
-                  border: '2px solid #e0e0e0',
-                  borderRadius: 8,
+                  border: '2px solid #e2e8f0',
+                  borderRadius: 12,
+                  resize: 'vertical',
                   outline: 'none',
-                  transition: 'border-color 0.3s ease',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s',
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
               />
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="image" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-              รูปภาพสินค้า
-            </label>
-            <input
-              type="file"
-              id="image"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                setUploadError('');
-                if (!file) return;
-                try {
-                  setUploading(true);
-                  const path = `products/${Date.now()}_${file.name}`;
-                  const ref = storageRef(storage, path);
-                  await uploadBytes(ref, file);
-                  const url = await getDownloadURL(ref);
-                  setFormData(prev => ({ ...prev, image: url }));
-                  setImagePreview(url);
-                } catch (err) {
-                  console.error(err);
-                  setUploadError('อัพโหลดรูปภาพล้มเหลว');
-                } finally {
-                  setUploading(false);
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                fontSize: 15,
-                border: '2px solid #e0e0e0',
-                borderRadius: 8,
-                outline: 'none',
-                transition: 'border-color 0.3s ease',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
-            {uploading && <div style={{ marginTop: 8, color: '#666' }}>กำลังอัพโหลดรูปภาพ...</div>}
-            {uploadError && <div style={{ marginTop: 8, color: '#c00' }}>{uploadError}</div>}
-            {imagePreview && (
-              <div style={{ marginTop: 12 }}>
-                <img src={imagePreview} alt="preview" style={{ maxWidth: '200px', borderRadius: 6, border: '1px solid #eee' }} />
+            {/* ที่ตั้งซื้อ - เต็มแถว */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                ที่ตั้งซื้อ / แหล่งที่ซื้อ
+              </label>
+              <input
+                type="text"
+                name="purchaseLocation"
+                value={formData.purchaseLocation}
+                onChange={handleChange}
+                placeholder="เช่น ร้าน A สาขา B หรือแหล่งที่มา"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  fontSize: 15,
+                  border: '2px solid #e2e8f0',
+                  borderRadius: 12,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+              />
+            </div>
+
+            {/* ราคา + จำนวน - 2 คอลัมน์ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                  ราคา (บาท) *
+                </label>
+                <input
+                  type="number"
+                  name="costPrice"
+                  value={formData.costPrice}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    border: '2px solid #e2e8f0',
+                    borderRadius: 12,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                  onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                />
               </div>
-            )}
-          </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                  จำนวนสินค้า *
+                </label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    border: '2px solid #e2e8f0',
+                    borderRadius: 12,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                  onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                />
+              </div>
+            </div>
 
-          <div>
-            <label htmlFor="addDate" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-              วันที่เพิ่มสินค้า *
-            </label>
-            <input
-              type="date"
-              id="addDate"
-              name="addDate"
-              value={formData.addDate}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: 15,
-                border: '2px solid #e0e0e0',
-                borderRadius: 8,
-                outline: 'none',
-                transition: 'border-color 0.3s ease',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
-          </div>
+            {/* รูปภาพ + วันที่ + ปุ่ม - 2 คอลัมน์ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+              {/* คอลัมน์ซ้าย: รูปภาพ + วันที่ + ปุ่ม */}
+              <div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                    รูปภาพสินค้า
+                  </label>
+                  <input
+                    type="file"
+                    id="image"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      setUploadError('');
+                      if (!file) return;
+                      try {
+                        setUploading(true);
+                        const path = `products/${Date.now()}_${file.name}`;
+                        const ref = storageRef(storage, path);
+                        await uploadBytes(ref, file);
+                        const url = await getDownloadURL(ref);
+                        setFormData((prev) => ({ ...prev, image: url }));
+                        setImagePreview(url);
+                      } catch (err) {
+                        console.error(err);
+                        setUploadError('อัพโหลดรูปภาพล้มเหลว');
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: 14,
+                      border: '2px solid #e2e8f0',
+                      borderRadius: 12,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>กำลังอัพโหลดรูปภาพ...</div>}
+                  {uploadError && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 13 }}>{uploadError}</div>}
+                </div>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-            <button
-              type="submit"
-              disabled={saving || uploading}
-              style={{
-                padding: '12px 24px',
-                fontSize: 16,
-                backgroundColor: (saving || uploading) ? '#6c757d' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                cursor: (saving || uploading) ? 'not-allowed' : 'pointer',
-                fontWeight: '600',
-                transition: 'background-color 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!saving && !uploading) e.target.style.backgroundColor = '#0056b3';
-              }}
-              onMouseLeave={(e) => {
-                if (!saving && !uploading) e.target.style.backgroundColor = '#007bff';
-              }}
-            >
-              {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/dashboard')}
-              style={{
-                padding: '12px 24px',
-                fontSize: 16,
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                cursor: 'pointer',
-                fontWeight: '600',
-                transition: 'background-color 0.3s ease'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#5a6268'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#6c757d'}
-            >
-              ยกเลิก
-            </button>
-          </div>
-        </form>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                    วันที่เพิ่มสินค้า *
+                  </label>
+                  <input
+                    type="date"
+                    name="addDate"
+                    value={formData.addDate}
+                    onChange={handleChange}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: 15,
+                      border: '2px solid #e2e8f0',
+                      borderRadius: 12,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                    onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                  />
+                </div>
+
+                {/* ปุ่ม */}
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <button
+                    type="submit"
+                    disabled={saving || uploading}
+                    style={{
+                      padding: '12px 28px',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: saving || uploading ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                      border: 'none',
+                      borderRadius: 999,
+                      cursor: saving || uploading ? 'not-allowed' : 'pointer',
+                      boxShadow: saving || uploading ? 'none' : '0 6px 20px rgba(37,99,235,0.4)',
+                    }}
+                  >
+                    {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/dashboard')}
+                    style={{
+                      padding: '12px 28px',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: '#374151',
+                      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 999,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              </div>
+
+              {/* คอลัมน์ขวา: ตัวอย่างรูปภาพ */}
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                  ตัวอย่างรูปภาพ
+                </label>
+                <div
+                  style={{
+                    width: '100%',
+                    height: 220,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: '2px solid #e2e8f0',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <span style={{ color: '#94a3b8', fontSize: 14 }}>ยังไม่มีรูปภาพ</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

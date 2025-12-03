@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { db } from '../../firebase';
+import { db, storage } from '../../firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
@@ -18,6 +19,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [photoURL, setPhotoURL] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [photoPreview, setPhotoPreview] = useState('');
 
   // Form states for editing
   const [editForm, setEditForm] = useState({
@@ -29,19 +34,19 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user || !profile) return;
-      
       setDisplayName(profile.displayName || '');
       setEmail(profile.email || user.email || '');
       setRole(profile.role || '');
-      
-      // Load additional data from Firestore
+      setPhotoURL(profile.photoURL || user.photoURL || '');
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           setPhone(data.phone || '');
           setAddress(data.address || '');
-          
+          if (data.photoURL && !profile.photoURL && !user.photoURL) {
+            setPhotoURL(data.photoURL);
+          }
           if (data.createdAt) {
             setCreatedAt(data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt));
           }
@@ -52,7 +57,6 @@ export default function ProfilePage() {
         setLoading(false);
       }
     };
-    
     loadProfile();
   }, [user, profile]);
 
@@ -62,6 +66,8 @@ export default function ProfilePage() {
       phone: phone,
       address: address
     });
+    setPhotoPreview('');
+    setUploadError('');
     setIsEditing(true);
     setError('');
     setSuccess('');
@@ -81,36 +87,28 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     if (!user) return;
-    
     setSaving(true);
     setError('');
     setSuccess('');
-    
     try {
-      // Update Firebase Auth profile
-      if (editForm.displayName.trim() !== displayName) {
-        await updateProfile(auth.currentUser, {
-          displayName: editForm.displayName.trim()
-        });
-      }
-      
-      // Update Firestore
+      const finalPhoto = (photoPreview || photoURL || '').trim() || null;
+      await updateProfile(auth.currentUser, {
+        displayName: editForm.displayName.trim(),
+        photoURL: finalPhoto,
+      });
       await updateDoc(doc(db, 'users', user.uid), {
         displayName: editForm.displayName.trim() || null,
         phone: editForm.phone.trim() || null,
         address: editForm.address.trim() || null,
+        photoURL: finalPhoto,
         updatedAt: new Date()
       });
-      
-      // Update local state
       setDisplayName(editForm.displayName.trim());
       setPhone(editForm.phone.trim());
       setAddress(editForm.address.trim());
-      
+      setPhotoURL(finalPhoto || '');
       setSuccess('อัพเดตข้อมูลโปรไฟล์สำเร็จ!');
       setIsEditing(false);
-      
-      // Reload after 1.5 seconds
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -150,7 +148,18 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <div
+        style={{
+          padding: '24px',
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background:
+            'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+          boxSizing: 'border-box',
+        }}
+      >
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '50px',
@@ -169,407 +178,595 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: '30px',
-        borderRadius: '16px',
-        marginBottom: '30px',
-        boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
-        color: '#fff'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
-              โปรไฟล์ของฉัน
-            </h1>
-            <p style={{ margin: 0, fontSize: '16px', opacity: 0.9 }}>
-              จัดการข้อมูลส่วนตัวของคุณ
-            </p>
+    <div
+      style={{
+        padding: '32px 24px',
+        minHeight: '100vh',
+        background:
+          'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 1180, margin: '0 auto' }}>
+        {/* Header */}
+        <div
+          style={{
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            padding: '20px 24px',
+            borderRadius: 18,
+            marginBottom: 20,
+            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+            border: '1px solid rgba(255,255,255,0.9)',
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              color: '#1e40af',
+              fontSize: 24,
+              fontWeight: 700,
+            }}
+          >
+            โปรไฟล์ผู้ดูแลระบบ
+          </h1>
+          <div
+            style={{
+              fontSize: 14,
+              color: '#3b82f6',
+              marginTop: 6,
+            }}
+          >
+            ตรวจสอบและจัดการข้อมูลบัญชีของผู้ดูแลระบบ
           </div>
-          {!isEditing && (
-            <button
-              onClick={handleEditClick}
+        </div>
+
+        {/* Profile Card */}
+        <div
+          style={{
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            borderRadius: 18,
+            padding: '26px 28px 30px 28px',
+            boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
+            border: '1px solid rgba(255,255,255,0.9)',
+            marginBottom: '20px',
+          }}
+        >
+          {/* Avatar + summary */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '20px',
+              marginBottom: '28px',
+              paddingBottom: '24px',
+              borderBottom: '1px solid #e5e7eb',
+            }}
+          >
+            <div
               style={{
-                padding: '12px 24px',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: '#667eea',
-                backgroundColor: '#fff',
-                border: 'none',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                width: '96px',
+                height: '96px',
+                borderRadius: '999px',
+                background:
+                  'radial-gradient(circle at 30% 15%, #ffffff 0%, #bae6fd 25%, #38bdf8 55%, #1d4ed8 98%)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                justifyContent: 'center',
+                color: '#0b1120',
+                fontSize: '40px',
+                fontWeight: '800',
+                boxShadow: '0 14px 30px rgba(15,23,42,0.35)',
+                border: '3px solid rgba(255,255,255,0.95)',
+                overflow: 'hidden',
               }}
             >
-              <span>✏️</span>
-              <span>แก้ไขข้อมูล</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Profile Card */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '16px',
-        padding: '40px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        marginBottom: '30px'
-      }}>
-        {/* Avatar Section */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '24px',
-          marginBottom: '40px',
-          paddingBottom: '40px',
-          borderBottom: '2px solid #f0f0f0'
-        }}>
-          <div style={{
-            width: '120px',
-            height: '120px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '48px',
-            fontWeight: 'bold',
-            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
-            position: 'relative'
-          }}>
-            {(displayName || email || 'A')[0].toUpperCase()}
-            <div style={{
-              position: 'absolute',
-              bottom: '8px',
-              right: '8px',
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: '#4CAF50',
-              border: '3px solid #fff',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}></div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ margin: '0 0 12px 0', fontSize: '28px', color: '#333', fontWeight: '700' }}>
-              {displayName || 'ไม่ระบุชื่อ'}
-            </h2>
-            <div style={{
-              display: 'inline-block',
-              padding: '8px 20px',
-              borderRadius: '25px',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: roleInfo.color,
-              backgroundColor: roleInfo.bg,
-              border: `2px solid ${roleInfo.color}30`
-            }}>
-              {roleInfo.label}
+              {(photoPreview || photoURL) ? (
+                <img
+                  src={photoPreview || photoURL}
+                  alt="avatar"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 'inherit',
+                    objectFit: 'cover',
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                (displayName || email || 'A')[0].toUpperCase()
+              )}
             </div>
-          </div>
-        </div>
-
-        {/* Information Display */}
-        {!isEditing ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '24px'
-          }}>
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '12px',
-              border: '1px solid #e0e0e0',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  backgroundColor: '#667eea',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '20px'
-                }}>
-                  📧
-                </div>
-                <label style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  อีเมล
-                </label>
-              </div>
-              <div style={{
-                fontSize: '16px',
-                color: '#333',
-                fontWeight: '500',
-                wordBreak: 'break-word'
-              }}>
+            <div style={{ flex: 1 }}>
+              <h2
+                style={{
+                  margin: '0 0 4px 0',
+                  fontSize: '24px',
+                  color: '#111827',
+                  fontWeight: 700,
+                }}
+              >
+                {displayName || 'ไม่ระบุชื่อ'}
+              </h2>
+              <div
+                style={{
+                  marginBottom: 8,
+                  fontSize: 14,
+                  color: '#6b7280',
+                }}
+              >
                 {email || '-'}
               </div>
-            </div>
-
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '12px',
-              border: '1px solid #e0e0e0',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  backgroundColor: '#4CAF50',
-                  display: 'flex',
+              <div
+                style={{
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '20px'
-                }}>
-                  📱
-                </div>
-                <label style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  เบอร์โทรศัพท์
-                </label>
-              </div>
-              <div style={{
-                fontSize: '16px',
-                color: '#333',
-                fontWeight: '500'
-              }}>
-                {phone || '-'}
-              </div>
-            </div>
-
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '12px',
-              border: '1px solid #e0e0e0',
-              gridColumn: '1 / -1',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  backgroundColor: '#FF9800',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '20px'
-                }}>
-                  📍
-                </div>
-                <label style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  ที่อยู่
-                </label>
-              </div>
-              <div style={{
-                fontSize: '16px',
-                color: '#333',
-                fontWeight: '500',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
-                {address || '-'}
-              </div>
-            </div>
-
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '12px',
-              border: '1px solid #e0e0e0',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  backgroundColor: '#2196F3',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '20px'
-                }}>
-                  📅
-                </div>
-                <label style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  วันที่สร้างบัญชี
-                </label>
-              </div>
-              <div style={{
-                fontSize: '16px',
-                color: '#333',
-                fontWeight: '500'
-              }}>
-                {formatDate(createdAt)}
+                  gap: 8,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '6px 15px',
+                    borderRadius: '999px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: roleInfo.color,
+                    backgroundColor: roleInfo.bg,
+                  }}
+                >
+                  {roleInfo.label}
+                </span>
+                {createdAt && (
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: '#9ca3af',
+                    }}
+                  >
+                    สร้างบัญชีเมื่อ {formatDate(createdAt)}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-        ) : (
-          /* Edit Form */
-          <div>
+
+          {/* Information Display / Edit */}
+          {!isEditing ? (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 18,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#6b7280',
+                  }}
+                >
+                  ตรวจสอบข้อมูลส่วนตัวก่อนทำการแก้ไข หากข้อมูลไม่ถูกต้องสามารถกดปุ่ม
+                  "แก้ไขข้อมูล" ที่มุมขวาได้ทันที
+                </div>
+                <button
+                  onClick={handleEditClick}
+                  style={{
+                    padding: '10px 22px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#eff6ff',
+                    background:
+                      'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
+                    border: 'none',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    boxShadow: '0 10px 20px rgba(37,99,235,0.45)',
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  แก้ไขข้อมูล
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(260px, 0.95fr) minmax(320px, 1.1fr)',
+                  gap: '22px',
+                }}
+              >
+                {/* Left: account info */}
+                <div
+                  style={{
+                    backgroundColor: '#f9fafb',
+                    borderRadius: 14,
+                    padding: '16px 18px 18px 18px',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#4b5563',
+                      marginBottom: 10,
+                    }}
+                  >
+                    ข้อมูลบัญชี
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {/* อีเมล */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        📧
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>อีเมล</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{email || '-'}</div>
+                      </div>
+                    </div>
+
+                    {/* Role */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        🛡️
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>สิทธิ์การใช้งาน</div>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: roleInfo.color,
+                            backgroundColor: roleInfo.bg,
+                          }}
+                        >
+                          {roleInfo.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* วันที่สร้างบัญชี */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        📅
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>วันที่สร้างบัญชี</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{formatDate(createdAt)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: contact info */}
+                <div
+                  style={{
+                    backgroundColor: '#f9fafb',
+                    borderRadius: 14,
+                    padding: '16px 18px 18px 18px',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#4b5563',
+                      marginBottom: 10,
+                    }}
+                  >
+                    ข้อมูลติดต่อ
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
+                    }}
+                  >
+                    {/* เบอร์โทรศัพท์ */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        📱
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>เบอร์โทรศัพท์</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{phone || '-'}</div>
+                      </div>
+                    </div>
+
+                    {/* ที่อยู่ */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 12,
+                        padding: '12px 14px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        📍
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>ที่อยู่</div>
+                        <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{address || '-'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Edit Form */
+            <div>
             {error && (
               <div style={{
-                padding: '16px 20px',
+                padding: '12px 16px',
                 backgroundColor: '#ffebee',
-                border: '2px solid #f44336',
-                borderRadius: '12px',
+                border: '1px solid #f44336',
+                borderRadius: '8px',
                 color: '#c62828',
                 fontSize: '14px',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
+                marginBottom: '20px'
               }}>
-                <span style={{ fontSize: '20px' }}>⚠️</span>
-                <span>{error}</span>
+                {error}
               </div>
             )}
 
             {success && (
               <div style={{
-                padding: '16px 20px',
+                padding: '12px 16px',
                 backgroundColor: '#e8f5e9',
-                border: '2px solid #4CAF50',
-                borderRadius: '12px',
+                border: '1px solid #4CAF50',
+                borderRadius: '8px',
                 color: '#2e7d32',
                 fontSize: '14px',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
+                marginBottom: '20px'
               }}>
-                <span style={{ fontSize: '20px' }}>✓</span>
-                <span>{success}</span>
+                {success}
               </div>
             )}
 
             <form onSubmit={handleUpdateProfile}>
               <div style={{
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+              }}>
+                <div
+                  style={{
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '999px',
+                    overflow: 'hidden',
+                    backgroundColor: '#e5e7eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#4b5563',
+                  }}
+                >
+                  {(photoPreview || photoURL) ? (
+                    <img
+                      src={photoPreview || photoURL}
+                      alt="preview-avatar"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    (displayName || email || 'A')[0].toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <label
+                    htmlFor="profileImage"
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: '#111827',
+                    }}
+                  >
+                    รูปโปรไฟล์
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label
+                      htmlFor="profileImage"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px 16px',
+                        borderRadius: 999,
+                        border: '1px solid #2563eb',
+                        background:
+                          uploadingPhoto || saving
+                            ? '#9ca3af'
+                            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 60%, #1d4ed8 100%)',
+                        color: '#eff6ff',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: uploadingPhoto || saving ? 'not-allowed' : 'pointer',
+                        boxShadow:
+                          uploadingPhoto || saving
+                            ? 'none'
+                            : '0 6px 14px rgba(37,99,235,0.45)',
+                        letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {uploadingPhoto ? 'กำลังเลือกรูป...' : 'เลือกไฟล์รูปภาพ'}
+                    </label>
+                    <input
+                      id="profileImage"
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingPhoto || saving}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        setUploadError('');
+                        if (!file || !user) return;
+                        try {
+                          setUploadingPhoto(true);
+                          const path = `profile/${user.uid}_${Date.now()}_${file.name}`;
+                          const ref = storageRef(storage, path);
+                          await uploadBytes(ref, file);
+                          const url = await getDownloadURL(ref);
+                          setPhotoPreview(url);
+                          setPhotoURL(url);
+                        } catch (err) {
+                          console.error('Error uploading profile image:', err);
+                          setUploadError('อัพโหลดรูปโปรไฟล์ล้มเหลว');
+                        } finally {
+                          setUploadingPhoto(false);
+                        }
+                      }}
+                      style={{
+                        display: 'none',
+                      }}
+                    />
+                  </div>
+                  {uploadingPhoto && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                      กำลังอัพโหลดรูปโปรไฟล์...
+                    </div>
+                  )}
+                  {uploadError && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#b91c1c' }}>
+                      {uploadError}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '24px',
-                marginBottom: '30px'
+                gridTemplateColumns: 'minmax(260px, 0.9fr) minmax(320px, 1.1fr)',
+                gap: '22px',
+                marginBottom: '24px'
               }}>
                 <div>
                   <label htmlFor="editDisplayName" style={{
                     display: 'block',
-                    marginBottom: '10px',
+                    marginBottom: '8px',
                     fontSize: '14px',
                     fontWeight: '600',
                     color: '#333'
@@ -585,22 +782,12 @@ export default function ProfilePage() {
                     required
                     style={{
                       width: '100%',
-                      padding: '14px 18px',
+                      padding: '12px 16px',
                       fontSize: '15px',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '10px',
                       outline: 'none',
-                      transition: 'all 0.3s ease',
-                      boxSizing: 'border-box',
-                      backgroundColor: '#fff'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#667eea';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e0e0e0';
-                      e.target.style.boxShadow = 'none';
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -608,7 +795,7 @@ export default function ProfilePage() {
                 <div>
                   <label htmlFor="editPhone" style={{
                     display: 'block',
-                    marginBottom: '10px',
+                    marginBottom: '8px',
                     fontSize: '14px',
                     fontWeight: '600',
                     color: '#333'
@@ -623,22 +810,12 @@ export default function ProfilePage() {
                     placeholder="เช่น 081-234-5678"
                     style={{
                       width: '100%',
-                      padding: '14px 18px',
+                      padding: '12px 16px',
                       fontSize: '15px',
                       border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
+                      borderRadius: '8px',
                       outline: 'none',
-                      transition: 'all 0.3s ease',
-                      boxSizing: 'border-box',
-                      backgroundColor: '#fff'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#667eea';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e0e0e0';
-                      e.target.style.boxShadow = 'none';
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -646,7 +823,7 @@ export default function ProfilePage() {
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label htmlFor="editAddress" style={{
                     display: 'block',
-                    marginBottom: '10px',
+                    marginBottom: '8px',
                     fontSize: '14px',
                     fontWeight: '600',
                     color: '#333'
@@ -661,24 +838,14 @@ export default function ProfilePage() {
                     rows={4}
                     style={{
                       width: '100%',
-                      padding: '14px 18px',
+                      padding: '12px 16px',
                       fontSize: '15px',
                       border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
+                      borderRadius: '8px',
                       outline: 'none',
-                      transition: 'all 0.3s ease',
                       boxSizing: 'border-box',
                       resize: 'vertical',
-                      fontFamily: 'inherit',
-                      backgroundColor: '#fff'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#667eea';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e0e0e0';
-                      e.target.style.boxShadow = 'none';
+                      fontFamily: 'inherit'
                     }}
                   />
                 </div>
@@ -696,27 +863,18 @@ export default function ProfilePage() {
                   onClick={handleCancelEdit}
                   disabled={saving}
                   style={{
-                    padding: '14px 28px',
+                    padding: '12px 24px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: '#666',
-                    backgroundColor: '#f5f5f5',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '12px',
+                    color: '#374151',
+                    background: saving
+                      ? '#e5e7eb'
+                      : 'linear-gradient(135deg, #f9fafb 0%, #e5e7eb 45%, #d1d5db 100%)',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '999px',
                     cursor: saving ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!saving) {
-                      e.target.style.backgroundColor = '#e0e0e0';
-                      e.target.style.borderColor = '#ccc';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!saving) {
-                      e.target.style.backgroundColor = '#f5f5f5';
-                      e.target.style.borderColor = '#e0e0e0';
-                    }
+                    boxShadow: saving ? 'none' : '0 6px 14px rgba(107,114,128,0.35)',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   ยกเลิก
@@ -725,116 +883,26 @@ export default function ProfilePage() {
                   type="submit"
                   disabled={saving}
                   style={{
-                    padding: '14px 28px',
+                    padding: '12px 24px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: '#fff',
-                    backgroundColor: saving ? '#ccc' : '#667eea',
+                    color: '#eff6ff',
+                    background: saving
+                      ? '#9ca3af'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
                     border: 'none',
-                    borderRadius: '12px',
+                    borderRadius: '999px',
                     cursor: saving ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: saving ? 'none' : '0 4px 12px rgba(102, 126, 234, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!saving) {
-                      e.target.style.backgroundColor = '#5568d3';
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!saving) {
-                      e.target.style.backgroundColor = '#667eea';
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                    }
+                    boxShadow: saving ? 'none' : '0 10px 20px rgba(37,99,235,0.45)',
+                    letterSpacing: '0.03em',
                   }}
                 >
-                  {saving ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
-                        width: '16px',
-                        height: '16px',
-                        border: '2px solid #fff',
-                        borderTop: '2px solid transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 0.8s linear infinite',
-                        display: 'inline-block'
-                      }}></span>
-                      กำลังบันทึก...
-                    </span>
-                  ) : (
-                    'บันทึกการเปลี่ยนแปลง'
-                  )}
+                  {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
                 </button>
               </div>
             </form>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         )}
-      </div>
-
-      {/* Account Info Card */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '16px',
-        padding: '30px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
-      }}>
-        <h3 style={{
-          margin: '0 0 20px 0',
-          fontSize: '20px',
-          color: '#333',
-          fontWeight: '600',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span>🔐</span>
-          <span>ข้อมูลบัญชี</span>
-        </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '20px'
-        }}>
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '12px',
-            border: '1px solid #e0e0e0'
-          }}>
-            <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px', fontWeight: '600' }}>User ID</div>
-            <div style={{
-              fontSize: '13px',
-              color: '#333',
-              fontFamily: 'monospace',
-              wordBreak: 'break-all',
-              padding: '8px',
-              backgroundColor: '#fff',
-              borderRadius: '6px'
-            }}>
-              {user?.uid || '-'}
-            </div>
-          </div>
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '12px',
-            border: '1px solid #e0e0e0'
-          }}>
-            <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px', fontWeight: '600' }}>Provider</div>
-            <div style={{
-              fontSize: '14px',
-              color: '#333',
-              padding: '8px',
-              backgroundColor: '#fff',
-              borderRadius: '6px'
-            }}>
-              Email/Password
-            </div>
-          </div>
         </div>
       </div>
     </div>

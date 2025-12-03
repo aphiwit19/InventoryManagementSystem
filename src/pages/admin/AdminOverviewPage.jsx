@@ -79,15 +79,42 @@ export default function AdminOverviewPage() {
   const maxDailyRevenue = dailyRevenue.reduce((m, d) => Math.max(m, d.total), 0) || 1;
 
   return (
-    <div style={{ padding: 24, background:'#F3F4F6', minHeight:'100%' }}>
-      <div style={{ maxWidth: 1200, margin:'0 auto' }}>
-        <div style={{ marginBottom: 20 }}>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight:700, color: '#111827' }}>แดชบอร์ดผู้ดูแล</h1>
-          <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>ภาพรวมสินค้า ยอดขาย และคำสั่งซื้อที่ต้องจัดการ</div>
+    <div
+      style={{
+        padding: '32px 24px',
+        background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+        minHeight: '100vh',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 700,
+              color: '#1e40af',
+              letterSpacing: '0.02em',
+            }}
+          >
+            แดชบอร์ดผู้ดูแลระบบ
+          </h1>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>
+            ภาพรวมสินค้า ยอดขาย และสถิติข้อมูลสำคัญ
+          </div>
         </div>
 
         {/* แถวบน: 3 การ์ด */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
           <SummaryCard
             title="จำนวนสินค้าทั้งหมด"
             value={products.length.toLocaleString()}
@@ -97,44 +124,78 @@ export default function AdminOverviewPage() {
           <SummaryCard
             title="สินค้าที่สต็อกต่ำ"
             value={lowStock.length.toLocaleString()}
-            subtext="ต่ำกว่า 20% ของสต็อกตั้งต้น"
-            // highlight={lowStock.length > 0}
+            subtext="ต่ำกว่า 20% ของสต็อกเต็มที่หมด"
             onClick={() => navigate('/admin/products')}
           />
           <SummaryCard
             title="คำสั่งซื้อที่รอดำเนินการ"
             value={pendingCustomerOrders.length.toLocaleString()}
-            subtext="คำสั่งซื้อจากลูกค้า"
+            subtext="คำสั่งจากลูกค้า"
             onClick={() => navigate('/admin/orders?source=customer')}
           />
         </div>
 
-        {/* แถวถัดมา: 3 การ์ด */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
-          <SummaryCard
-            title="คำสั่งเบิกที่รอดำเนินการ"
-            value={pendingWithdrawals.length.toLocaleString()}
-            subtext="คำสั่งเบิกจากสตาฟ"
-            onClick={() => navigate('/admin/orders?source=staff')}
-          />
-          <SummaryCard
+        {/* แถวรายได้: 2 การ์ดใหญ่ */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 16,
+            marginBottom: 20,
+          }}
+        >
+          <RevenueCard
             title="รายได้วันนี้"
-            value={`฿${todayRevenue.toLocaleString()}`}
-            subtext="ยอดสั่งซื้อจากลูกค้าวันนี้"
+            value={todayRevenue}
+            subtext="ยอดขายรวมของวันนี้"
           />
-          <SummaryCard
-            title="รายได้สะสมทั้งหมด"
-            value={`฿${totalRevenue.toLocaleString()}`}
-            subtext="ยอดสั่งซื้อจากลูกค้าทั้งหมด"
+          <RevenueCard
+            title="รายได้รวมทั้งหมด"
+            value={totalRevenue}
+            subtext="ยอดขายทั้งหมด"
           />
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1.1fr 1.3fr', gap: 18, alignItems:'stretch' }}>
-          <Panel title="สินค้าสต็อกต่ำ" emptyText="ยังไม่มีสินค้าที่สต็อกต่ำ">
-            {lowStock.slice(0, 5).map(p => (
-              <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', fontSize:13 }}>
-                <div style={{ maxWidth: 260, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p.productName || 'ไม่มีชื่อสินค้า'}</div>
-                <div style={{ color:'#EA580C', fontWeight:600 }}>{(p.quantity ?? 0).toLocaleString()} ชิ้น</div>
+        {/* แถวล่าง: Panel สินค้าต้องสั่งอีก + กราฟ */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1.4fr',
+            gap: 20,
+            alignItems: 'stretch',
+          }}
+        >
+          <Panel
+            title="สินค้าสต๊อกต่ำ"
+            badge={lowStock.length > 0 ? `${lowStock.length} ชิ้น` : null}
+            emptyText="ยังไม่มีสินค้าที่สต็อกต่ำ"
+          >
+            {lowStock.slice(0, 5).map((p) => (
+              <div
+                key={p.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 0',
+                  borderBottom: '1px solid #f1f5f9',
+                  fontSize: 14,
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: 200,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    color: '#1e293b',
+                  }}
+                >
+                  {p.productName || 'ไม่มีชื่อสินค้า'}
+                </div>
+                <div style={{ color: '#3b82f6', fontWeight: 600 }}>
+                  {(p.quantity ?? 0).toLocaleString()} ชิ้น
+                </div>
               </div>
             ))}
           </Panel>
@@ -148,39 +209,114 @@ export default function AdminOverviewPage() {
   );
 }
 
-function SummaryCard({ title, value, subtext, highlight, onClick }) {
+function SummaryCard({ title, value, subtext, onClick }) {
   return (
     <div
       onClick={onClick}
       style={{
-        background:'#fff',
-        borderRadius:16,
-        padding:'14px 16px',
-        boxShadow:'0 2px 8px rgba(15,23,42,0.08)',
+        background: '#fff',
+        borderRadius: 18,
+        padding: '20px 22px',
+        boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
         cursor: onClick ? 'pointer' : 'default',
-        border: highlight ? '1px solid #F97316' : '1px solid #E5E7EB',
-        display:'flex',
-        flexDirection:'column',
-        justifyContent:'space-between',
-        minHeight:88,
+        border: '1px solid rgba(255,255,255,0.8)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: 110,
+        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+        backdropFilter: 'blur(8px)',
+      }}
+      onMouseEnter={(e) => {
+        if (onClick) {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 16px 48px rgba(15,23,42,0.18), 0 8px 24px rgba(37,99,235,0.15)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)';
       }}
     >
-      <div style={{ fontSize:12, color:'#6B7280' }}>{title}</div>
-      <div style={{ fontSize:22, fontWeight:700, marginTop:4, color:'#111827' }}>{value}</div>
-      <div style={{ fontSize:12, color:'#9CA3AF', marginTop:2 }}>{subtext}</div>
+      <div style={{ fontSize: 13, color: '#3b82f6', fontWeight: 500 }}>{title}</div>
+      <div style={{ fontSize: 32, fontWeight: 700, marginTop: 8, color: '#1e40af' }}>{value}</div>
+      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{subtext}</div>
     </div>
   );
 }
 
-function Panel({ title, emptyText, children }) {
+function RevenueCard({ title, value, subtext }) {
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        borderRadius: 18,
+        padding: '24px 28px',
+        boxShadow: '0 10px 40px rgba(15,23,42,0.14), 0 4px 16px rgba(37,99,235,0.1)',
+        border: '1px solid rgba(255,255,255,0.9)',
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>{title}</div>
+      <div
+        style={{
+          fontSize: 36,
+          fontWeight: 700,
+          color: '#1e40af',
+          letterSpacing: '-0.02em',
+        }}
+      >
+        ฿{value.toLocaleString()}
+      </div>
+      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>{subtext}</div>
+    </div>
+  );
+}
+
+function Panel({ title, badge, emptyText, children }) {
   const isEmpty = !children || (Array.isArray(children) && children.length === 0);
   return (
-    <div style={{ background:'#fff', borderRadius:16, padding:16, boxShadow:'0 2px 8px rgba(15,23,42,0.06)', height:'100%', display:'flex', flexDirection:'column' }}>
-      <div style={{ fontSize:14, fontWeight:600, marginBottom:8, color:'#111827' }}>{title}</div>
+    <div
+      style={{
+        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        borderRadius: 18,
+        padding: '22px 24px',
+        boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
+        border: '1px solid rgba(255,255,255,0.9)',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#1e293b' }}>{title}</div>
+        {badge && (
+          <span
+            style={{
+              padding: '4px 12px',
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#fff',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            }}
+          >
+            {badge}
+          </span>
+        )}
+      </div>
       {isEmpty ? (
-        <div style={{ fontSize:13, color:'#9CA3AF', padding:'10px 0' }}>{emptyText}</div>
+        <div style={{ fontSize: 13, color: '#94a3b8', padding: '10px 0' }}>{emptyText}</div>
       ) : (
-        <div style={{ flex:1 }}>{children}</div>
+        <div style={{ flex: 1 }}>{children}</div>
       )}
     </div>
   );
@@ -194,21 +330,40 @@ function RevenueBarChart({ data, max }) {
   };
 
   return (
-    <div style={{ paddingTop: 4 }}>
-      <div style={{ display:'flex', alignItems:'flex-end', gap:10, height:160, padding:'4px 4px 0' }}>
+    <div style={{ paddingTop: 8, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 12,
+          flex: 1,
+          minHeight: 180,
+          padding: '8px 4px 0',
+        }}
+      >
         {data.map((d) => {
-          const ratio = d.total <= 0 ? 0 : d.total / max;
-          const height = 20 + ratio * 110; // สูงขั้นต่ำ 20px
+          const ratio = d.total <= 0 ? 0.05 : d.total / max;
+          const height = Math.max(20, ratio * 150);
           return (
-            <div key={d.key} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end' }}>
+            <div
+              key={d.key}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+              }}
+            >
               <div
                 style={{
-                  width:'65%',
+                  width: '60%',
                   height,
-                  background:'linear-gradient(to top, #4F46E5, #6366F1)',
-                  borderRadius:6,
-                  boxShadow:'0 1px 3px rgba(15,23,42,0.25)',
-                  transition:'height 0.2s ease-out',
+                  background: 'linear-gradient(to top, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
+                  borderRadius: 6,
+                  boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+                  transition: 'height 0.3s ease-out',
+                  cursor: 'pointer',
                 }}
                 title={`฿${d.total.toLocaleString()}`}
               />
@@ -216,9 +371,21 @@ function RevenueBarChart({ data, max }) {
           );
         })}
       </div>
-      <div style={{ display:'flex', justifyContent:'space-between', marginTop:8, fontSize:11, color:'#6B7280' }}>
-        {data.map(d => (
-          <div key={d.key} style={{ flex:1, textAlign:'center' }}>{formatLabel(d)}</div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: 12,
+          fontSize: 12,
+          color: '#64748b',
+          borderTop: '1px solid #f1f5f9',
+          paddingTop: 10,
+        }}
+      >
+        {data.map((d) => (
+          <div key={d.key} style={{ flex: 1, textAlign: 'center' }}>
+            {formatLabel(d)}
+          </div>
         ))}
       </div>
     </div>

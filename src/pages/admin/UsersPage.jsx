@@ -67,13 +67,13 @@ export default function UsersPage() {
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'admin':
-        return { bg: '#f44336', color: '#fff', label: 'Admin' };
+        return { bg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#fff', label: 'Admin', shadow: '0 2px 8px rgba(239,68,68,0.4)' };
       case 'staff':
-        return { bg: '#2196F3', color: '#fff', label: 'Staff' };
+        return { bg: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', label: 'Staff', shadow: '0 2px 8px rgba(37,99,235,0.4)' };
       case 'customer':
-        return { bg: '#4CAF50', color: '#fff', label: 'Customer' };
+        return { bg: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#fff', label: 'Customer', shadow: '0 2px 8px rgba(34,197,94,0.4)' };
       default:
-        return { bg: '#9e9e9e', color: '#fff', label: 'Customer' };
+        return { bg: 'linear-gradient(135deg, #64748b 0%, #475569 100%)', color: '#fff', label: 'Customer', shadow: '0 2px 8px rgba(100,116,139,0.4)' };
     }
   };
 
@@ -100,27 +100,37 @@ export default function UsersPage() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div
+      style={{
+        padding: '32px 24px',
+        background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+        minHeight: '100vh',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* Header */}
-      <div style={{
-        backgroundColor: '#fff',
-        padding: '20px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
+      <div
+        style={{
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+          padding: '20px 24px',
+          borderRadius: 18,
+          marginBottom: 20,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+          border: '1px solid rgba(255,255,255,0.9)',
+        }}
+      >
         <div>
-          <h1 style={{ margin: '0 0 5px 0', fontSize: '28px', color: '#333', fontWeight: '700' }}>
+          <h1 style={{ margin: 0, fontSize: 24, color: '#1e40af', fontWeight: 700 }}>
             จัดการผู้ใช้
           </h1>
-          <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+          <p style={{ margin: '6px 0 0 0', color: '#3b82f6', fontSize: 14 }}>
             จัดการสิทธิ์และบทบาทของผู้ใช้ทั้งหมด
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <input
               type="text"
@@ -128,30 +138,36 @@ export default function UsersPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
-                padding: '10px 40px 10px 15px',
-                borderRadius: '20px',
-                border: '1px solid #ddd',
-                fontSize: '14px',
-                width: '250px'
+                padding: '10px 40px 10px 16px',
+                borderRadius: 999,
+                border: '2px solid #e2e8f0',
+                fontSize: 14,
+                width: 240,
+                background: '#fff',
+                outline: 'none',
               }}
             />
             <span style={{
               position: 'absolute',
-              right: '15px',
+              right: 14,
               top: '50%',
               transform: 'translateY(-50%)',
-              color: '#999'
+              color: '#3b82f6',
+              fontSize: 16,
             }}>🔍</span>
           </div>
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             style={{
-              padding: '10px 15px',
-              borderRadius: '20px',
-              border: '1px solid #ddd',
-              fontSize: '14px',
-              backgroundColor: '#fff'
+              padding: '10px 16px',
+              borderRadius: 999,
+              border: '2px solid #e2e8f0',
+              fontSize: 14,
+              backgroundColor: '#fff',
+              color: '#1e40af',
+              fontWeight: 500,
+              outline: 'none',
             }}
           >
             <option value="all">ทุกบทบาท</option>
@@ -163,20 +179,26 @@ export default function UsersPage() {
       </div>
 
       {/* Users Table */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 2fr 1fr 1fr',
-          padding: '16px 20px',
-          backgroundColor: '#f8f9fa',
-          borderBottom: '1px solid #eee',
-          fontWeight: 'bold'
-        }}>
+      <div
+        style={{
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: 18,
+          boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.9)',
+        }}
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 2fr 1fr 1fr',
+            padding: '14px 20px',
+            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+            fontWeight: 600,
+            fontSize: 13,
+            color: '#1e40af',
+          }}
+        >
           <div>อีเมล</div>
           <div>ชื่อ</div>
           <div>บทบาทปัจจุบัน</div>
@@ -212,12 +234,14 @@ export default function UsersPage() {
                   </div>
                   <div>
                     <span style={{
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      backgroundColor: roleInfo.bg,
+                      padding: '6px 16px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      background: roleInfo.bg,
                       color: roleInfo.color,
-                      fontWeight: '500'
+                      fontWeight: 600,
+                      boxShadow: roleInfo.shadow,
+                      display: 'inline-block',
                     }}>
                       {roleInfo.label}
                     </span>
@@ -228,12 +252,16 @@ export default function UsersPage() {
                       onChange={(e) => handleUpdateRole(user.id, e.target.value, currentRole)}
                       disabled={saving}
                       style={{
-                        padding: '6px 12px',
-                        borderRadius: '4px',
-                        border: '1px solid #ddd',
-                        fontSize: '13px',
+                        padding: '10px 16px',
+                        borderRadius: 10,
+                        border: '2px solid #e2e8f0',
+                        fontSize: 13,
+                        fontWeight: 500,
                         backgroundColor: '#fff',
-                        cursor: saving ? 'not-allowed' : 'pointer'
+                        color: '#1e40af',
+                        cursor: saving ? 'not-allowed' : 'pointer',
+                        outline: 'none',
+                        boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
                       }}
                     >
                       <option value="customer">Customer</option>

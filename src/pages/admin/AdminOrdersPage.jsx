@@ -116,56 +116,89 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
       <div style={{
-        background: '#fff', padding: 20, borderRadius: 8, marginBottom: 20,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)'
       }}>
-        <h1 style={{ margin: 0, color: '#333' }}>{headingTitle}</h1>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>{headingTitle}</h1>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>จัดการคำสั่งซื้อและการจัดส่งทั้งหมด</div>
+        </div>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={searchPlaceholder} style={{ padding: '10px 40px 10px 12px', borderRadius: 20, border: '1px solid #ddd', width: 220 }}/>
-            <span style={{ position:'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color:'#999' }}>🔍</span>
+            <input 
+              value={search} 
+              onChange={e=>setSearch(e.target.value)} 
+              placeholder={searchPlaceholder} 
+              style={{ 
+                padding: '10px 40px 10px 16px', 
+                borderRadius: 999, 
+                border: '2px solid #e2e8f0', 
+                width: 260,
+                fontSize: 14,
+                outline: 'none',
+                background: '#fff',
+              }}
+            />
+            <span style={{ position:'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color:'#3b82f6', fontSize: 16 }}>🔍</span>
           </div>
           {initialSource === 'all' && (
-            <select value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)} style={{ padding: '10px 12px', borderRadius: 20, border: '1px solid #ddd' }}>
-              <option value="all">ทั้งหมด</option>
-              <option value="customer">ผู้ซื้อ</option>
-              <option value="staff">ผู้เบิก</option>
+            <select 
+              value={sourceFilter} 
+              onChange={e=>setSourceFilter(e.target.value)} 
+              style={{ 
+                padding: '10px 16px', 
+                borderRadius: 999, 
+                border: '2px solid #e2e8f0',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#1e40af',
+                background: '#fff',
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">ทุกประเภท</option>
+              <option value="customer">คำสั่งซื้อ</option>
+              <option value="staff">คำสั่งเบิก</option>
             </select>
           )}
           {sourceFilter === 'staff' && (
-            <div style={{ display: 'inline-flex', borderRadius: 20, border: '1px solid #ddd', overflow: 'hidden' }}>
+            <div style={{ display: 'inline-flex', borderRadius: 999, overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,23,42,0.1)' }}>
               <button
                 type="button"
                 onClick={() => setDeliveryFilter('shipping')}
                 style={{
-                  padding: '8px 14px',
+                  padding: '10px 18px',
                   border: 'none',
-                  background: deliveryFilter === 'shipping' ? '#4CAF50' : '#fff',
-                  color: deliveryFilter === 'shipping' ? '#fff' : '#333',
+                  background: deliveryFilter === 'shipping' 
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
+                    : '#fff',
+                  color: deliveryFilter === 'shipping' ? '#fff' : '#64748b',
                   cursor: 'pointer',
                   fontSize: 13,
-                  fontWeight: deliveryFilter === 'shipping' ? 600 : 400,
-                  borderRight: '1px solid #ddd'
+                  fontWeight: 600,
                 }}
               >
-                จัดส่ง
+                📦 จัดส่ง
               </button>
               <button
                 type="button"
                 onClick={() => setDeliveryFilter('pickup')}
                 style={{
-                  padding: '8px 14px',
+                  padding: '10px 18px',
                   border: 'none',
-                  background: deliveryFilter === 'pickup' ? '#4CAF50' : '#fff',
-                  color: deliveryFilter === 'pickup' ? '#fff' : '#333',
+                  background: deliveryFilter === 'pickup' 
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
+                    : '#fff',
+                  color: deliveryFilter === 'pickup' ? '#fff' : '#64748b',
                   cursor: 'pointer',
                   fontSize: 13,
-                  fontWeight: deliveryFilter === 'pickup' ? 600 : 400,
+                  fontWeight: 600,
                 }}
               >
-                รับเอง
+                🏪 รับเอง
               </button>
             </div>
           )}
@@ -173,11 +206,11 @@ export default function AdminOrdersPage() {
       </div>
 
       {loading ? (
-        <div style={{ background:'#fff', padding: 40, borderRadius: 8, textAlign: 'center' }}>กำลังโหลด...</div>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)', color: '#64748b' }}>กำลังโหลด...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ background:'#fff', padding: 40, borderRadius: 8, textAlign: 'center', color:'#777' }}>ไม่พบรายการ</div>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', color:'#64748b', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>ไม่พบรายการ</div>
       ) : (
-        <div style={{ background:'#fff', borderRadius: 8, overflowX:'auto', boxShadow:'0 2px 4px rgba(0,0,0,0.1)' }}>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, overflowX:'auto', boxShadow:'0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)' }}>
           {sourceFilter === 'customer' ? (
             <>
               <div
@@ -186,10 +219,11 @@ export default function AdminOrdersPage() {
                   gridTemplateColumns:
                     '0.9fr 1fr 1.6fr 0.9fr 1.4fr 0.7fr',
                   gap: 8,
-                  padding: '12px 16px',
-                  background: '#f8f9fa',
+                  padding: '14px 20px',
+                  background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
                   fontWeight: 600,
                   fontSize: 13,
+                  color: '#1e40af',
                 }}
               >
                 <div>วันที่</div>
@@ -259,17 +293,24 @@ export default function AdminOrdersPage() {
                         type="button"
                         onClick={(e) => { e.stopPropagation(); goDetail(o); }}
                         style={{
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          border: '1px solid #2563EB',
-                          background: isProcessed ? '#4CAF50' : '#2563EB',
+                          padding: '8px 16px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: isProcessed 
+                            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                           color: '#fff',
                           cursor: 'pointer',
-                          fontSize: 13,
-                          width: 88,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          boxShadow: isProcessed 
+                            ? '0 2px 8px rgba(34,197,94,0.3)' 
+                            : '0 2px 8px rgba(37,99,235,0.3)',
+                          minWidth: 100,
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        {isProcessed ? 'จัดการแล้ว' : 'จัดการ'}
+                        {isProcessed ? '✓ เสร็จสิ้น' : 'จัดการ'}
                       </button>
                     </div>
                   </div>
@@ -283,10 +324,11 @@ export default function AdminOrdersPage() {
                   display: 'grid',
                   gridTemplateColumns: '0.9fr 1fr 1.4fr 1.4fr 1.2fr 1.4fr 1.3fr 0.7fr',
                   gap: 8,
-                  padding: '12px 16px',
-                  background: '#f8f9fa',
+                  padding: '14px 20px',
+                  background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
                   fontWeight: 600,
                   fontSize: 13,
+                  color: '#1e40af',
                 }}
               >
                 <div>วันที่</div>
@@ -347,17 +389,24 @@ export default function AdminOrdersPage() {
                         type="button"
                         onClick={(e) => { e.stopPropagation(); goDetail(o); }}
                         style={{
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          border: '1px solid #2563EB',
-                          background: isProcessed ? '#4CAF50' : '#2563EB',
+                          padding: '8px 16px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: isProcessed 
+                            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                           color: '#fff',
                           cursor: 'pointer',
-                          fontSize: 13,
-                          width: 88,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          boxShadow: isProcessed 
+                            ? '0 2px 8px rgba(34,197,94,0.3)' 
+                            : '0 2px 8px rgba(37,99,235,0.3)',
+                          minWidth: 100,
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        {isProcessed ? 'จัดการแล้ว' : 'จัดการ'}
+                        {isProcessed ? '✓ เสร็จสิ้น' : 'จัดการ'}
                       </button>
                     </div>
                   </div>
