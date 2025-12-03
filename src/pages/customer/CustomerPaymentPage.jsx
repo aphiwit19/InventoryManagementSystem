@@ -16,6 +16,7 @@ export default function CustomerPaymentPage() {
   const [requestedBy, setRequestedBy] = useState('');
   const [phone, setPhone] = useState('');
   const [requestedAddress, setRequestedAddress] = useState('');
+  const [formError, setFormError] = useState('');
   const [withdrawDate] = useState(new Date().toISOString().slice(0, 10));
   const total = useMemo(
     () => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0),
@@ -59,51 +60,43 @@ export default function CustomerPaymentPage() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          if (data.displayName) {
-            setRequestedBy(data.displayName);
-          } else if (profile?.displayName) {
-            setRequestedBy(profile.displayName);
-          } else if (user.email) {
-            setRequestedBy(user.email);
-          }
-          if (data.phone) {
-            setPhone(data.phone);
-          }
-          if (data.address) {
-            setRequestedAddress(data.address);
-          }
+          // ดึงชื่อ
+          const name = data.displayName || data.name || profile?.displayName || user.displayName || user.email || '';
+          setRequestedBy(name);
+          
+          // ดึงเบอร์โทร
+          const userPhone = data.phone || data.tel || '';
+          setPhone(userPhone);
+          
+          // ดึงที่อยู่
+          const userAddress = data.address || data.requestedAddress || '';
+          setRequestedAddress(userAddress);
         } else {
-          if (profile?.displayName) {
-            setRequestedBy(profile.displayName);
-          } else if (user.email) {
-            setRequestedBy(user.email);
-          }
+          // ถ้าไม่มีข้อมูลใน Firestore ให้ใช้จาก profile หรือ user
+          setRequestedBy(profile?.displayName || user.displayName || user.email || '');
         }
       } catch (err) {
         console.error('Error loading user for payment:', err);
-        if (profile?.displayName) {
-          setRequestedBy(profile.displayName);
-        } else if (user?.email) {
-          setRequestedBy(user.email);
-        }
+        setRequestedBy(profile?.displayName || user?.displayName || user?.email || '');
       } finally {
         setLoadingUser(false);
       }
     };
     loadUser();
-  }, [user?.uid, profile]);
+  }, [user?.uid, user?.displayName, user?.email, profile?.displayName]);
 
   const handleConfirm = async () => {
+    setFormError('');
     if (!user?.uid) {
-      alert('กรุณาเข้าสู่ระบบก่อนทำรายการ');
+      setFormError('กรุณาเข้าสู่ระบบก่อนทำรายการ');
       return;
     }
     if (items.length === 0) {
-      alert('ยังไม่มีสินค้าในตะกร้า');
+      setFormError('ยังไม่มีสินค้าในตะกร้า');
       return;
     }
     if (!requestedBy.trim() || !requestedAddress.trim()) {
-      alert('กรุณากรอกชื่อและที่อยู่ให้ครบ');
+      setFormError('กรุณากรอกชื่อและที่อยู่ให้ครบ');
       return;
     }
 
@@ -383,6 +376,23 @@ export default function CustomerPaymentPage() {
                   ฿{total.toLocaleString()}
                 </span>
               </div>
+
+              {formError && (
+                <div
+                  style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    color: '#dc2626',
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    marginBottom: 12,
+                    fontSize: 14,
+                    textAlign: 'center',
+                  }}
+                >
+                  {formError}
+                </div>
+              )}
 
               <button
                 type="button"

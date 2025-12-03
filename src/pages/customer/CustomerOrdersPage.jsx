@@ -146,20 +146,23 @@ export default function CustomerOrdersPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
-                padding: '8px 16px',
-                borderRadius: 999,
-                border: '1px solid rgba(255,255,255,0.7)',
-                fontSize: 13,
-                minWidth: 150,
-                background: 'rgba(15,23,42,0.18)',
-                color: '#F9FAFB',
+                padding: '10px 18px',
+                borderRadius: 12,
+                border: '2px solid #e2e8f0',
+                fontSize: 14,
+                fontWeight: 500,
+                minWidth: 160,
+                background: '#ffffff',
+                color: '#1e40af',
                 flexShrink: 0,
                 marginLeft: 'auto',
+                cursor: 'pointer',
+                outline: 'none',
               }}
             >
-              <option value="all">สถานะทั้งหมด</option>
+              <option value="all" style={{ color: '#374151', background: '#fff' }}>สถานะทั้งหมด</option>
               {statuses.map((s) => (
-                <option key={s} value={s}>
+                <option key={s} value={s} style={{ color: '#374151', background: '#fff' }}>
                   {s}
                 </option>
               ))}
