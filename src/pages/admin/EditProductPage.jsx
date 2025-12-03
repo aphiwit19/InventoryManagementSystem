@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProductById, updateProduct } from '../../services';
 import { Link } from 'react-router-dom';
+import { storage } from '../../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function EditProductPage() {
   const navigate = useNavigate();
@@ -18,6 +20,9 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -36,6 +41,9 @@ export default function EditProductPage() {
           addDate: formattedDate,
           quantity: product.quantity || ''
         });
+        if (product.image) {
+          setImagePreview(product.image);
+        }
       } catch (err) {
         console.error('Error loading product:', err);
         setError('ไม่พบสินค้านี้');
@@ -60,6 +68,9 @@ export default function EditProductPage() {
     setError('');
 
     try {
+      if (uploading) {
+        throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
+      }
       await updateProduct(id, formData);
       alert('อัพเดตข้อมูลสินค้าสำเร็จ!');
       navigate('/admin/dashboard');
@@ -92,7 +103,6 @@ export default function EditProductPage() {
   }
 
   return (
-    // Removed the sidebar and adjusted the main content styling
     <div style={{ padding: '20px' }}>
       
       <div style={{
@@ -257,18 +267,34 @@ export default function EditProductPage() {
 
           <div>
             <label htmlFor="image" style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', fontSize: '14px' }}>
-              URL รูปภาพ
+              รูปภาพสินค้า
             </label>
             <input
-              type="url"
+              type="file"
               id="image"
-              name="image"
-              value={formData.image}
-              onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                setUploadError('');
+                if (!file) return;
+                try {
+                  setUploading(true);
+                  const path = `products/${Date.now()}_${file.name}`;
+                  const ref = storageRef(storage, path);
+                  await uploadBytes(ref, file);
+                  const url = await getDownloadURL(ref);
+                  setFormData(prev => ({ ...prev, image: url }));
+                  setImagePreview(url);
+                } catch (err) {
+                  console.error(err);
+                  setUploadError('อัพโหลดรูปภาพล้มเหลว');
+                } finally {
+                  setUploading(false);
+                }
+              }}
               style={{
                 width: '100%',
-                padding: '12px 16px',
+                padding: '10px 12px',
                 fontSize: 15,
                 border: '2px solid #e0e0e0',
                 borderRadius: 8,
@@ -279,6 +305,13 @@ export default function EditProductPage() {
               onFocus={(e) => e.target.style.borderColor = '#667eea'}
               onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
             />
+            {uploading && <div style={{ marginTop: 8, color: '#666' }}>กำลังอัพโหลดรูปภาพ...</div>}
+            {uploadError && <div style={{ marginTop: 8, color: '#c00' }}>{uploadError}</div>}
+            {imagePreview && (
+              <div style={{ marginTop: 12 }}>
+                <img src={imagePreview} alt="preview" style={{ maxWidth: '200px', borderRadius: 6, border: '1px solid #eee' }} />
+              </div>
+            )}
           </div>
 
           <div>
@@ -310,23 +343,23 @@ export default function EditProductPage() {
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploading}
               style={{
                 padding: '12px 24px',
                 fontSize: 16,
-                backgroundColor: saving ? '#6c757d' : '#007bff',
+                backgroundColor: (saving || uploading) ? '#6c757d' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: 8,
-                cursor: saving ? 'not-allowed' : 'pointer',
+                cursor: (saving || uploading) ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
                 transition: 'background-color 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                if (!saving) e.target.style.backgroundColor = '#0056b3';
+                if (!saving && !uploading) e.target.style.backgroundColor = '#0056b3';
               }}
               onMouseLeave={(e) => {
-                if (!saving) e.target.style.backgroundColor = '#007bff';
+                if (!saving && !uploading) e.target.style.backgroundColor = '#007bff';
               }}
             >
               {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}

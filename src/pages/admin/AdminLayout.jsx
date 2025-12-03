@@ -60,7 +60,7 @@ const AdminLayout = () => {
             borderRadius: '50%',
             backgroundColor: isActiveLink('/admin/dashboard') ? 'white' : '#888'
           }} />
-          <span>รายการสินค้า</span>
+          <span>จัดการสินค้า</span>
         </Link>
         <Link
           to="/admin/orders?source=customer"
@@ -131,29 +131,7 @@ const AdminLayout = () => {
           }} />
           <span>จัดการสิทธิ์ผู้ใช้</span>
         </Link>
-        <Link
-          to="/admin/addproduct"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: isActiveLink('/admin/addproduct') ? '#4CAF50' : '#f0f0f0',
-            color: isActiveLink('/admin/addproduct') ? 'white' : '#333',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontWeight: isActiveLink('/admin/addproduct') ? 'bold' : 'normal'
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: isActiveLink('/admin/addproduct') ? 'white' : '#888'
-          }} />
-          <span>เพิ่มสินค้าใหม่</span>
-        </Link>
+        {/* เมนูเพิ่มสินค้าใหม่ถูกย้ายไปรวมในหน้า "จัดการสินค้า" ผ่านปุ่ม + เพิ่มสินค้าใหม่ */}
         <Link
           to="/admin/inventory_history"
           style={{
