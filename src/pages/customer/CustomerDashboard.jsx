@@ -107,6 +107,9 @@ export default function CustomerDashboard() {
       const cartItems = await getCart(user.uid, 'customer');
       const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
       setCartCount(totalItems);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('customer-cart-updated'));
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
       alert('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
@@ -153,6 +156,9 @@ export default function CustomerDashboard() {
       setCartError('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setCartLoading(false);
+      if (!cartError && typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('customer-cart-updated'));
+      }
     }
   };
 
@@ -162,232 +168,7 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div
-      style={{
-        padding: 0,
-        minHeight: '100vh',
-        background:
-          'radial-gradient(circle at top left, #ffffff 0%, #e5f0ff 40%, #d6e4ff 70%, #c7d2fe 100%)'
-      }}
-    >
-      {/* Top Header - Blue Rounded Bar */}
-      <div style={{ padding: '24px 24px 14px', display: 'flex', justifyContent: 'center' }}>
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 1200,
-            background:
-              'linear-gradient(135deg, #1D4ED8 0%, #2563EB 35%, #1D9BF0 70%, #4F46E5 100%)',
-            padding: '22px 36px',
-            borderRadius: '24px',
-            boxShadow: '0 14px 36px rgba(15,23,42,0.35)'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* Left: Logo and Store Name */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '26px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.18)'
-                }}
-              >
-                🏪
-              </div>
-              <div>
-                <div
-                  style={{
-                    color: '#fff',
-                    fontSize: '26px',
-                    fontWeight: '800',
-                    marginBottom: 4,
-                    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }}
-                >
-                  ร้านค้าออนไลน์
-                </div>
-                <div
-                  style={{
-                    color: 'rgba(255,255,255,0.9)',
-                    fontSize: 13,
-                    fontWeight: 400
-                  }}
-                >
-                  สินค้าคุณภาพ ราคาย่อมเยา
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Cart, Profile, Logout */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
-              {/* Cart Icon */}
-              <Link
-                to="/customer/withdraw"
-                style={{
-                  position: 'relative',
-                  width: '44px',
-                  height: '44px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  borderRadius: '999px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: '22px',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                🛒
-                {cartCount > 0 && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: -6,
-                      right: -6,
-                      backgroundColor: '#f97316',
-                      color: '#fff',
-                      borderRadius: '999px',
-                      minWidth: 20,
-                      height: 20,
-                      padding: '0 4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 11,
-                      fontWeight: 'bold',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
-                    }}
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </div>
-                )}
-              </Link>
-
-              {/* Profile Icon + Menu */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowMenu((prev) => !prev)}
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: '999px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontSize: '24px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    border: 'none',
-                    padding: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  👤
-                </button>
-                {showMenu && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      marginTop: 8,
-                      background: '#fff',
-                      borderRadius: 12,
-                      boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
-                      minWidth: 160,
-                      zIndex: 2100,
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <Link
-                      to="/customer/profile"
-                      onClick={() => setShowMenu(false)}
-                      style={{
-                        display: 'block',
-                        padding: '10px 14px',
-                        fontSize: 14,
-                        color: '#111827',
-                        textDecoration: 'none',
-                        borderBottom: '1px solid #e5e7eb'
-                      }}
-                    >
-                      โปรไฟล์
-                    </Link>
-                    <Link
-                      to="/customer/orders"
-                      onClick={() => setShowMenu(false)}
-                      style={{
-                        display: 'block',
-                        padding: '10px 14px',
-                        fontSize: 14,
-                        color: '#111827',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      ติดตามสถานะ
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              {/* Logout Button */}
-              <button
-                onClick={() => signOut(auth)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '10px 18px',
-                  backgroundColor: 'rgba(255,255,255,0.18)',
-                  border: 'none',
-                  borderRadius: '999px',
-                  color: '#fff',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                }}
-              >
-                <span>🚪</span>
-                <span>ออกจากระบบ</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div style={{ paddingTop: 0 }}>
       {/* Search Bar */}
       <div style={{ display: 'flex', justifyContent: 'center', padding: '0 24px 26px' }}>
         <div
@@ -955,6 +736,157 @@ export default function CustomerDashboard() {
           </div>
         </div>
       )}
+
+      {/* Footer - store information (only on customer dashboard) */}
+      <footer
+        style={{
+          marginTop: 32,
+          background:
+            'linear-gradient(135deg, #020617 0%, #0f172a 40%, #020617 100%)',
+          color: '#e5e7eb',
+          padding: '32px 24px 24px',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            display: 'grid',
+            gridTemplateColumns: '2fr 1.2fr 1.2fr 1.4fr',
+            gap: 32,
+          }}
+        >
+          {/* About store */}
+          <div>
+            <h3
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 20,
+                fontWeight: 700,
+                color: '#f9fafb',
+              }}
+            >
+              ร้านค้าของเรา
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.6,
+              }}
+            >
+              พบกับสินค้าคุณภาพพร้อมจัดส่งอย่างรวดเร็ว เพื่อการช็อปที่สะดวกและปลอดภัย
+              เรามุ่งมั่นให้ความพึงพอใจสูงสุดแก่ลูกค้าทุกท่าน
+            </p>
+          </div>
+
+          {/* Menu */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#e5e7eb',
+              }}
+            >
+              เมนูหลัก
+            </h4>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.8,
+              }}
+            >
+              <li>หน้าหลัก</li>
+              <li>รายการสินค้า</li>
+              <li>ประวัติคำสั่งซื้อ</li>
+              <li>โปรไฟล์</li>
+            </ul>
+          </div>
+
+          {/* Customer services */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#e5e7eb',
+              }}
+            >
+              บริการลูกค้า
+            </h4>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.8,
+              }}
+            >
+              <li>วิธีการสั่งซื้อ</li>
+              <li>การจัดส่งสินค้า</li>
+              <li>นโยบายการคืนสินค้า</li>
+              <li>คำถามที่พบบ่อย</li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#e5e7eb',
+              }}
+            >
+              ติดต่อเรา
+            </h4>
+            <div
+              style={{
+                fontSize: 13,
+                color: '#9ca3af',
+                lineHeight: 1.8,
+              }}
+            >
+              <div>โทร: 084-922-3468</div>
+              <div>อีเมล: hr@vannessplus.com</div>
+              <div>ที่อยู่: 98 Sathorn Square Building, North Sathorn Road, Silom,Bangrak,Bangkok 10500</div>
+              <div>วันทำการ: จันทร์ - เสาร์ 8:30 - 17:30 น.</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '18px auto 0',
+            borderTop: '1px solid rgba(148,163,184,0.25)',
+            paddingTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12,
+            color: '#6b7280',
+          }}
+        >
+          <div>ร้านค้าของเรา สงวนลิขสิทธิ์ทั้งหมด</div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <span>นโยบายความเป็นส่วนตัว</span>
+            <span>เงื่อนไขการใช้งาน</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
