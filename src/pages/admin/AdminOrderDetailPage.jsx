@@ -96,8 +96,8 @@ export default function AdminOrderDetailPage() {
           style={{
             background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
             borderRadius: 18,
-            padding: '24px 28px',
-            marginBottom: 20,
+            padding: '16px 20px',
+            marginBottom: 8,
             boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
             display: 'flex',
             justifyContent: 'space-between',
@@ -107,27 +107,27 @@ export default function AdminOrderDetailPage() {
         >
           <div>
             <div style={{ fontSize: 12, color: '#3b82f6', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 6 }}>ORDER DETAIL</div>
-            <h1 style={{ margin: '0 0 6px', fontSize: 24, color: '#0ea5e9', fontWeight: 700 }}>คำสั่งซื้อ #{id}</h1>
+            <h1 style={{ margin: '0 0 6px', fontSize: 24, color: '#1e40af', fontWeight: 700 }}>คำสั่งซื้อ #{id}</h1>
             <div style={{ fontSize: 14, color: '#64748b' }}>วันที่สั่งซื้อ: {dateText}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>ยอดรวม</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#0ea5e9' }}>฿{totalText}</div>
+            <div style={{ fontSize: 32, fontWeight: 700, color: '#1e40af' }}>฿{totalText}</div>
           </div>
         </div>
 
         {/* Two Cards Row: ข้อมูลผู้สั่งซื้อ + สินค้าในคำสั่งซื้อ */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
           {/* ข้อมูลผู้สั่งซื้อ */}
           <div
             style={{
               background: '#ffffff',
-              borderRadius: 16,
-              padding: '20px 24px',
+              borderRadius: 14,
+              padding: '14px 18px',
               boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <div
                 style={{
                   width: 32,
@@ -157,12 +157,12 @@ export default function AdminOrderDetailPage() {
           <div
             style={{
               background: '#ffffff',
-              borderRadius: 16,
-              padding: '20px 24px',
+              borderRadius: 14,
+              padding: '14px 18px',
               boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <div
                 style={{
                   width: 32,
@@ -213,12 +213,12 @@ export default function AdminOrderDetailPage() {
           style={{
             background: '#ffffff',
             borderRadius: 16,
-            padding: '20px 24px',
+            padding: '12px 18px',
             boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
-            marginBottom: 20,
+            marginBottom: 8,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <div
               style={{
                 width: 32,
@@ -237,19 +237,19 @@ export default function AdminOrderDetailPage() {
             <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>ข้อมูลการจัดส่ง</h2>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
               <span style={{ fontSize: 14, color: '#6b7280' }}>วิธีรับ:</span>
               <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{(order.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง'}</span>
             </div>
             {order.receivedBy && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: 14, color: '#6b7280' }}>ผู้รับ:</span>
                 <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{order.receivedBy}</span>
               </div>
             )}
             {order.note && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
                 <span style={{ fontSize: 14, color: '#6b7280' }}>หมายเหตุ:</span>
                 <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{order.note}</span>
               </div>
@@ -262,7 +262,7 @@ export default function AdminOrderDetailPage() {
           style={{
             background: '#ffffff',
             borderRadius: 16,
-            padding: '24px',
+            padding: '20px 24px',
             boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
           }}
         >
