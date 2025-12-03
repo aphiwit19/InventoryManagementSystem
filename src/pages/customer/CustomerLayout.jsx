@@ -84,21 +84,18 @@ const CustomerLayout = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {/* Left: Logo and Store Name */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div
+              <img 
+                src="/Inventory Hub .png" 
+                alt="Inventory Hub" 
                 style={{
                   width: '48px',
                   height: '48px',
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '26px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
+                  objectFit: 'contain',
+                  borderRadius: '10px',
+                  background: '#fff',
+                  padding: '4px',
                 }}
-              >
-                🏪
-              </div>
+              />
               <div>
                 <button
                   type="button"
@@ -116,7 +113,7 @@ const CustomerLayout = () => {
                     textAlign: 'left',
                   }}
                 >
-                  ร้านค้าออนไลน์
+                  Inventory Hub
                 </button>
                 <div
                   style={{
@@ -125,7 +122,7 @@ const CustomerLayout = () => {
                     fontWeight: 400,
                   }}
                 >
-                  สินค้าคุณภาพ ราคาย่อมเยา
+                  ระบบจัดการสต็อกสินค้า
                 </div>
               </div>
             </div>

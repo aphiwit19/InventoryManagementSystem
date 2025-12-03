@@ -161,28 +161,42 @@ export default function StaffDashboard() {
               pointerEvents: "none",
             }}
           />
-          <div>
-            <div
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <img 
+              src="/Inventory Hub .png" 
+              alt="Inventory Hub" 
               style={{
-                fontSize: 12,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                opacity: 0.9,
+                width: 52,
+                height: 52,
+                objectFit: "contain",
+                borderRadius: 10,
+                background: "#fff",
+                padding: 4,
               }}
-            >
-              STAFF PANEL
-            </div>
-            <h1
-              style={{
-                margin: "4px 0 2px",
-                fontSize: 20,
-                letterSpacing: "0.03em",
-              }}
-            >
-              รายการสินค้า
-            </h1>
-            <div style={{ fontSize: 13, opacity: 0.9 }}>
-              ทำรายการสินค้า
+            />
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  opacity: 0.9,
+                }}
+              >
+                STAFF PANEL
+              </div>
+              <h1
+                style={{
+                  margin: "4px 0 2px",
+                  fontSize: 20,
+                  letterSpacing: "0.03em",
+                }}
+              >
+                รายการสินค้า
+              </h1>
+              <div style={{ fontSize: 13, opacity: 0.9 }}>
+                ทำรายการสินค้า
+              </div>
             </div>
           </div>
           <div

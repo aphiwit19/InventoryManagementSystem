@@ -124,35 +124,41 @@ export default function AdminOverviewPage() {
           <SummaryCard
             title="สินค้าที่สต็อกต่ำ"
             value={lowStock.length.toLocaleString()}
-            subtext="ต่ำกว่า 20% ของสต็อกเต็มที่หมด"
+            subtext="ต่ำกว่า 20% ของสต็อกตั้งต้น"
             onClick={() => navigate('/admin/products')}
           />
           <SummaryCard
             title="คำสั่งซื้อที่รอดำเนินการ"
             value={pendingCustomerOrders.length.toLocaleString()}
-            subtext="คำสั่งจากลูกค้า"
+            subtext="คำสั่งซื้อจากลูกค้า"
             onClick={() => navigate('/admin/orders?source=customer')}
           />
         </div>
 
-        {/* แถวรายได้: 2 การ์ดใหญ่ */}
+        {/* แถวที่ 2: คำสั่งเบิก + รายได้ */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: 16,
-            marginBottom: 20,
+            marginBottom: 16,
           }}
         >
+          <SummaryCard
+            title="คำสั่งเบิกที่รอดำเนินการ"
+            value={pendingWithdrawals.length.toLocaleString()}
+            subtext="คำสั่งเบิกจากสตาฟ"
+            onClick={() => navigate('/admin/orders?source=staff')}
+          />
           <RevenueCard
             title="รายได้วันนี้"
             value={todayRevenue}
-            subtext="ยอดขายรวมของวันนี้"
+            subtext="ยอดสั่งซื้อจากลูกค้าวันนี้"
           />
           <RevenueCard
-            title="รายได้รวมทั้งหมด"
+            title="รายได้สะสมทั้งหมด"
             value={totalRevenue}
-            subtext="ยอดขายทั้งหมด"
+            subtext="ยอดสั่งซื้อจากลูกค้าทั้งหมด"
           />
         </div>
 

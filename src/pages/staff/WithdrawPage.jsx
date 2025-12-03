@@ -135,33 +135,44 @@ export default function WithdrawPage() {
   return (
     <div
       style={{
-        padding: '24px',
-        minHeight: '100%',
+        padding: '32px 24px',
+        minHeight: '100vh',
         background:
           'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
         boxSizing: 'border-box',
       }}
     >
       <div style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
+        {/* Header */}
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 18,
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            padding: '20px 24px',
+            borderRadius: 18,
+            marginBottom: 20,
+            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+            border: '1px solid rgba(255,255,255,0.9)',
           }}
         >
-          <h2
+          <h1
             style={{
               margin: 0,
-              fontSize: 22,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              color: '#1f2937',
+              color: '#1e40af',
+              fontSize: 24,
+              fontWeight: 700,
             }}
           >
             คำสั่งเบิกสินค้า
-          </h2>
+          </h1>
+          <div
+            style={{
+              fontSize: 14,
+              color: '#3b82f6',
+              marginTop: 6,
+            }}
+          >
+            สร้างคำสั่งเบิกสินค้าและจัดการรายการ
+          </div>
         </div>
 
         <div
