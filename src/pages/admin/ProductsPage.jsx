@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 import { useAuth } from '../../auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -8,6 +9,8 @@ import { Link } from 'react-router-dom';
 
 export default function ProductsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, profile } = useAuth();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -48,6 +51,7 @@ export default function ProductsPage() {
     if (searchTerm.trim() === '') {
       setFilteredProducts(products);
       setCurrentPage(1);
+
     } else {
       const filtered = products.filter(product =>
         product.productName?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -56,6 +60,19 @@ export default function ProductsPage() {
       setCurrentPage(1);
     }
   }, [searchTerm, products]);
+
+  // ถ้ามาจากหน้าแจ้งเตือนสินค้า พร้อมพารามิเตอร์ focus ให้แสดงเฉพาะสินค้านั้น
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const focusId = params.get('focus');
+    if (!focusId) return;
+
+    const target = products.find(p => p.id === focusId);
+    if (target) {
+      setFilteredProducts([target]);
+      setCurrentPage(1);
+    }
+  }, [location.search, products]);
 
   // คำนวณ pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);

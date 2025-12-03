@@ -5,6 +5,8 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminOverviewPage from './pages/admin/AdminOverviewPage';
+import AdminAlertsPage from './pages/admin/AdminAlertsPage';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import StaffLayout from './pages/staff/StaffLayout';
 import StaffOrdersPage from './pages/staff/StaffOrdersPage';
@@ -49,7 +51,9 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute allow={['admin']} />}> 
             <Route element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<ProductsPage />} />
+              <Route path="dashboard" element={<AdminOverviewPage />} />
+              <Route path="alerts" element={<AdminAlertsPage />} />
+              <Route path="products" element={<ProductsPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="orders/:id" element={<AdminOrderDetailPage />} />
               <Route path="users" element={<UsersPage />} />

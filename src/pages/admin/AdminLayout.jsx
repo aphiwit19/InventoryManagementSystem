@@ -12,10 +12,8 @@ const AdminLayout = () => {
   const currentOrdersSource = params.get('source') || 'customer';
 
   const isActiveLink = (path) => {
-    // Special handling for the dashboard route
-    if (path === '/admin/dashboard') {
-      return location.pathname === '/admin/dashboard' || 
-             location.pathname.startsWith('/admin/products/');
+    if (path === '/admin/products') {
+      return location.pathname === '/admin/products' || location.pathname.startsWith('/admin/products/');
     }
     return location.pathname === path;
   };
@@ -59,6 +57,52 @@ const AdminLayout = () => {
             height: 10,
             borderRadius: '50%',
             backgroundColor: isActiveLink('/admin/dashboard') ? 'white' : '#888'
+          }} />
+          <span>แดชบอร์ด</span>
+        </Link>
+        <Link
+          to="/admin/alerts"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: isActiveLink('/admin/alerts') ? '#4CAF50' : '#f0f0f0',
+            color: isActiveLink('/admin/alerts') ? 'white' : '#333',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: isActiveLink('/admin/alerts') ? 'bold' : 'normal'
+          }}
+        >
+          <span style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: isActiveLink('/admin/alerts') ? 'white' : '#888'
+          }} />
+          <span>แจ้งเตือนสินค้า</span>
+        </Link>
+        <Link
+          to="/admin/products"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: isActiveLink('/admin/products') ? '#4CAF50' : '#f0f0f0',
+            color: isActiveLink('/admin/products') ? 'white' : '#333',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: isActiveLink('/admin/products') ? 'bold' : 'normal'
+          }}
+        >
+          <span style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: isActiveLink('/admin/products') ? 'white' : '#888'
           }} />
           <span>จัดการสินค้า</span>
         </Link>
