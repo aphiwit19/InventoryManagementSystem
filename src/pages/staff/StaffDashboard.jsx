@@ -138,8 +138,8 @@ export default function StaffDashboard() {
             width: "100%",
             background:
               "linear-gradient(135deg, #1D4ED8 0%, #2563EB 28%, #22c1f1 60%, #4F46E5 100%)",
-            padding: "22px 36px",
-            borderRadius: 24,
+            padding: "22px 28px",
+            borderRadius: 18,
             marginBottom: 18,
             display: "flex",
             justifyContent: "space-between",
@@ -149,6 +149,7 @@ export default function StaffDashboard() {
             color: "#fff",
             position: "relative",
             overflow: "visible",
+            boxSizing: "border-box",
           }}
         >
           <div
@@ -398,8 +399,9 @@ export default function StaffDashboard() {
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 20,
-                margin: "18px 0 26px",
+                gap: 16,
+                marginTop: 0,
+                marginBottom: 26,
               }}
             >
             {currentProducts.map((product) => (

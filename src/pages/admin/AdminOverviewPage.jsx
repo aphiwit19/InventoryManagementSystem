@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllProducts, getAllWithdrawals, isLowStock } from '../../services';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 export default function AdminOverviewPage() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [userCounts, setUserCounts] = useState({ customers: 0, staff: 0, total: 0 });
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
       try {
         const [p, w] = await Promise.all([
           getAllProducts(),
@@ -18,8 +19,19 @@ export default function AdminOverviewPage() {
         ]);
         setProducts(p || []);
         setWithdrawals(w || []);
-      } finally {
-        setLoading(false);
+
+        // ดึงข้อมูลผู้ใช้
+        const usersSnap = await getDocs(collection(db, 'users'));
+        let customers = 0;
+        let staff = 0;
+        usersSnap.forEach(doc => {
+          const role = doc.data().role;
+          if (role === 'customer') customers++;
+          else if (role === 'staff') staff++;
+        });
+        setUserCounts({ customers, staff, total: customers + staff });
+      } catch (error) {
+        console.error('Error loading data:', error);
       }
     };
     load();
@@ -122,20 +134,20 @@ export default function AdminOverviewPage() {
             onClick={() => navigate('/admin/products')}
           />
           <SummaryCard
-            title="สินค้าที่สต็อกต่ำ"
-            value={lowStock.length.toLocaleString()}
-            subtext="ต่ำกว่า 20% ของสต็อกตั้งต้น"
-            onClick={() => navigate('/admin/products')}
-          />
-          <SummaryCard
             title="คำสั่งซื้อที่รอดำเนินการ"
             value={pendingCustomerOrders.length.toLocaleString()}
             subtext="คำสั่งซื้อจากลูกค้า"
             onClick={() => navigate('/admin/orders?source=customer')}
           />
+          <SummaryCard
+            title="คำสั่งเบิกที่รอดำเนินการ"
+            value={pendingWithdrawals.length.toLocaleString()}
+            subtext="คำสั่งเบิกจากสตาฟ"
+            onClick={() => navigate('/admin/orders?source=staff')}
+          />
         </div>
 
-        {/* แถวที่ 2: คำสั่งเบิก + รายได้ */}
+        {/* แถวที่ 2: ผู้ใช้ + รายได้ */}
         <div
           style={{
             display: 'grid',
@@ -145,10 +157,9 @@ export default function AdminOverviewPage() {
           }}
         >
           <SummaryCard
-            title="คำสั่งเบิกที่รอดำเนินการ"
-            value={pendingWithdrawals.length.toLocaleString()}
-            subtext="คำสั่งเบิกจากสตาฟ"
-            onClick={() => navigate('/admin/orders?source=staff')}
+            title="ผู้ใช้ทั้งหมด"
+            value={userCounts.total.toLocaleString()}
+            subtext={`ลูกค้า ${userCounts.customers} | สตาฟ ${userCounts.staff}`}
           />
           <RevenueCard
             title="รายได้วันนี้"
