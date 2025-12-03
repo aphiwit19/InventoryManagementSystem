@@ -106,9 +106,6 @@ const AdminLayout = () => {
         <Link to="/admin/dashboard" style={getLinkStyle(isActiveLink('/admin/dashboard'))}>
           แดชบอร์ด
         </Link>
-        <Link to="/admin/alerts" style={getLinkStyle(isActiveLink('/admin/alerts'))}>
-          แจ้งเตือนสินค้า
-        </Link>
         <Link to="/admin/products" style={getLinkStyle(isActiveLink('/admin/products'))}>
           จัดการสินค้า
         </Link>
@@ -118,11 +115,14 @@ const AdminLayout = () => {
         <Link to="/admin/orders?source=staff" style={getLinkStyle(isOrdersActive('staff'))}>
           รายการคำสั่งเบิก
         </Link>
+        <Link to="/admin/inventory_history" style={getLinkStyle(isActiveLink('/admin/inventory_history'))}>
+          ประวัติสินค้าเข้า–ออกคลัง
+        </Link>
+        <Link to="/admin/alerts" style={getLinkStyle(isActiveLink('/admin/alerts'))}>
+          แจ้งเตือนสต็อกต่ำ
+        </Link>
         <Link to="/admin/users" style={getLinkStyle(isActiveLink('/admin/users'))}>
           จัดการสิทธิ์ผู้ใช้
-        </Link>
-        <Link to="/admin/inventory_history" style={getLinkStyle(isActiveLink('/admin/inventory_history'))}>
-          จัดการสินค้าเข้า/ออก
         </Link>
         <Link to="/admin/profile" style={getLinkStyle(isActiveLink('/admin/profile'))}>
           โปรไฟล์

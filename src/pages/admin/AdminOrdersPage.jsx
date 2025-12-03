@@ -21,6 +21,8 @@ export default function AdminOrdersPage() {
   const [deliveryFilter, setDeliveryFilter] = useState('all'); // all | shipping | pickup
   const [edits, setEdits] = useState({}); // { [id]: { shippingCarrier, trackingNumber, shippingStatus } }
   const [savedOk, setSavedOk] = useState({}); // { [id]: true when last save succeeded }
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   const headingTitle = sourceFilter === 'customer'
     ? 'จัดการคำสั่งซื้อ'
@@ -78,6 +80,43 @@ export default function AdminOrdersPage() {
     const deliveryOk = deliveryFilter === 'all' || ((o.deliveryMethod || 'shipping') === deliveryFilter);
     return hit && statusOk && sourceOk && deliveryOk;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentOrders = filtered.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const buildPageRange = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    let start = currentPage - 2;
+    let end = currentPage + 2;
+
+    if (start < 1) {
+      start = 1;
+      end = 5;
+    }
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = totalPages - 4;
+    }
+
+    for (let i = start; i <= end; i += 1) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
 
   const canSave = (id) => {
     const order = orders.find(o => o.id === id);
@@ -210,8 +249,9 @@ export default function AdminOrdersPage() {
       ) : filtered.length === 0 ? (
         <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', color:'#64748b', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>ไม่พบรายการ</div>
       ) : (
-        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, overflowX:'auto', boxShadow:'0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)' }}>
-          {sourceFilter === 'customer' ? (
+        <>
+          <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, overflowX:'auto', boxShadow:'0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)' }}>
+            {sourceFilter === 'customer' ? (
             <>
               <div
                 style={{
@@ -233,7 +273,7 @@ export default function AdminOrdersPage() {
                 <div>ที่อยู่</div>
                 <div style={{ textAlign: 'center' }}>จัดการ</div>
               </div>
-              {filtered.map((o) => {
+              {currentOrders.map((o) => {
                 const dateText = new Date(
                   o.withdrawDate?.seconds
                     ? o.withdrawDate.seconds * 1000
@@ -317,7 +357,7 @@ export default function AdminOrdersPage() {
                 );
               })}
             </>
-          ) : (
+            ) : (
             <>
               <div
                 style={{
@@ -340,7 +380,7 @@ export default function AdminOrdersPage() {
                 <div>หมายเหตุ</div>
                 <div style={{ textAlign: 'center' }}>จัดการ</div>
               </div>
-              {filtered.map((o) => {
+              {currentOrders.map((o) => {
                 // filter ตาม deliveryFilter แต่ตารางเรียบง่ายขึ้น ไม่มี inline shipping fields แล้ว
                 if (deliveryFilter === 'shipping' && (o.deliveryMethod || 'shipping') !== 'shipping') return null;
                 if (deliveryFilter === 'pickup' && (o.deliveryMethod || 'shipping') !== 'pickup') return null;
@@ -414,7 +454,88 @@ export default function AdminOrdersPage() {
               })}
             </>
           )}
-        </div>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 8,
+                padding: '18px 22px',
+                marginTop: 16,
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: 18,
+                boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
+                border: '1px solid rgba(255,255,255,0.9)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 10,
+                  border: '2px solid #e2e8f0',
+                  background: currentPage === 1 ? '#f1f5f9' : '#ffffff',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  color: currentPage === 1 ? '#94a3b8' : '#1e40af',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Previous
+              </button>
+              {buildPageRange().map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => handlePageChange(page)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 10,
+                    border: currentPage === page ? 'none' : '2px solid #e2e8f0',
+                    background:
+                      currentPage === page
+                        ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                        : '#ffffff',
+                    color: currentPage === page ? '#ffffff' : '#374151',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    boxShadow:
+                      currentPage === page
+                        ? '0 2px 8px rgba(37,99,235,0.4)'
+                        : 'none',
+                    minWidth: 40,
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 10,
+                  border: '2px solid #e2e8f0',
+                  background: currentPage === totalPages ? '#f1f5f9' : '#ffffff',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  color: currentPage === totalPages ? '#94a3b8' : '#1e40af',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

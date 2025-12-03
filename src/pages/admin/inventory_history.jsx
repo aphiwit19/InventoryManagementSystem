@@ -11,7 +11,7 @@ export default function InventoryHistoryIndex() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(5);
+  const [pageSize] = useState(8);
 
   useEffect(() => {
     const load = async () => {
@@ -116,6 +116,38 @@ export default function InventoryHistoryIndex() {
 
   // reset page when filters change
   useEffect(() => { setPage(1); }, [typeFilter, fromDate, toDate, search]);
+
+  const handlePageChange = (p) => {
+    if (p < 1 || p > totalPages) return;
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const buildPageRange = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    let start = currentPage - 2;
+    let end = currentPage + 2;
+
+    if (start < 1) {
+      start = 1;
+      end = 5;
+    }
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = totalPages - 4;
+    }
+
+    for (let i = start; i <= end; i += 1) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
 
   return (
     <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
@@ -327,7 +359,7 @@ export default function InventoryHistoryIndex() {
         >
           <button
             disabled={currentPage === 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
+            onClick={() => handlePageChange(currentPage - 1)}
             style={{
               padding: '10px 18px',
               border: '2px solid #e2e8f0',
@@ -341,31 +373,31 @@ export default function InventoryHistoryIndex() {
           >
             Previous
           </button>
-          {Array.from({ length: totalPages }).map((_, i) => (
+          {buildPageRange().map((p) => (
             <button
-              key={i}
-              onClick={() => setPage(i + 1)}
+              key={p}
+              onClick={() => handlePageChange(p)}
               style={{
                 padding: '10px 16px',
-                border: currentPage === i + 1 ? 'none' : '2px solid #e2e8f0',
+                border: currentPage === p ? 'none' : '2px solid #e2e8f0',
                 borderRadius: 10,
-                background: currentPage === i + 1
+                background: currentPage === p
                   ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
                   : '#fff',
-                color: currentPage === i + 1 ? '#fff' : '#374151',
+                color: currentPage === p ? '#fff' : '#374151',
                 cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: 600,
-                boxShadow: currentPage === i + 1 ? '0 2px 8px rgba(37,99,235,0.4)' : 'none',
+                boxShadow: currentPage === p ? '0 2px 8px rgba(37,99,235,0.4)' : 'none',
                 minWidth: 44,
               }}
             >
-              {i + 1}
+              {p}
             </button>
           ))}
           <button
             disabled={currentPage === totalPages}
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            onClick={() => handlePageChange(currentPage + 1)}
             style={{
               padding: '10px 18px',
               border: '2px solid #e2e8f0',

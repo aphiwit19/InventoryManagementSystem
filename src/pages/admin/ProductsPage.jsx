@@ -17,7 +17,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 8;
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantityChange, setQuantityChange] = useState('');
@@ -78,6 +78,32 @@ export default function ProductsPage() {
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const buildPageRange = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    let start = currentPage - 2;
+    let end = currentPage + 2;
+
+    if (start < 1) {
+      start = 1;
+      end = 5;
+    }
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = totalPages - 4;
+    }
+
+    for (let i = start; i <= end; i += 1) {
+      pages.push(i);
+    }
+
+    return pages;
   };
 
   const handleDeleteProduct = async (productId, productName) => {
@@ -220,8 +246,31 @@ export default function ProductsPage() {
       {totalPages >= 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '20px 24px', marginTop: 10, background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)' }}>
           <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>Previous</button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button key={page} onClick={() => handlePageChange(page)} style={{ padding: '10px 16px', border: currentPage === page ? 'none' : '2px solid #e2e8f0', borderRadius: 10, background: currentPage === page ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#fff', color: currentPage === page ? '#fff' : '#374151', cursor: 'pointer', fontSize: 14, fontWeight: 600, boxShadow: currentPage === page ? '0 2px 8px rgba(37,99,235,0.4)' : 'none', minWidth: 44 }}>{page}</button>
+          {buildPageRange().map((page) => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              style={{
+                padding: '10px 16px',
+                border: currentPage === page ? 'none' : '2px solid #e2e8f0',
+                borderRadius: 10,
+                background:
+                  currentPage === page
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                    : '#fff',
+                color: currentPage === page ? '#fff' : '#374151',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600,
+                boxShadow:
+                  currentPage === page
+                    ? '0 2px 8px rgba(37,99,235,0.4)'
+                    : 'none',
+                minWidth: 44,
+              }}
+            >
+              {page}
+            </button>
           ))}
           <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>Next</button>
         </div>
