@@ -281,22 +281,23 @@ export default function LoginPage() {
                 fontSize: '15px',
                 fontWeight: '500',
                 color: '#3b82f6',
-                background: '#fff',
-                border: '2px solid #e2e8f0',
+                background: 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
+                border: 'none',
                 borderRadius: '14px',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 textAlign: 'center',
                 textDecoration: 'none',
-                marginTop: '8px'
+                marginTop: '8px',
+                whiteSpace: 'nowrap',
+                boxSizing: 'border-box',
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)'
               }}
               onMouseEnter={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.background = '#eff6ff';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.04)';
               }}
               onMouseLeave={(e) => {
-                e.target.style.borderColor = '#e2e8f0';
-                e.target.style.background = '#fff';
+                e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.04)';
               }}
             >
               ยังไม่มีบัญชี? สมัครสมาชิก
