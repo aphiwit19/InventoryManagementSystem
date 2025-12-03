@@ -108,7 +108,7 @@ export default function LoginPage() {
                 </span>
                 <input
                   type="email"
-                  placeholder="customer1@gmail.com"
+                  placeholder="example@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -163,7 +163,8 @@ export default function LoginPage() {
                 </span>
                 <input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="รหัสผ่าน"
+                  
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{

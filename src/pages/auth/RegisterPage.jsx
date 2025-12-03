@@ -229,7 +229,7 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="password"
-                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  placeholder="อย่างน้อย 8 ตัวอักษร"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
