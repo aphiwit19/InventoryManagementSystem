@@ -249,7 +249,6 @@ export default function AdminOrdersPage() {
                 return (
                   <div
                     key={o.id}
-                    onClick={() => goDetail(o)}
                     style={{
                       display: 'grid',
                       gridTemplateColumns:
@@ -259,7 +258,6 @@ export default function AdminOrdersPage() {
                       borderTop: '1px solid #eee',
                       alignItems: 'flex-start',
                       fontSize: 13,
-                      cursor: 'pointer',
                     }}
                   >
                     <div>{dateText}</div>
@@ -283,7 +281,7 @@ export default function AdminOrdersPage() {
                     <div style={{ textAlign: 'center' }}>
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); goDetail(o); }}
+                        onClick={() => goDetail(o)}
                         style={{
                           padding: '8px 16px',
                           borderRadius: 8,
@@ -351,7 +349,6 @@ export default function AdminOrdersPage() {
                 return (
                   <div
                     key={o.id}
-                    onClick={() => goDetail(o)}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '0.9fr 1fr 1.4fr 1.4fr 1.2fr 1.4fr 1.3fr 0.7fr',
@@ -359,7 +356,6 @@ export default function AdminOrdersPage() {
                       padding: '12px 16px',
                       borderTop: '1px solid #eee',
                       alignItems: 'center',
-                      cursor: 'pointer',
                       fontSize: 13,
                     }}
                   >
@@ -379,7 +375,7 @@ export default function AdminOrdersPage() {
                     <div style={{ textAlign: 'center' }}>
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); goDetail(o); }}
+                        onClick={() => goDetail(o)}
                         style={{
                           padding: '8px 16px',
                           borderRadius: 8,

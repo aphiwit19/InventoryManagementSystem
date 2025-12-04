@@ -1,368 +1,388 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { createWithdrawal, getAllProducts, getCart, updateCartItem, removeFromCart, clearCart, migrateLocalStorageCart } from '../../services';
+import { getCart, updateCartItem, removeFromCart, clearCart, createWithdrawal } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
-import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function WithdrawPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const [productsById, setProductsById] = useState({});
-  const [items, setItems] = useState([]);
-  const [requestedBy, setRequestedBy] = useState('');
-  const [receivedBy, setReceivedBy] = useState('');
-  const [receivedAddress, setReceivedAddress] = useState('');
-  const [profileAddress, setProfileAddress] = useState('');
-  const [note, setNote] = useState('');
-  const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
-  const [deliveryMethod, setDeliveryMethod] = useState('shipping');
+  const { user, profile } = useAuth();
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [cartLoading, setCartLoading] = useState(true);
 
-  const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
+  // Pagination for cart items
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const list = await getAllProducts();
-        const map = {};
-        list.forEach(p => { map[p.id] = p; });
-        setProductsById(map);
-      } catch (error) {
-        console.error('Error loading products:', error);
-      }
-    };
-    load();
-  }, []);
+  // Form data
+  const [formData, setFormData] = useState({
+    requesterName: '',
+    requesterDepartment: '',
+    recipientName: '',
+    recipientPhone: '',
+    recipientAddress: '',
+    withdrawDate: new Date().toISOString().split('T')[0],
+    notes: '',
+    deliveryMethod: 'pickup', // pickup = รับเอง, shipping = จัดส่ง
+  });
 
-  // Auto-fill staff name/address from Firestore profile when entering the page
-  useEffect(() => {
-    const loadStaffProfile = async () => {
-      try {
-        if (!user?.uid) return;
-        const userRef = doc(db, 'users', user.uid);
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) return;
-        const data = snap.data() || {};
-
-        // Fill requestedBy (staff name) if empty
-        if (!requestedBy) {
-          const name = data.displayName || user?.displayName || user?.email || '';
-          if (name) setRequestedBy(name);
-        }
-
-        // Keep profile address reference
-        if (typeof data.address === 'string') {
-          setProfileAddress(data.address);
-        }
-
-        // Fill receivedAddress (shipping address) if empty and method is shipping
-        if (deliveryMethod === 'shipping' && !receivedAddress && data.address) {
-          setReceivedAddress(data.address);
-        }
-      } catch (e) {
-        console.error('Error loading staff profile:', e);
-      }
-    };
-    loadStaffProfile();
-    // We intentionally exclude requestedBy/receivedAddress from deps to avoid overriding user input after initial load
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
-
-  // React to delivery method changes: clear address for pickup, restore for shipping if empty
-  useEffect(() => {
-    if (deliveryMethod === 'pickup') {
-      if (receivedAddress) setReceivedAddress('');
-    } else if (deliveryMethod === 'shipping') {
-      if (!receivedAddress && profileAddress) setReceivedAddress(profileAddress);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deliveryMethod]);
-
-  // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {
     const loadCart = async () => {
-      if (!user?.uid) {
-        setCartLoading(false);
-        return;
-      }
-      
-      setCartLoading(true);
+      if (!user) return;
       try {
-        // Try to migrate localStorage cart first (one-time)
-        const legacyKey = 'staffCart';
-        const perUserKey = `staffCart_${user.uid}`;
-        await migrateLocalStorageCart(user.uid, legacyKey, 'staff');
-        await migrateLocalStorageCart(user.uid, perUserKey, 'staff');
-        
-        // Load cart from Firebase
-        const cartItems = await getCart(user.uid, 'staff');
-        setItems(cartItems);
+        const cartData = await getCart(user.uid, 'staff');
+        setCart(cartData || []);
       } catch (error) {
         console.error('Error loading cart:', error);
-        setItems([]);
       } finally {
-        setCartLoading(false);
+        setLoading(false);
       }
     };
     loadCart();
-  }, [user?.uid]);
+  }, [user]);
 
-  const updateQty = async (id, qty) => {
-    if (!user?.uid) return;
-    const qtyTotal = productsById[id]?.quantity ?? 0;
-    const qtyReserved = productsById[id]?.reserved ?? 0;
-    const qtyStaffReserved = productsById[id]?.staffReserved ?? 0;
-    const stock = Math.max(0, qtyTotal - qtyReserved - qtyStaffReserved);
-    
-    const value = Math.max(1, Math.min(parseInt(qty || 1), stock));
-    
+  useEffect(() => {
+    if (profile) {
+      setFormData(prev => ({
+        ...prev,
+        requesterName: profile.displayName || profile.email || '',
+        recipientAddress: profile.address || '',
+      }));
+    }
+  }, [profile]);
+
+  const handleQuantityChange = async (item, newQty) => {
+    if (newQty < 1) return;
     try {
-      await updateCartItem(user.uid, id, value, stock, 'staff');
-      setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: value, stock } : it));
+      await updateCartItem(user.uid, item.productId, newQty, item.variantSize, item.variantColor, 'staff');
+      setCart(prev => prev.map(c => {
+        if (c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor) {
+          return { ...c, quantity: newQty };
+        }
+        return c;
+      }));
     } catch (error) {
-      console.error('Error updating cart item:', error);
-      alert('ไม่สามารถอัปเดตจำนวนสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      console.error('Error updating quantity:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     }
   };
 
-  const removeItem = async (id) => {
-    if (!user?.uid) return;
+  const handleRemoveItem = async (item) => {
+    if (!window.confirm('ต้องการลบสินค้านี้ออกจากตะกร้า?')) return;
     try {
-      await removeFromCart(user.uid, id, 'staff');
-      setItems(prev => prev.filter(it => it.id !== id));
+      await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor, 'staff');
+      setCart(prev => prev.filter(c => !(c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor)));
     } catch (error) {
-      console.error('Error removing cart item:', error);
-      alert('ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      console.error('Error removing item:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     }
   };
 
-  const submit = async () => {
-    if (items.length === 0) return;
-    const needAddress = deliveryMethod === 'shipping';
-    if (!requestedBy.trim() || !receivedBy.trim() || (needAddress && !receivedAddress.trim()) || !withdrawDate) {
+  const handleClearCart = async () => {
+    if (!window.confirm('ต้องการล้างตะกร้าทั้งหมด?')) return;
+    try {
+      await clearCart(user.uid, 'staff');
+      setCart([]);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) {
+      alert('ไม่มีสินค้าในตะกร้า');
       return;
     }
-    if (!user?.uid) {
-      alert('กรุณาเข้าสู่ระบบก่อน');
+    if (!formData.requesterName || !formData.recipientName) {
+      alert('กรุณากรอกข้อมูลผู้เบิกและผู้รับให้ครบถ้วน');
       return;
     }
-    
+
     setSubmitting(true);
     try {
-      await createWithdrawal({
-        items: items.map(it => ({ productId: it.id, productName: it.productName, price: it.price, quantity: it.quantity, subtotal: it.price * it.quantity })),
-        requestedBy: requestedBy.trim(),
-        receivedBy: receivedBy.trim(),
-        receivedAddress: receivedAddress.trim(),
-        note: note.trim(),
-        withdrawDate,
-        total,
+      const orderData = {
         createdByUid: user.uid,
-        createdByEmail: user.email || null,
+        createdByEmail: user.email,
         createdSource: 'staff',
-        deliveryMethod,
-      });
-      
-      // Clear cart after successful order
+        items: cart.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          price: item.sellPrice,
+          quantity: item.quantity,
+          subtotal: item.sellPrice * item.quantity,
+          variantSize: item.variantSize || null,
+          variantColor: item.variantColor || null,
+        })),
+        requestedBy: formData.requesterName,
+        requestedAddress: formData.recipientAddress,
+        receivedBy: formData.recipientName,
+        receivedAddress: formData.recipientAddress,
+        withdrawDate: formData.withdrawDate,
+        note: formData.notes,
+        total: cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0),
+        deliveryMethod: formData.deliveryMethod,
+      };
+
+      await createWithdrawal(orderData);
       await clearCart(user.uid, 'staff');
-      setItems([]);
-      
-      navigate('/staff/orders');
-    } catch (e) {
-      console.error('Error creating withdrawal:', e);
-      alert('ไม่สามารถบันทึกคำสั่งเบิกได้: ' + (e?.message || ''));
+      window.dispatchEvent(new Event('staff-cart-updated'));
+      navigate('/staff');
+    } catch (error) {
+      console.error('Error creating withdrawal:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const totalAmount = cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดตะกร้า...</p>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        padding: '32px 24px',
-        minHeight: '100vh',
-        background:
-          'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ width: '100%', maxWidth: 1120, margin: '0 auto' }}>
+    <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         {/* Header */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #0ea5e9 100%)',
-            padding: '24px 28px',
-            borderRadius: 18,
-            marginBottom: 20,
-            boxShadow: '0 10px 40px rgba(30,64,175,0.3)',
-          }}
-        >
-          <h1
-            style={{
-              margin: '0 0 6px',
-              color: '#fff',
-              fontSize: 26,
-              fontWeight: 700,
-            }}
-          >
-            คำสั่งเบิกสินค้า
-          </h1>
-          <div
-            style={{
-              fontSize: 14,
-              color: 'rgba(255,255,255,0.85)',
-            }}
-          >
-            สร้างคำสั่งเบิกสินค้าและจัดการรายการ
-          </div>
+        <div style={{ 
+          background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #22d3ee 100%)', 
+          padding: '24px 32px', 
+          borderRadius: 16, 
+          marginBottom: 20, 
+          boxShadow: '0 10px 40px rgba(30,64,175,0.3)'
+        }}>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 26, fontWeight: 700 }}>คำสั่งเบิกสินค้า</h1>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>สร้างคำสั่งเบิกสินค้าและจัดการรายการ</div>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1.2fr',
-            gap: 20,
-            alignItems: 'flex-start',
-          }}
-        >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 18,
-              boxShadow: '0 10px 30px rgba(15,23,42,0.18)',
-              padding: 18,
-              boxSizing: 'border-box',
-            }}
-          >
-            {cartLoading ? (
-              <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>กำลังโหลดตะกร้า...</p>
-            ) : items.length === 0 ? (
-              <p style={{ color: '#999' }}>ยังไม่มีรายการในคำสั่งเบิก</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {items.map(it => (
-                  <div key={it.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', gap: 12, alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{it.productName}</div>
-                      <div style={{ color: '#777', fontSize: 12 }}>คงเหลือพร้อมขาย: {Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0) - (productsById[it.id]?.staffReserved ?? 0))} ชิ้น</div>
+        {/* Action Bar */}
+        <div style={{ background: '#fff', padding: '16px 24px', borderRadius: 12, marginBottom: 20, boxShadow: '0 4px 16px rgba(15,23,42,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 14, color: '#374151' }}>
+            <span style={{ fontWeight: 600 }}>{cart.length}</span> รายการในตะกร้า
+          </div>
+          {cart.length > 0 && (
+            <button onClick={handleClearCart} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>ล้างตะกร้า</button>
+          )}
+        </div>
+
+        {cart.length === 0 ? (
+          <div style={{ background: '#fff', borderRadius: 18, padding: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+            <div style={{ fontSize: 60, marginBottom: 16 }}>🛒</div>
+            <p style={{ color: '#64748b', fontSize: 16 }}>ตะกร้าว่างเปล่า</p>
+            <button onClick={() => navigate('/staff')} style={{ marginTop: 16, padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>เลือกสินค้า</button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 20 }}>
+            {/* Cart Items */}
+            <div style={{ background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+              <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600, color: '#111827' }}>รายการสินค้า</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {cart.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item, idx) => (
+                  <div key={`${item.productId}-${item.variantSize}-${item.variantColor}-${idx}`} style={{ display: 'flex', gap: 16, padding: 16, background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe' }}>
+                    {/* Image */}
+                    <div style={{ width: 80, height: 80, borderRadius: 10, background: '#dbeafe', overflow: 'hidden', flexShrink: 0 }}>
+                      {item.image ? <img src={item.image} alt={item.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', fontSize: 24 }}>📦</div>}
                     </div>
-                    <div style={{ textAlign: 'right' }}>฿{(it.price).toLocaleString()}</div>
-                    <div>
-                      <input type="number" min={1} max={Math.max(0, (productsById[it.id]?.quantity ?? 0) - (productsById[it.id]?.reserved ?? 0) - (productsById[it.id]?.staffReserved ?? 0))} value={it.quantity} onChange={(e)=>updateQty(it.id, e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8 }} />
+                    {/* Info */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#111827', fontSize: 15, marginBottom: 4 }}>{item.productName}</div>
+                      {/* Variant Info */}
+                      {(item.variantSize || item.variantColor) && (
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                          {item.variantSize && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>ไซส์: {item.variantSize}</span>}
+                          {item.variantColor && <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>สี: {item.variantColor}</span>}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>หน่วย: {item.unit || 'ชิ้น'}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <button onClick={() => handleQuantityChange(item, item.quantity - 1)} disabled={item.quantity <= 1} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #bfdbfe', background: '#fff', cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer', fontSize: 14 }}>-</button>
+                        <span style={{ fontWeight: 600, minWidth: 30, textAlign: 'center' }}>{item.quantity}</span>
+                        <button onClick={() => handleQuantityChange(item, item.quantity + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #bfdbfe', background: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right', fontWeight: 600 }}>฿{(it.price * it.quantity).toLocaleString()}</div>
-                    <button onClick={()=>removeItem(it.id)} style={{ gridColumn: '1 / -1', justifySelf: 'end', background: 'transparent', border: 'none', color: '#f44336', cursor: 'pointer' }}>ลบ</button>
+                    {/* Price & Remove */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                      <button onClick={() => handleRemoveItem(item)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
+                      <div style={{ fontWeight: 700, color: '#16a34a', fontSize: 16 }}>฿{(item.sellPrice * item.quantity).toLocaleString()}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
 
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 22,
-              boxShadow: '0 14px 32px rgba(15,23,42,0.22)',
-              padding: 24,
-              boxSizing: 'border-box',
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: 14 }}>รายละเอียดผู้เบิก</h3>
+              {/* Pagination */}
+              {cart.length > itemsPerPage && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+                    disabled={currentPage === 1}
+                    style={{ 
+                      padding: '8px 16px', 
+                      borderRadius: 8, 
+                      border: '1px solid #e2e8f0', 
+                      background: currentPage === 1 ? '#f1f5f9' : '#fff', 
+                      color: currentPage === 1 ? '#94a3b8' : '#374151', 
+                      fontSize: 14, 
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer' 
+                    }}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: Math.ceil(cart.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        border: currentPage === page ? 'none' : '1px solid #e2e8f0',
+                        background: currentPage === page ? '#1e40af' : '#fff',
+                        color: currentPage === page ? '#fff' : '#374151',
+                        fontSize: 14,
+                        fontWeight: currentPage === page ? 600 : 400,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(cart.length / itemsPerPage), prev + 1))} 
+                    disabled={currentPage === Math.ceil(cart.length / itemsPerPage)}
+                    style={{ 
+                      padding: '8px 16px', 
+                      borderRadius: 8, 
+                      border: '1px solid #e2e8f0', 
+                      background: currentPage === Math.ceil(cart.length / itemsPerPage) ? '#f1f5f9' : '#fff', 
+                      color: currentPage === Math.ceil(cart.length / itemsPerPage) ? '#94a3b8' : '#374151', 
+                      fontSize: 14, 
+                      cursor: currentPage === Math.ceil(cart.length / itemsPerPage) ? 'not-allowed' : 'pointer' 
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>วิธีรับสินค้า</div>
-                <select
-                  value={deliveryMethod}
-                  onChange={(e)=>setDeliveryMethod(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, boxSizing: 'border-box' }}
-                >
-                  <option value="shipping">จัดส่ง</option>
-                  <option value="pickup">รับเอง</option>
-                </select>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ผู้เบิก</div>
-                <input
-                  value={requestedBy}
-                  onChange={(e)=>setRequestedBy(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ผู้รับ</div>
-                <input
-                  value={receivedBy}
-                  onChange={(e)=>setReceivedBy(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>ที่อยู่รับของ {deliveryMethod==='pickup' ? '(ไม่บังคับเมื่อรับเอง)' : ''}</div>
-                <textarea
-                  value={receivedAddress}
-                  onChange={(e)=>setReceivedAddress(e.target.value)}
-                  rows={3}
-                  disabled={deliveryMethod==='pickup'}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical', background: deliveryMethod==='pickup' ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>หมายเหตุ (ถ้ามี)</div>
-                <textarea
-                  value={note}
-                  onChange={(e)=>setNote(e.target.value)}
-                  rows={2}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, resize:'vertical', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>วันที่เบิก</div>
-                <input
-                  type="date"
-                  value={withdrawDate}
-                  onChange={(e)=>setWithdrawDate(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, boxSizing: 'border-box' }}
-                />
-              </div>
+            {/* Withdraw Form */}
+            <div style={{ background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', height: 'fit-content' }}>
+              <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600, color: '#111827' }}>ข้อมูลการเบิก</h2>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>ชื่อผู้เบิก *</label>
+                  <input type="text" value={formData.requesterName} onChange={(e) => setFormData(prev => ({ ...prev, requesterName: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>ชื่อผู้รับ *</label>
+                  <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
+                </div>
+                
+                {/* วิธีการรับสินค้า */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600, color: '#374151' }}>วิธีการรับสินค้า *</label>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <label 
+                      style={{ 
+                        flex: 1, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 10, 
+                        padding: '14px 16px', 
+                        borderRadius: 10, 
+                        border: formData.deliveryMethod === 'pickup' ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                        background: formData.deliveryMethod === 'pickup' ? '#eff6ff' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        name="deliveryMethod" 
+                        value="pickup" 
+                        checked={formData.deliveryMethod === 'pickup'} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, deliveryMethod: e.target.value }))}
+                        style={{ display: 'none' }}
+                      />
+                      <span style={{ fontSize: 20 }}>🏪</span>
+                      <div>
+                        <div style={{ fontWeight: 600, color: formData.deliveryMethod === 'pickup' ? '#1e40af' : '#374151', fontSize: 14 }}>รับเอง</div>
+                        <div style={{ fontSize: 11, color: '#6b7280' }}>มารับที่คลังสินค้า</div>
+                      </div>
+                    </label>
+                    <label 
+                      style={{ 
+                        flex: 1, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 10, 
+                        padding: '14px 16px', 
+                        borderRadius: 10, 
+                        border: formData.deliveryMethod === 'shipping' ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                        background: formData.deliveryMethod === 'shipping' ? '#eff6ff' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        name="deliveryMethod" 
+                        value="shipping" 
+                        checked={formData.deliveryMethod === 'shipping'} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, deliveryMethod: e.target.value }))}
+                        style={{ display: 'none' }}
+                      />
+                      <span style={{ fontSize: 20 }}>📦</span>
+                      <div>
+                        <div style={{ fontWeight: 600, color: formData.deliveryMethod === 'shipping' ? '#1e40af' : '#374151', fontSize: 14 }}>จัดส่ง</div>
+                        <div style={{ fontSize: 11, color: '#6b7280' }}>ส่งไปยังที่อยู่</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                <span style={{ color: '#666' }}>ราคารวม</span>
-                <strong>฿{total.toLocaleString()}</strong>
-              </div>
-              <button
-                disabled={submitting || items.length===0}
-                onClick={submit}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  background:
-                    submitting || items.length===0
-                      ? '#9ca3af'
-                      : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
-                  color: '#eff6ff',
-                  border: 'none',
-                  borderRadius: 999,
-                  cursor: submitting || items.length===0 ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  boxSizing: 'border-box',
-                  marginTop: 4,
-                  boxShadow:
-                    submitting || items.length===0
-                      ? 'none'
-                      : '0 10px 20px rgba(37,99,235,0.45)',
-                  letterSpacing: '0.03em',
-                }}
-              >
-                {submitting ? 'กำลังบันทึก...' : 'บันทึกคำสั่งเบิก'}
-              </button>
+                {/* ที่อยู่จัดส่ง - แสดงเฉพาะเมื่อเลือกจัดส่ง */}
+                {formData.deliveryMethod === 'shipping' && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>ที่อยู่จัดส่ง *</label>
+                    <textarea value={formData.recipientAddress} onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))} rows={2} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+                  </div>
+                )}
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>วันที่เบิก *</label>
+                  <input type="date" value={formData.withdrawDate} onChange={(e) => setFormData(prev => ({ ...prev, withdrawDate: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>หมายเหตุ</label>
+                  <textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+                </div>
+
+                {/* Summary */}
+                <div style={{ background: '#eff6ff', padding: 16, borderRadius: 10, border: '1px solid #bfdbfe' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#374151' }}>จำนวนรายการ:</span>
+                    <span style={{ fontWeight: 600 }}>{cart.length} รายการ</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#374151' }}>มูลค่ารวม:</span>
+                    <span style={{ fontWeight: 700, fontSize: 20, color: '#16a34a' }}>฿{totalAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: 10, border: 'none', background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: submitting ? 'none' : '0 6px 20px rgba(37,99,235,0.4)' }}>
+                  {submitting ? 'กำลังสร้างคำสั่งเบิก...' : 'ยืนยันคำสั่งเบิก'}
+                </button>
+              </form>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

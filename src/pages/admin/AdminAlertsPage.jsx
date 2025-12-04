@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProducts, isLowStock } from '../../services';
+import { getAllProducts, isLowStock, getLowStockVariants } from '../../services';
 
 export default function AdminAlertsPage() {
   const navigate = useNavigate();
@@ -129,7 +129,7 @@ export default function AdminAlertsPage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '3fr 1.2fr 1.2fr 1.2fr',
+                gridTemplateColumns: '2.5fr 2fr 1.2fr 1fr',
                 padding: '14px 20px',
                 background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
                 fontSize: 13,
@@ -138,72 +138,111 @@ export default function AdminAlertsPage() {
               }}
             >
               <div>สินค้า</div>
-              <div style={{ textAlign: 'right' }}>จำนวนคงเหลือ</div>
-              <div style={{ textAlign: 'right' }}>สต็อกตั้งต้น</div>
+              <div>Variant ที่สต๊อกต่ำ</div>
+              <div style={{ textAlign: 'right' }}>จำนวนรวม</div>
               <div style={{ textAlign: 'right' }}>จัดการ</div>
             </div>
 
-            {currentItems.map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '3fr 1.2fr 1.2fr 1.2fr',
-                  padding: '14px 16px',
-                  borderBottom: '1px solid #f1f5f9',
-                  fontSize: 14,
-                  alignItems: 'center',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {p.image && (
-                    <img
-                      src={p.image}
-                      alt={p.productName || ''}
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 10,
-                        objectFit: 'cover',
-                        background: '#f1f5f9',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      }}
-                    />
-                  )}
+            {currentItems.map((p) => {
+              const lowVariants = getLowStockVariants(p);
+              const unit = p.unit || 'ชิ้น';
+              
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2.5fr 2fr 1.2fr 1fr',
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #f1f5f9',
+                    fontSize: 14,
+                    alignItems: 'center',
+                    background: (p.quantity || 0) === 0 ? '#fef2f2' : '#fff',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 10, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt={p.productName || ''}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 20 }}>📦</div>
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 15 }}>{p.productName || 'ไม่มีชื่อสินค้า'}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                        {p.category && <span style={{ background: '#eff6ff', color: '#1e40af', padding: '2px 8px', borderRadius: 4, marginRight: 6 }}>{p.category}</span>}
+                        {p.hasVariants && <span style={{ color: '#6b7280' }}>{p.variants?.length || 0} variants</span>}
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div>
-                    <div style={{ fontWeight: 600, color: '#1e293b' }}>{p.productName || 'ไม่มีชื่อสินค้า'}</div>
-                    {p.sku && (
-                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>SKU: {p.sku}</div>
+                    {lowVariants.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {lowVariants.map((v, idx) => (
+                          <span 
+                            key={idx}
+                            style={{ 
+                              background: v.available === 0 ? '#dc2626' : v.available <= 5 ? '#f59e0b' : '#fef3c7',
+                              color: v.available <= 5 ? '#fff' : '#92400e',
+                              padding: '4px 10px', 
+                              borderRadius: 6, 
+                              fontSize: 12, 
+                              fontWeight: 500,
+                            }}
+                          >
+                            {v.size}/{v.color}: {v.available}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ 
+                        background: '#dc2626', 
+                        color: '#fff', 
+                        padding: '4px 10px', 
+                        borderRadius: 6, 
+                        fontSize: 12, 
+                        fontWeight: 500 
+                      }}>
+                        สต๊อกรวมต่ำ
+                      </span>
                     )}
                   </div>
+                  
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: (p.quantity || 0) === 0 ? '#dc2626' : '#f59e0b' }}>
+                      {(p.quantity ?? 0).toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6b7280' }}>{unit}</div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/admin/products?focus=${p.id}`)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
+                      }}
+                    >
+                      เพิ่มสต๊อก
+                    </button>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right', color: '#dc2626', fontWeight: 700 }}>
-                  {(p.quantity ?? 0).toLocaleString()} ชิ้น
-                </div>
-                <div style={{ textAlign: 'right', color: '#64748b' }}>
-                  {p.initialQuantity != null ? `${p.initialQuantity.toLocaleString()} ชิ้น` : '-'}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/admin/products?focus=${p.id}`)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: 999,
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                      color: '#fff',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
-                    }}
-                  >
-                    จัดการสินค้า
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

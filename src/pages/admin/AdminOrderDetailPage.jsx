@@ -40,19 +40,20 @@ export default function AdminOrderDetailPage() {
 
   const canSave = () => {
     if (!order) return false;
-    if (isPickup) return !!form.shippingStatus;
-    return !!(form.shippingCarrier && form.trackingNumber && form.shippingStatus);
+    return !!form.shippingStatus;
   };
 
   const handleSave = async () => {
     if (!order || !canSave()) return;
     setSaving(true);
     try {
+      console.log('Saving order:', { id, form, createdByUid: order.createdByUid, deliveryMethod: order.deliveryMethod });
       await updateWithdrawalShipping(id, {
         shippingCarrier: form.shippingCarrier,
         trackingNumber: form.trackingNumber.trim(),
         shippingStatus: form.shippingStatus,
       }, order.createdByUid);
+      console.log('Order saved successfully');
       // หลังบันทึก พยายามย้อนกลับไปหน้าที่มาแบบเดียวกับปุ่มย้อนกลับ
       if (window.history.length > 1) {
         navigate(-1);
@@ -60,6 +61,9 @@ export default function AdminOrderDetailPage() {
         const src = order.createdSource === 'staff' ? 'staff' : 'customer';
         navigate(`/admin/orders?source=${src}`);
       }
+    } catch (error) {
+      console.error('Error saving order:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -284,6 +288,7 @@ export default function AdminOrderDetailPage() {
               : 'สำหรับคำสั่งจัดส่งแบบจัดส่ง ให้เลือกสถานะเป็น "ส่งของแล้ว" เมื่อผู้รับมารับของหรือ'}
           </div>
 
+          {/* แสดงช่องขนส่งและ Tracking เฉพาะเมื่อเป็นแบบจัดส่ง */}
           {!isPickup && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
               <div>
@@ -310,7 +315,7 @@ export default function AdminOrderDetailPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>เลขติดตาม</label>
+                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>เลข Tracking</label>
                 <input
                   value={form.trackingNumber}
                   onChange={(e) => setForm((f) => ({ ...f, trackingNumber: e.target.value }))}

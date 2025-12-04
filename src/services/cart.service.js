@@ -47,9 +47,9 @@ export async function saveCart(uid, items, role = 'customer') {
 }
 
 /**
- * Add item to cart
+ * Add item to cart (supports variants)
  * @param {string} uid - User ID
- * @param {Object} product - Product to add { id, productName, price, quantity, image, stock }
+ * @param {Object} product - Product to add { productId, productName, sellPrice, quantity, image, unit, variantSize?, variantColor?, maxQuantity }
  * @param {string} role - User role ('customer' or 'staff')
  * @returns {Promise<void>}
  */
@@ -57,24 +57,41 @@ export async function addToCart(uid, product, role = 'customer') {
   try {
     if (!uid) throw new Error('User ID is required');
     const currentCart = await getCart(uid, role);
-    const existingIndex = currentCart.findIndex(item => item.id === product.id);
+    
+    // Find existing item by productId AND variant (size + color)
+    const existingIndex = currentCart.findIndex(item => 
+      item.productId === product.productId &&
+      item.variantSize === (product.variantSize || null) &&
+      item.variantColor === (product.variantColor || null)
+    );
     
     let updatedCart;
     if (existingIndex >= 0) {
-      // Update existing item quantity - add to existing quantity
+      // Update existing item quantity
       updatedCart = [...currentCart];
       const existingItem = updatedCart[existingIndex];
       const newQuantity = (existingItem.quantity || 0) + (product.quantity || 1);
-      const maxQuantity = Math.min(newQuantity, product.stock || existingItem.stock || 0);
+      const maxQuantity = Math.min(newQuantity, product.maxQuantity || existingItem.maxQuantity || 999);
       
       updatedCart[existingIndex] = {
         ...existingItem,
         quantity: maxQuantity,
-        stock: product.stock || existingItem.stock // Update stock info
+        sellPrice: product.sellPrice || existingItem.sellPrice,
+        maxQuantity: product.maxQuantity || existingItem.maxQuantity
       };
     } else {
       // Add new item
-      updatedCart = [...currentCart, product];
+      updatedCart = [...currentCart, {
+        productId: product.productId,
+        productName: product.productName,
+        image: product.image,
+        unit: product.unit || 'ชิ้น',
+        quantity: product.quantity || 1,
+        sellPrice: product.sellPrice || 0,
+        maxQuantity: product.maxQuantity || 999,
+        variantSize: product.variantSize || null,
+        variantColor: product.variantColor || null,
+      }];
     }
     
     await saveCart(uid, updatedCart, role);
@@ -85,23 +102,27 @@ export async function addToCart(uid, product, role = 'customer') {
 }
 
 /**
- * Update item quantity in cart
+ * Update item quantity in cart (supports variants)
  * @param {string} uid - User ID
  * @param {string} productId - Product ID
  * @param {number} quantity - New quantity
- * @param {number} stock - Available stock
+ * @param {string} variantSize - Variant size (optional)
+ * @param {string} variantColor - Variant color (optional)
  * @param {string} role - User role ('customer' or 'staff')
  * @returns {Promise<void>}
  */
-export async function updateCartItem(uid, productId, quantity, stock, role = 'customer') {
+export async function updateCartItem(uid, productId, quantity, variantSize = null, variantColor = null, role = 'customer') {
   try {
     if (!uid) throw new Error('User ID is required');
     const currentCart = await getCart(uid, role);
-    const updatedCart = currentCart.map(item =>
-      item.id === productId
-        ? { ...item, quantity: Math.max(1, Math.min(quantity, stock || 0)), stock }
-        : item
-    );
+    const updatedCart = currentCart.map(item => {
+      if (item.productId === productId && 
+          item.variantSize === variantSize && 
+          item.variantColor === variantColor) {
+        return { ...item, quantity: Math.max(1, quantity) };
+      }
+      return item;
+    });
     await saveCart(uid, updatedCart, role);
   } catch (error) {
     console.error('Error updating cart item:', error);
@@ -110,17 +131,23 @@ export async function updateCartItem(uid, productId, quantity, stock, role = 'cu
 }
 
 /**
- * Remove item from cart
+ * Remove item from cart (supports variants)
  * @param {string} uid - User ID
  * @param {string} productId - Product ID to remove
+ * @param {string} variantSize - Variant size (optional)
+ * @param {string} variantColor - Variant color (optional)
  * @param {string} role - User role ('customer' or 'staff')
  * @returns {Promise<void>}
  */
-export async function removeFromCart(uid, productId, role = 'customer') {
+export async function removeFromCart(uid, productId, variantSize = null, variantColor = null, role = 'customer') {
   try {
     if (!uid) throw new Error('User ID is required');
     const currentCart = await getCart(uid, role);
-    const updatedCart = currentCart.filter(item => item.id !== productId);
+    const updatedCart = currentCart.filter(item => 
+      !(item.productId === productId && 
+        item.variantSize === variantSize && 
+        item.variantColor === variantColor)
+    );
     await saveCart(uid, updatedCart, role);
   } catch (error) {
     console.error('Error removing from cart:', error);

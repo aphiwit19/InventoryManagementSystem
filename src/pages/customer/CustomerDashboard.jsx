@@ -1,29 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAllProducts, addToCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
-import { getAllProducts, addToCart as addToCartService, migrateLocalStorageCart } from '../../services';
 
 export default function CustomerDashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
-  const [showQtyPrompt, setShowQtyPrompt] = useState(false);
-  const [promptProduct] = useState(null);
-  const [promptQty, setPromptQty] = useState('1');
-  const [showDetail, setShowDetail] = useState(false);
-  const [detailProduct, setDetailProduct] = useState(null);
-  const [cartLoading, setCartLoading] = useState({}); // { productId: true/false }
-  const [cartError, setCartError] = useState('');
+  const itemsPerPage = 8;
+
+  // Variant selection modal
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     const loadProducts = async () => {
       try {
         const productsData = await getAllProducts();
-        setProducts(productsData);
-        setFilteredProducts(productsData);
+        // Filter only products with stock
+        const available = productsData.filter(p => (p.quantity || 0) > 0);
+        setProducts(available);
+      } catch (error) {
+        console.error('Error loading products:', error);
       } finally {
         setLoading(false);
       }
@@ -31,841 +35,299 @@ export default function CustomerDashboard() {
     loadProducts();
   }, []);
 
-  // Migrate localStorage cart to Firebase and load cart count
-  useEffect(() => {
-    const loadCartData = async () => {
-      if (!user?.uid) return;
-      try {
-        // Try to migrate from both legacy and per-user localStorage keys
-        const legacyKey = 'customerCart';
-        const perUserKey = `customerCart_${user.uid}`;
-        
-        // Try legacy first
-        await migrateLocalStorageCart(user.uid, legacyKey, 'customer');
-        // Try per-user key
-        await migrateLocalStorageCart(user.uid, perUserKey, 'customer');
-        
-        // Load cart count
-      } catch (error) {
-        console.warn('Cart migration/load failed:', error);
-      }
-    };
-    loadCartData();
-  }, [user?.uid]);
+  const uniqueCategories = useMemo(() => {
+    const cats = products.map(p => p.category).filter(c => c && c.trim() !== '');
+    return [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
+  }, [products]);
 
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredProducts(products);
-      setCurrentPage(1);
-    } else {
-      const filtered = products.filter(p => p.productName?.toLowerCase().includes(searchTerm.toLowerCase()));
-      setFilteredProducts(filtered);
-      setCurrentPage(1);
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+    if (searchTerm.trim() !== '') {
+      filtered = filtered.filter(product =>
+        product.productName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-  }, [searchTerm, products]);
+    if (categoryFilter) {
+      filtered = filtered.filter(product => product.category === categoryFilter);
+    }
+    return filtered;
+  }, [products, searchTerm, categoryFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
-
-  const addToCartDirectly = async (product) => {
-    if (!user?.uid) {
-      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
-      return;
-    }
-    
-    const available = Math.max(0, (product.quantity || 0) - (product.reserved || 0));
-    if (available <= 0) {
-      alert('สินค้าหมดสต็อก');
-      return;
-    }
-    
-    // Set loading state for this specific product
-    setCartLoading(prev => ({ ...prev, [product.id]: true }));
-    
-    try {
-      await addToCartService(user.uid, {
-        id: product.id,
-        productName: product.productName,
-        price: product.price ?? product.costPrice ?? 0,
-        quantity: 1,
-        image: product.image || null,
-        stock: available
-      }, 'customer');
-      
-      // Notify layout to update cart count
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('customer-cart-updated'));
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      // Clear loading state for this specific product
-      setCartLoading(prev => ({ ...prev, [product.id]: false }));
-    }
-  };
-
-  const confirmAddToCart = async () => {
-    if (!promptProduct || !user?.uid) {
-      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
-      return;
-    }
-    const available = Math.max(0, (promptProduct.quantity || 0) - (promptProduct.reserved || 0));
-    const qty = Math.max(1, Math.min(parseInt(promptQty || 1), available));
-    
-    setCartLoading(true);
-    setCartError('');
-    try {
-      await addToCartService(user.uid, {
-        id: promptProduct.id,
-        productName: promptProduct.productName,
-        price: promptProduct.price ?? promptProduct.costPrice ?? 0,
-        quantity: qty,
-        image: promptProduct.image || null,
-        stock: available
-      }, 'customer');
-      
-      // Close prompt; cart count will be updated via event in finally
-      setShowQtyPrompt(false);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      setCartError('ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      setCartLoading(false);
-      if (!cartError && typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('customer-cart-updated'));
-      }
-    }
-  };
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const openProductModal = (product) => {
+    setSelectedProduct(product);
+    setSelectedVariant(null);
+    setQuantity(1);
+  };
+
+  const closeModal = () => {
+    setSelectedProduct(null);
+    setSelectedVariant(null);
+    setQuantity(1);
+  };
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      return;
+    }
+
+    const product = selectedProduct;
+    if (!product) return;
+
+    const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
+
+    if (hasVariants && !selectedVariant) {
+      alert('กรุณาเลือก Variant ก่อนเพิ่มลงตะกร้า');
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      const cartItem = {
+        productId: product.id,
+        productName: product.productName,
+        image: product.image,
+        unit: product.unit || 'ชิ้น',
+        quantity: quantity,
+      };
+
+      if (hasVariants && selectedVariant) {
+        cartItem.variantSize = selectedVariant.size;
+        cartItem.variantColor = selectedVariant.color;
+        cartItem.sellPrice = selectedVariant.sellPrice;
+        cartItem.maxQuantity = Math.max(0, (selectedVariant.quantity || 0) - (selectedVariant.reserved || 0));
+      } else {
+        cartItem.sellPrice = product.sellPrice || product.price || 0;
+        cartItem.maxQuantity = Math.max(0, (product.quantity || 0) - (product.reserved || 0));
+      }
+
+      await addToCart(user.uid, cartItem);
+      alert(`เพิ่ม "${product.productName}" ลงตะกร้าแล้ว!`);
+      closeModal();
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const getAvailableQuantity = () => {
+    if (!selectedProduct) return 0;
+    const hasVariants = selectedProduct.hasVariants && Array.isArray(selectedProduct.variants);
+    if (hasVariants && selectedVariant) {
+      return Math.max(0, (selectedVariant.quantity || 0) - (selectedVariant.reserved || 0));
+    }
+    return Math.max(0, (selectedProduct.quantity || 0) - (selectedProduct.reserved || 0));
+  };
+
+  const getDisplayPrice = (product) => {
+    const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
+    if (hasVariants) {
+      const prices = product.variants.map(v => v.sellPrice || 0);
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      return min === max ? `฿${min.toLocaleString()}` : `฿${min.toLocaleString()} - ฿${max.toLocaleString()}`;
+    }
+    return `฿${(product.sellPrice || product.price || 0).toLocaleString()}`;
+  };
+
   return (
-    <div style={{ paddingTop: 0 }}>
-      {/* Search Bar */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '0 24px 26px' }}>
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 1200,
-            backgroundColor: '#fff',
-            padding: '18px 26px 22px',
-            borderRadius: '20px',
-            boxShadow: '0 8px 20px rgba(15,23,42,0.12)'
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '12px'
-            }}
-          >
-            <span style={{ fontSize: '20px' }}>🔍</span>
-            <span style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>ค้นหาสินค้า</span>
+    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
+      {/* Header */}
+      <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>สินค้าทั้งหมด</h1>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>เลือกสินค้าที่ต้องการเพิ่มลงตะกร้า</div>
+        </div>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <input type="text" placeholder="ค้นหาสินค้า..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 220, background: '#fff', outline: 'none' }} />
+            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', fontSize: 16 }}>🔍</span>
           </div>
-          <input
-            type="text"
-            placeholder="พิมพ์ชื่อสินค้า หรือคำที่เกี่ยวข้อง..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '14px 18px',
-              fontSize: 15,
-              border: '2px solid #e5e7eb',
-              borderRadius: '999px',
-              outline: 'none',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#4A90E2';
-              e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.3)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#e5e7eb';
-              e.target.style.boxShadow = 'none';
-            }}
-          />
+          <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 14px', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
+            <option value="">ทุกประเภท</option>
+            {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
+          <button onClick={() => navigate('/customer/withdraw')} style={{ padding: '10px 20px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 20px rgba(16,185,129,0.4)' }}>🛒 ตะกร้า</button>
         </div>
       </div>
 
       {/* Products Grid */}
-      <div style={{ padding: '0 24px 24px', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: 1200 }}>
-        {loading ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '40px',
-              backgroundColor: '#fff',
-              borderRadius: '16px',
-              boxShadow: '0 4px 12px rgba(15,23,42,0.08)'
-            }}
-          >
-            <p>กำลังโหลดสินค้า...</p>
-          </div>
-        ) : currentProducts.length === 0 ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '40px',
-              backgroundColor: '#fff',
-              borderRadius: '16px',
-              boxShadow: '0 4px 12px rgba(15,23,42,0.08)'
-            }}
-          >
-            <p style={{ color: '#999', fontSize: '18px' }}>
-              {searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้า'}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 20,
-                marginBottom: 30
-              }}
-            >
-              {currentProducts.map((product) => (
-                <div
-                  key={product.id}
-                  style={{
-                    backgroundColor: '#fff',
-                    borderRadius: '18px',
-                    padding: '14px 14px 12px',
-                    boxShadow: '0 10px 25px rgba(15,23,42,0.18)',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-5px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                  onClick={() => {
-                    setDetailProduct(product);
-                    setShowDetail(true);
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      height: 200,
-                      backgroundColor: '#f3f4f6',
-                      borderRadius: '14px',
-                      marginBottom: 14,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={product.productName}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      style={{
-                        display: product.image ? 'none' : 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '100%',
-                        height: '100%',
-                        color: '#999'
-                      }}
-                    >
-                      No Image
-                    </div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+          <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดสินค้า...</p>
+        </div>
+      ) : currentProducts.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าในระบบ'}</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, marginBottom: 24 }}>
+          {currentProducts.map((product) => {
+            const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
+            return (
+              <div key={product.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 6px 24px rgba(15,23,42,0.1)', transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(15,23,42,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(15,23,42,0.1)'; }}>
+                {/* Image */}
+                <div style={{ height: 160, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {product.image ? <img src={product.image} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9ca3af', fontSize: 40 }}>📦</span>}
+                </div>
+                {/* Info */}
+                <div style={{ padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{product.productName}</h3>
+                    {hasVariants && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 500 }}>{product.variants.length} แบบ</span>}
                   </div>
-                  <h3
-                    style={{
-                      margin: '0 0 6px 0',
-                      fontSize: 17,
-                      color: '#111827',
-                      fontWeight: 700
-                    }}
-                  >
-                    {product.productName || 'Unnamed Product'}
-                  </h3>
-                  {product.purchaseLocation && (
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>
-                      แหล่งที่ซื้อ: {product.purchaseLocation}
-                    </div>
+                  {product.description && (
+                    <p style={{ margin: '0 0 8px', fontSize: 12, color: '#6b7280', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
                   )}
-                  <p
-                    style={{
-                      margin: '0 0 10px 0',
-                      fontSize: 12,
-                      color: '#6b7280',
-                      height: 36,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
-                    }}
-                  >
-                    {product.description || 'ไม่มีคำอธิบาย'}
-                  </p>
-                  <div
-                    style={{
-                      backgroundColor: '#e8f5e9',
-                      padding: '6px 10px',
-                      borderRadius: 999,
-                      marginBottom: 10,
-                      fontSize: 12,
-                      color: '#15803d',
-                      fontWeight: 500,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
-                  >
-                    คงเหลือพร้อมขาย: {Math.max(0, (product.quantity || 0) - (product.reserved || 0))} ชิ้น
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                    {product.category && <span style={{ background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.category}</span>}
+                    <span style={{ background: '#f8fafc', color: '#64748b', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.unit || 'ชิ้น'}</span>
                   </div>
-                  <div
-                    style={{
-                      marginTop: 'auto',
-                      marginLeft: -14,
-                      marginRight: -14,
-                      padding: '10px 16px 8px',
-                      borderRadius: '0 0 18px 18px',
-                      background:
-                        'linear-gradient(90deg, #1D4ED8 0%, #2563EB 50%, #4F46E5 100%)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      columnGap: 8
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 700,
-                        color: '#fff',
-                        textShadow: '0 1px 2px rgba(15,23,42,0.5)'
-                      }}
-                    >
-                      ฿{(product.price ?? product.costPrice ?? 0).toLocaleString()}
-                    </span>
-                    <button
-                      style={{
-                        padding: '8px 16px',
-                        backgroundColor: '#ffffff',
-                        color: '#1D4ED8',
-                        border: 'none',
-                        borderRadius: 999,
-                        cursor: cartLoading[product.id] ? 'not-allowed' : 'pointer',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        opacity: cartLoading[product.id] ? 0.7 : 1,
-                        boxShadow: '0 2px 6px rgba(15,23,42,0.25)'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCartDirectly(product);
-                      }}
-                      disabled={
-                        cartLoading[product.id] ||
-                        Math.max(0, (product.quantity || 0) - (product.reserved || 0)) <= 0
-                      }
-                    >
-                      {cartLoading[product.id] ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
-                    </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>{getDisplayPrice(product)}</span>
+                    <span style={{ fontSize: 12, color: '#6b7280' }}>คงเหลือ: {product.quantity} {product.unit || 'ชิ้น'}</span>
                   </div>
+                  <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
+                    {hasVariants ? 'เพิ่มลงตะกร้า' : 'เพิ่มลงตะกร้า'}
+                  </button>
                 </div>
-              ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+          <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ก่อนหน้า</button>
+          <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>หน้า {currentPage} / {totalPages}</span>
+          <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ถัดไป</button>
+        </div>
+      )}
+
+      {/* Variant Selection Modal */}
+      {selectedProduct && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={closeModal}>
+          <div style={{ background: '#fff', borderRadius: 20, maxWidth: 500, width: '100%', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }} onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>{selectedProduct.productName}</h2>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#6b7280' }}>×</button>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: 20,
-                  backgroundColor: '#fff',
-                  borderRadius: 999,
-                  boxShadow: '0 4px 10px rgba(15,23,42,0.15)'
-                }}
-              >
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  style={{
-                    padding: '8px 16px',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    backgroundColor: currentPage === 1 ? '#f5f5f5' : '#fff',
-                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                    color: currentPage === 1 ? '#999' : '#333'
-                  }}
-                >
-                  Previous
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      backgroundColor: currentPage === page ? '#4CAF50' : '#fff',
-                      color: currentPage === page ? 'white' : '#333',
-                      cursor: 'pointer',
-                      fontWeight: currentPage === page ? 'bold' : 'normal'
-                    }}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    padding: '8px 16px',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    backgroundColor: currentPage === totalPages ? '#f5f5f5' : '#fff',
-                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                    color: currentPage === totalPages ? '#999' : '#333'
-                  }}
-                >
-                  Next
-                </button>
+            {/* Modal Body */}
+            <div style={{ padding: '24px' }}>
+              {/* Product Image */}
+              <div style={{ height: 200, background: '#f3f4f6', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {selectedProduct.image ? <img src={selectedProduct.image} alt={selectedProduct.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9ca3af', fontSize: 60 }}>📦</span>}
               </div>
-            )}
-          </>
-        )}
-        </div>
-      </div>
 
-      {/* Product Detail Modal */}
-      {showDetail && detailProduct && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2100,
-            padding: 20
-          }}
-          onClick={() => setShowDetail(false)}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 12,
-              width: 640,
-              maxWidth: '100%',
-              padding: 20,
-              display: 'grid',
-              gridTemplateColumns: '1fr 1.2fr',
-              gap: 16
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                width: '100%',
-                height: 280,
-                background: '#f0f0f0',
-                borderRadius: 8,
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              {detailProduct.image ? (
-                <img
-                  src={detailProduct.image}
-                  alt={detailProduct.productName}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+              {/* Variant Selection - Button Grid */}
+              {selectedProduct.hasVariants && Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0 ? (
+                <div style={{ marginBottom: 20 }}>
+                  <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>เลือกแบบที่ต้องการ:</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
+                    {selectedProduct.variants.map((variant, idx) => {
+                      const available = Math.max(0, (variant.quantity || 0) - (variant.reserved || 0));
+                      const isSelected = selectedVariant === variant;
+                      const isOutOfStock = available <= 0;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => !isOutOfStock && setSelectedVariant(variant)}
+                          disabled={isOutOfStock}
+                          style={{
+                            padding: '12px 10px',
+                            borderRadius: 10,
+                            border: isSelected ? '2px solid #3b82f6' : '2px solid #e5e7eb',
+                            background: isOutOfStock ? '#f3f4f6' : isSelected ? '#eff6ff' : '#fff',
+                            cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                            opacity: isOutOfStock ? 0.5 : 1,
+                            textAlign: 'center',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? '#1e40af' : '#111827' }}>{variant.size}</div>
+                          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{variant.color}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', marginTop: 6 }}>฿{(variant.sellPrice || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 10, color: isOutOfStock ? '#ef4444' : '#6b7280', marginTop: 4 }}>
+                            {isOutOfStock ? 'หมด' : `เหลือ ${available}`}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : (
-                <span style={{ color: '#999' }}>No Image</span>
-              )}
-            </div>
-            <div>
-              <h2 style={{ marginTop: 0 }}>{detailProduct.productName || 'Unnamed Product'}</h2>
-              {detailProduct.purchaseLocation && (
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: '4px 0 8px'
-                  }}
-                >
-                  แหล่งที่ซื้อ: {detailProduct.purchaseLocation}
+                <div style={{ marginBottom: 20, padding: '16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, color: '#374151' }}>ราคา:</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>฿{(selectedProduct.sellPrice || selectedProduct.price || 0).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                    <span style={{ fontSize: 13, color: '#6b7280' }}>คงเหลือ:</span>
+                    <span style={{ fontSize: 13, color: '#6b7280' }}>{getAvailableQuantity()} {selectedProduct.unit || 'ชิ้น'}</span>
+                  </div>
                 </div>
               )}
-              <p style={{ color: '#666', whiteSpace: 'pre-wrap' }}>
-                {detailProduct.description || 'ไม่มีคำอธิบาย'}
-              </p>
-              <div
-                style={{
-                  background: '#e8f5e9',
-                  color: '#2e7d32',
-                  padding: '8px 12px',
-                  borderRadius: 6,
-                  fontWeight: 500,
-                  marginTop: 8
-                }}
-              >
-                คงเหลือพร้อมขาย:{' '}
-                {Math.max(
-                  0,
-                  (detailProduct.quantity || 0) - (detailProduct.reserved || 0)
-                )}{' '}
-                ชิ้น
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: 12
-                }}
-              >
-                <span
-                  style={{ fontSize: 22, fontWeight: 'bold', color: '#4CAF50' }}
-                >
-                  ฿{(detailProduct.price ?? detailProduct.costPrice ?? 0).toLocaleString()}
-                </span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => {
-                      setShowDetail(false);
-                      addToCartDirectly(detailProduct);
-                    }}
-                    disabled={
-                      cartLoading[detailProduct?.id] ||
-                      Math.max(
-                        0,
-                        (detailProduct.quantity || 0) -
-                          (detailProduct.reserved || 0)
-                      ) <= 0
-                    }
-                    style={{
-                      padding: '8px 14px',
-                      background: cartLoading[detailProduct?.id]
-                        ? '#ccc'
-                        : '#673AB7',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: cartLoading[detailProduct?.id]
-                        ? 'not-allowed'
-                        : 'pointer',
-                      opacity: cartLoading[detailProduct?.id] ? 0.6 : 1
-                    }}
-                  >
-                    {cartLoading[detailProduct?.id]
-                      ? 'กำลังเพิ่ม...'
-                      : 'เพิ่มลงตะกร้า'}
-                  </button>
-                  <button
-                    onClick={() => setShowDetail(false)}
-                    style={{
-                      padding: '8px 14px',
-                      background: '#6c757d',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ปิด
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Quantity Prompt Modal */}
-      {showQtyPrompt && promptProduct && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            padding: 20
-          }}
-          onClick={() => setShowQtyPrompt(false)}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 12,
-              width: 420,
-              maxWidth: '100%',
-              padding: 20
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ marginTop: 0 }}>ระบุจำนวนสินค้า</h3>
-            <p style={{ marginTop: 0, color: '#666' }}>{promptProduct.productName}</p>
-            <input
-              type="number"
-              min={1}
-              max={Math.max(
-                0,
-                (promptProduct.quantity || 0) - (promptProduct.reserved || 0)
+              {/* Selected Variant Info */}
+              {selectedVariant && (
+                <div style={{ marginBottom: 20, padding: '16px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe' }}>
+                  <div style={{ fontSize: 13, color: '#1e40af', fontWeight: 600, marginBottom: 8 }}>เลือกแล้ว:</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, color: '#374151' }}>{selectedVariant.size} / {selectedVariant.color}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>฿{(selectedVariant.sellPrice || 0).toLocaleString()}</span>
+                  </div>
+                </div>
               )}
-              value={promptQty}
-              onChange={(e) => setPromptQty(e.target.value)}
-              disabled={cartLoading}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #ddd',
-                borderRadius: 8
-              }}
-            />
-            {cartError && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: '10px',
-                  backgroundColor: '#ffebee',
-                  color: '#c62828',
-                  borderRadius: 8,
-                  fontSize: '14px'
-                }}
-              >
-                {cartError}
+
+              {/* Quantity */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>จำนวน:</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ width: 40, height: 40, borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', fontSize: 20, cursor: 'pointer', color: '#374151' }}>-</button>
+                  <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, Math.min(getAvailableQuantity(), parseInt(e.target.value) || 1)))} min="1" max={getAvailableQuantity()} style={{ width: 80, padding: '10px', textAlign: 'center', fontSize: 16, fontWeight: 600, border: '2px solid #e5e7eb', borderRadius: 10 }} />
+                  <button onClick={() => setQuantity(Math.min(getAvailableQuantity(), quantity + 1))} style={{ width: 40, height: 40, borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', fontSize: 20, cursor: 'pointer', color: '#374151' }}>+</button>
+                  <span style={{ fontSize: 13, color: '#6b7280' }}>/ {getAvailableQuantity()} {selectedProduct.unit || 'ชิ้น'}</span>
+                </div>
               </div>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                gap: 10,
-                justifyContent: 'flex-end',
-                marginTop: 16
-              }}
-            >
+
+              {/* Add to Cart Button */}
               <button
-                onClick={() => {
-                  setShowQtyPrompt(false);
-                  setCartError('');
-                }}
-                disabled={cartLoading}
+                onClick={handleAddToCart}
+                disabled={addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0}
                 style={{
-                  padding: '10px 16px',
-                  background: cartLoading ? '#ccc' : '#6c757d',
-                  color: '#fff',
+                  width: '100%',
+                  padding: '16px',
+                  borderRadius: 12,
                   border: 'none',
-                  borderRadius: 8,
-                  cursor: cartLoading ? 'not-allowed' : 'pointer'
+                  background: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? 'not-allowed' : 'pointer',
+                  boxShadow: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? 'none' : '0 6px 20px rgba(16,185,129,0.4)',
                 }}
               >
-                ยกเลิก
-              </button>
-              <button
-                onClick={confirmAddToCart}
-                disabled={cartLoading}
-                style={{
-                  padding: '10px 16px',
-                  background: cartLoading ? '#ccc' : '#4CAF50',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: cartLoading ? 'not-allowed' : 'pointer',
-                  fontWeight: 600
-                }}
-              >
-                {cartLoading ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
+                {addingToCart ? 'กำลังเพิ่ม...' : getAvailableQuantity() <= 0 ? 'สินค้าหมด' : `เพิ่มลงตะกร้า (฿${((selectedVariant?.sellPrice || selectedProduct.sellPrice || selectedProduct.price || 0) * quantity).toLocaleString()})`}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Footer - store information (only on customer dashboard) */}
-      <footer
-        style={{
-          marginTop: 32,
-          background:
-            'linear-gradient(135deg, #020617 0%, #0f172a 40%, #020617 100%)',
-          color: '#e5e7eb',
-          padding: '32px 24px 24px',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: '2fr 1.2fr 1.2fr 1.4fr',
-            gap: 32,
-          }}
-        >
-          {/* About store */}
-          <div>
-            <h3
-              style={{
-                margin: '0 0 10px 0',
-                fontSize: 20,
-                fontWeight: 700,
-                color: '#f9fafb',
-              }}
-            >
-              ร้านค้าของเรา
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                color: '#9ca3af',
-                lineHeight: 1.6,
-              }}
-            >
-              พบกับสินค้าคุณภาพพร้อมจัดส่งอย่างรวดเร็ว เพื่อการช็อปที่สะดวกและปลอดภัย
-              เรามุ่งมั่นให้ความพึงพอใจสูงสุดแก่ลูกค้าทุกท่าน
-            </p>
-          </div>
-
-          {/* Menu */}
-          <div>
-            <h4
-              style={{
-                margin: '0 0 10px 0',
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#e5e7eb',
-              }}
-            >
-              เมนูหลัก
-            </h4>
-            <ul
-              style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                fontSize: 13,
-                color: '#9ca3af',
-                lineHeight: 1.8,
-              }}
-            >
-              <li>หน้าหลัก</li>
-              <li>รายการสินค้า</li>
-              <li>ประวัติคำสั่งซื้อ</li>
-              <li>โปรไฟล์</li>
-            </ul>
-          </div>
-
-          {/* Customer services */}
-          <div>
-            <h4
-              style={{
-                margin: '0 0 10px 0',
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#e5e7eb',
-              }}
-            >
-              บริการลูกค้า
-            </h4>
-            <ul
-              style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                fontSize: 13,
-                color: '#9ca3af',
-                lineHeight: 1.8,
-              }}
-            >
-              <li>วิธีการสั่งซื้อ</li>
-              <li>การจัดส่งสินค้า</li>
-              <li>นโยบายการคืนสินค้า</li>
-              <li>คำถามที่พบบ่อย</li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4
-              style={{
-                margin: '0 0 10px 0',
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#e5e7eb',
-              }}
-            >
-              ติดต่อเรา
-            </h4>
-            <div
-              style={{
-                fontSize: 13,
-                color: '#9ca3af',
-                lineHeight: 1.8,
-              }}
-            >
-              <div>โทร: 084-922-3468</div>
-              <div>อีเมล: hr@vannessplus.com</div>
-              <div>ที่อยู่: 98 Sathorn Square Building, North Sathorn Road, Silom,Bangrak,Bangkok 10500</div>
-              <div>วันทำการ: จันทร์ - เสาร์ 8:30 - 17:30 น.</div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '18px auto 0',
-            borderTop: '1px solid rgba(148,163,184,0.25)',
-            paddingTop: 12,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 12,
-            color: '#6b7280',
-          }}
-        >
-          <div>ร้านค้าของเรา สงวนลิขสิทธิ์ทั้งหมด</div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <span>นโยบายความเป็นส่วนตัว</span>
-            <span>เงื่อนไขการใช้งาน</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
-

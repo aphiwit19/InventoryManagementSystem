@@ -1,433 +1,243 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { getAllProducts, getCart, updateCartItem, removeFromCart, migrateLocalStorageCart } from '../../services';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getCart, updateCartItem, removeFromCart, clearCart, createWithdrawal } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
-import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function CustomerWithdrawPage() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const [productsById, setProductsById] = useState({});
-  const [items, setItems] = useState([]);
-  const [requestedBy, setRequestedBy] = useState('');
-  const [requestedAddress, setRequestedAddress] = useState('');
-  const [cartLoading, setCartLoading] = useState(true);
-  const total = useMemo(() => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0), [items]);
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const list = await getAllProducts();
-        const map = {};
-        list.forEach(p => { map[p.id] = p; });
-        setProductsById(map);
-      } catch (error) {
-        console.error('Error loading products:', error);
-      }
-    };
-    load();
-  }, []);
+  // Form data
+  const [formData, setFormData] = useState({
+    recipientName: '',
+    recipientPhone: '',
+    recipientAddress: '',
+    notes: '',
+  });
 
-  // Load user data from Firebase
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (!user?.uid) {
-        return;
-      }
-      
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          // Auto-fill form with user data
-          if (data.displayName) {
-            setRequestedBy(data.displayName);
-          } else if (profile?.displayName) {
-            setRequestedBy(profile.displayName);
-          } else if (user?.email) {
-            setRequestedBy(user.email);
-          }
-          
-          if (data.address) {
-            setRequestedAddress(data.address);
-          }
-        } else {
-          // Fallback to profile data
-          if (profile?.displayName) {
-            setRequestedBy(profile.displayName);
-          } else if (user?.email) {
-            setRequestedBy(user.email);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        // Fallback to profile data
-        if (profile?.displayName) {
-          setRequestedBy(profile.displayName);
-        } else if (user?.email) {
-          setRequestedBy(user.email);
-        }
-      } finally {
-        // no-op
-      }
-    };
-    loadUserData();
-  }, [user?.uid, user?.email, profile]);
-
-  // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {
     const loadCart = async () => {
-      if (!user?.uid) {
-        setCartLoading(false);
-        return;
-      }
-      
-      setCartLoading(true);
+      if (!user) return;
       try {
-        // Try to migrate localStorage cart first (one-time)
-        const legacyKey = 'customerCart';
-        const perUserKey = `customerCart_${user.uid}`;
-        await migrateLocalStorageCart(user.uid, legacyKey, 'customer');
-        await migrateLocalStorageCart(user.uid, perUserKey, 'customer');
-        
-        // Load cart from Firebase
-        const cartItems = await getCart(user.uid, 'customer');
-        setItems(cartItems);
+        const cartData = await getCart(user.uid);
+        setCart(cartData || []);
       } catch (error) {
         console.error('Error loading cart:', error);
-        setItems([]);
       } finally {
-        setCartLoading(false);
+        setLoading(false);
       }
     };
     loadCart();
-  }, [user?.uid]);
+  }, [user]);
 
-  const updateQty = async (id, qty) => {
-    if (!user?.uid) return;
-    const qtyTotal = productsById[id]?.quantity ?? 0;
-    const qtyReserved = productsById[id]?.reserved ?? 0;
-    const stock = Math.max(0, qtyTotal - qtyReserved);
-    const value = Math.max(1, Math.min(parseInt(qty || 1), stock));
-    
+  useEffect(() => {
+    if (profile) {
+      setFormData(prev => ({
+        ...prev,
+        recipientName: profile.displayName || profile.email || '',
+      }));
+    }
+  }, [profile]);
+
+  const handleQuantityChange = async (item, newQty) => {
+    if (newQty < 1) return;
     try {
-      await updateCartItem(user.uid, id, value, stock, 'customer');
-      setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: value, stock } : it));
+      await updateCartItem(user.uid, item.productId, newQty, item.variantSize, item.variantColor);
+      setCart(prev => prev.map(c => {
+        if (c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor) {
+          return { ...c, quantity: newQty };
+        }
+        return c;
+      }));
     } catch (error) {
-      console.error('Error updating cart item:', error);
-      alert('ไม่สามารถอัปเดตจำนวนสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      console.error('Error updating quantity:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     }
   };
 
-  const removeItem = async (id) => {
-    if (!user?.uid) return;
+  const handleRemoveItem = async (item) => {
+    if (!window.confirm('ต้องการลบสินค้านี้ออกจากตะกร้า?')) return;
     try {
-      await removeFromCart(user.uid, id, 'customer');
-      setItems(prev => prev.filter(it => it.id !== id));
+      await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor);
+      setCart(prev => prev.filter(c => !(c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor)));
     } catch (error) {
-      console.error('Error removing cart item:', error);
-      alert('ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      console.error('Error removing item:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     }
   };
 
-  const goToPayment = () => {
-    if (!user?.uid) {
-      alert('กรุณาเข้าสู่ระบบก่อน');
+  const handleClearCart = async () => {
+    if (!window.confirm('ต้องการล้างตะกร้าทั้งหมด?')) return;
+    try {
+      await clearCart(user.uid);
+      setCart([]);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) {
+      alert('ไม่มีสินค้าในตะกร้า');
       return;
     }
-    if (items.length === 0) {
-      alert('ยังไม่มีสินค้าในตะกร้า');
+    if (!formData.recipientName || !formData.recipientPhone || !formData.recipientAddress) {
+      alert('กรุณากรอกข้อมูลผู้รับให้ครบถ้วน');
       return;
     }
-    navigate('/customer/payment');
+
+    setSubmitting(true);
+    try {
+      const orderData = {
+        userId: user.uid,
+        userEmail: user.email,
+        items: cart.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          image: item.image,
+          unit: item.unit,
+          quantity: item.quantity,
+          sellPrice: item.sellPrice,
+          variantSize: item.variantSize || null,
+          variantColor: item.variantColor || null,
+        })),
+        recipientName: formData.recipientName,
+        recipientPhone: formData.recipientPhone,
+        recipientAddress: formData.recipientAddress,
+        notes: formData.notes,
+        totalAmount: cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0),
+        orderType: 'customer',
+      };
+
+      await createWithdrawal(orderData);
+      await clearCart(user.uid);
+      alert('สร้างคำสั่งซื้อสำเร็จ!');
+      navigate('/customer');
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const totalAmount = cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดตะกร้า...</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: '30px', background: '#f0f4ff', minHeight: '100vh' }}>
-      {/* Step indicator */}
-      <div
-        style={{
-          maxWidth: 960,
-          margin: '0 auto 20px',
-          background: '#fff',
-          borderRadius: 16,
-          padding: '16px 24px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: 14,
-            fontWeight: 600
-          }}
-        >
-          <span style={{ color: '#2e7d32', borderBottom: '2px solid #2e7d32', paddingBottom: 4 }}>
-            1 ตะกร้า
-          </span>
-          <span style={{ color: '#9e9e9e' }}>2 ชำระเงิน</span>
-          <span style={{ color: '#9e9e9e' }}>3 เสร็จสิ้น</span>
-        </div>
-        <div
-          style={{
-            marginTop: 10,
-            height: 4,
-            borderRadius: 999,
-            background: 'linear-gradient(90deg,#4CAF50 0%,#4CAF50 33%,#e0e0e0 33%)'
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          maxWidth: 960,
-          margin: '0 auto',
-          background: '#fff',
-          borderRadius: 24,
-          padding: '24px 28px 28px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.08)'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: 22 }}>ตะกร้าสินค้า</h2>
+    <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>🛒 ตะกร้าสินค้า</h1>
+            <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{cart.length} รายการ</div>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={() => navigate('/customer')} style={{ padding: '10px 20px', borderRadius: 10, border: '2px solid #e2e8f0', background: '#fff', color: '#374151', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>← กลับ</button>
+            {cart.length > 0 && (
+              <button onClick={handleClearCart} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>ล้างตะกร้า</button>
+            )}
+          </div>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1.6fr 1fr',
-            gap: 20,
-            alignItems: 'flex-start'
-          }}
-        >
-          {/* Cart list */}
-          <div
-            style={{
-              background: '#f9fafb',
-              borderRadius: 20,
-              padding: 18,
-              border: '1px solid #e5e7eb',
-              minHeight: 120
-            }}
-          >
-            {cartLoading ? (
-              <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>กำลังโหลดตะกร้า...</p>
-            ) : items.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 10px' }}>
-                <p style={{ color: '#999', marginBottom: 12 }}>ยังไม่มีรายการในตะกร้า</p>
-                <Link
-                  to="/customer"
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: 999,
-                    background: '#4A90E2',
-                    color: '#fff',
-                    textDecoration: 'none',
-                    fontSize: 13,
-                    fontWeight: 600
-                  }}
-                >
-                  ไปเลือกสินค้า
-                </Link>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {items.map((it) => (
-                  <div
-                    key={it.id}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 120px 110px 110px',
-                      gap: 10,
-                      alignItems: 'center',
-                      padding: '8px 4px',
-                      borderBottom: '1px dashed #e5e7eb'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{it.productName}</div>
-                      <div style={{ color: '#777', fontSize: 12 }}>
-                        คงเหลือพร้อมขาย:{' '}
-                        {Math.max(
-                          0,
-                          (productsById[it.id]?.quantity ?? 0) -
-                            (productsById[it.id]?.reserved ?? 0)
-                        )}{' '}
-                        ชิ้น
+        {cart.length === 0 ? (
+          <div style={{ background: '#fff', borderRadius: 18, padding: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+            <div style={{ fontSize: 60, marginBottom: 16 }}>🛒</div>
+            <p style={{ color: '#64748b', fontSize: 16 }}>ตะกร้าว่างเปล่า</p>
+            <button onClick={() => navigate('/customer')} style={{ marginTop: 16, padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>เลือกสินค้า</button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20 }}>
+            {/* Cart Items */}
+            <div style={{ background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+              <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600, color: '#111827' }}>รายการสินค้า</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {cart.map((item, idx) => (
+                  <div key={`${item.productId}-${item.variantSize}-${item.variantColor}-${idx}`} style={{ display: 'flex', gap: 16, padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                    {/* Image */}
+                    <div style={{ width: 80, height: 80, borderRadius: 10, background: '#e5e7eb', overflow: 'hidden', flexShrink: 0 }}>
+                      {item.image ? <img src={item.image} alt={item.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 24 }}>📦</div>}
+                    </div>
+                    {/* Info */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#111827', fontSize: 15, marginBottom: 4 }}>{item.productName}</div>
+                      {/* Variant Info */}
+                      {(item.variantSize || item.variantColor) && (
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                          {item.variantSize && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>ไซส์: {item.variantSize}</span>}
+                          {item.variantColor && <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>สี: {item.variantColor}</span>}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>หน่วย: {item.unit || 'ชิ้น'}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <button onClick={() => handleQuantityChange(item, item.quantity - 1)} disabled={item.quantity <= 1} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer', fontSize: 14 }}>-</button>
+                        <span style={{ fontWeight: 600, minWidth: 30, textAlign: 'center' }}>{item.quantity}</span>
+                        <button onClick={() => handleQuantityChange(item, item.quantity + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right', fontSize: 14 }}>
-                      ฿{it.price.toLocaleString()}
-                    </div>
-                    <div>
-                      <input
-                        type="number"
-                        min={1}
-                        max={Math.max(
-                          0,
-                          (productsById[it.id]?.quantity ?? 0) -
-                            (productsById[it.id]?.reserved ?? 0)
-                        )}
-                        value={it.quantity}
-                        onChange={(e) => updateQty(it.id, e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: 999,
-                          fontSize: 13,
-                          textAlign: 'center'
-                        }}
-                      />
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          fontSize: 14,
-                          marginBottom: 4
-                        }}
-                      >
-                        ฿{(it.price * it.quantity).toLocaleString()}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(it.id)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#f44336',
-                          cursor: 'pointer',
-                          fontSize: 12
-                        }}
-                      >
-                        ลบ
-                      </button>
+                    {/* Price & Remove */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                      <button onClick={() => handleRemoveItem(item)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
+                      <div style={{ fontWeight: 700, color: '#16a34a', fontSize: 16 }}>฿{(item.sellPrice * item.quantity).toLocaleString()}</div>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Summary & basic info */}
-          <div
-            style={{
-              background: '#f9fafb',
-              borderRadius: 20,
-              padding: 18,
-              border: '1px solid #e5e7eb',
-              overflow: 'hidden'
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>
-              รายละเอียดผู้สั่งซื้อ
-            </h3>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                maxWidth: 460,
-                padding: '0 8px',
-                margin: '0 auto'
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    marginBottom: 6,
-                    color: '#374151'
-                  }}
-                >
-                  ผู้สั่งซื้อ
+            {/* Order Form */}
+            <div style={{ background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', height: 'fit-content' }}>
+              <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600, color: '#111827' }}>ข้อมูลการจัดส่ง</h2>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>ชื่อผู้รับ *</label>
+                  <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box' }} />
                 </div>
-                <input
-                  value={requestedBy}
-                  onChange={(e) => setRequestedBy(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: 16,
-                    fontSize: 14
-                  }}
-                />
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    marginBottom: 6,
-                    color: '#374151'
-                  }}
-                >
-                  ที่อยู่ผู้สั่งซื้อ
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>เบอร์โทร *</label>
+                  <input type="tel" value={formData.recipientPhone} onChange={(e) => setFormData(prev => ({ ...prev, recipientPhone: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box' }} />
                 </div>
-                <textarea
-                  value={requestedAddress}
-                  onChange={(e) => setRequestedAddress(e.target.value)}
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: 16,
-                    resize: 'vertical',
-                    fontSize: 14,
-                    fontFamily: 'inherit'
-                  }}
-                />
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: 8
-                }}
-              >
-                <span style={{ color: '#666' }}>ราคารวม</span>
-                <strong>฿{total.toLocaleString()}</strong>
-              </div>
-              <button
-                disabled={items.length === 0}
-                onClick={goToPayment}
-                style={{
-                  padding: '12px',
-                  background:
-                    items.length === 0
-                      ? '#9ca3af'
-                      : 'linear-gradient(90deg,#2563EB,#1D4ED8)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 999,
-                  cursor: items.length === 0 ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  marginTop: 4,
-                  boxShadow:
-                    items.length === 0
-                      ? 'none'
-                      : '0 4px 10px rgba(37,99,235,0.35)'
-                }}
-              >
-                ดำเนินการชำระเงิน
-              </button>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>ที่อยู่จัดส่ง *</label>
+                  <textarea value={formData.recipientAddress} onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))} required rows={3} style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>หมายเหตุ</label>
+                  <textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+                </div>
+
+                {/* Summary */}
+                <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#374151' }}>จำนวนรายการ:</span>
+                    <span style={{ fontWeight: 600 }}>{cart.length} รายการ</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#374151' }}>ยอดรวม:</span>
+                    <span style={{ fontWeight: 700, fontSize: 20, color: '#16a34a' }}>฿{totalAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: 10, border: 'none', background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: submitting ? 'none' : '0 6px 20px rgba(16,185,129,0.4)' }}>
+                  {submitting ? 'กำลังสร้างคำสั่งซื้อ...' : 'ยืนยันคำสั่งซื้อ'}
+                </button>
+              </form>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

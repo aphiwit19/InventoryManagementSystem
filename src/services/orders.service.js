@@ -11,6 +11,8 @@ export async function createWithdrawal(payload) {
         price: parseFloat(it.price || 0),
         quantity: parseInt(it.quantity || 0),
         subtotal: parseFloat(it.subtotal || 0),
+        variantSize: it.variantSize || null,
+        variantColor: it.variantColor || null,
       })),
       requestedBy: payload.requestedBy || null,
       requestedAddress: payload.requestedAddress || '',
@@ -114,38 +116,80 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
     if (isPickup && updates.shippingStatus === 'รับของแล้ว' && currentData.shippingStatus !== 'รับของแล้ว') {
       await runTransaction(db, async (tx) => {
         const items = currentData.items || [];
-        const states = [];
+        
+        // รวม items ที่มี productId เดียวกัน
+        const productMap = new Map();
         for (const it of items) {
-          const pRef = doc(db, 'products', it.productId);
-          const pSnap = await tx.get(pRef);
-          if (!pSnap.exists()) continue;
-          const pData = pSnap.data();
-          states.push({
-            pRef,
-            qty: parseInt(pData.quantity || 0),
-            staffReserved: parseInt(pData.staffReserved || 0),
+          const pid = it.productId;
+          if (!productMap.has(pid)) {
+            const pRef = doc(db, 'products', pid);
+            const pSnap = await tx.get(pRef);
+            if (!pSnap.exists()) continue;
+            const pData = pSnap.data();
+            productMap.set(pid, {
+              pRef,
+              qty: parseInt(pData.quantity || 0),
+              staffReserved: parseInt(pData.staffReserved || 0),
+              costPrice: parseFloat(pData.costPrice || 0),
+              variants: pData.variants || [],
+              totalUsed: 0,
+              variantUpdates: [], // เก็บรายการ variant ที่ต้องตัด
+            });
+          }
+          const prod = productMap.get(pid);
+          prod.totalUsed += parseInt(it.quantity || 0);
+          prod.variantUpdates.push({
+            variantSize: it.variantSize || null,
+            variantColor: it.variantColor || null,
             used: parseInt(it.quantity || 0),
-            costPrice: parseFloat(pData.costPrice || 0),
           });
         }
 
-        for (const s of states) {
-          const nextStaffReserved = Math.max(0, (s.staffReserved || 0) - s.used);
-          const nextQty = Math.max(0, s.qty - s.used);
-          tx.update(s.pRef, { staffReserved: nextStaffReserved, quantity: nextQty, updatedAt: Timestamp.now() });
-          const productHistoryCol = collection(s.pRef, 'inventory_history');
-          const histRef = doc(productHistoryCol);
-          const outSource = currentData.createdSource === 'customer' ? 'order_customer_pickup' : 'order_staff_pickup';
-          tx.set(histRef, {
-            date: Timestamp.now(),
-            costPrice: s.costPrice ?? null,
-            quantity: s.used,
-            type: 'out',
-            source: outSource,
-            orderId: withdrawalId,
-            actorUid: createdByUid,
-            createdAt: Timestamp.now(),
+        // ตัดสต๊อกแต่ละ product
+        for (const [pid, s] of productMap) {
+          const nextStaffReserved = Math.max(0, (s.staffReserved || 0) - s.totalUsed);
+          const nextQty = Math.max(0, s.qty - s.totalUsed);
+          
+          // ตัดสต๊อกระดับ variant
+          let updatedVariants = [...s.variants];
+          for (const vu of s.variantUpdates) {
+            if (updatedVariants.length > 0 && (vu.variantSize || vu.variantColor)) {
+              updatedVariants = updatedVariants.map(v => {
+                const sizeMatch = !vu.variantSize || v.size === vu.variantSize;
+                const colorMatch = !vu.variantColor || v.color === vu.variantColor;
+                if (sizeMatch && colorMatch) {
+                  return { ...v, quantity: Math.max(0, (v.quantity || 0) - vu.used) };
+                }
+                return v;
+              });
+            }
+          }
+          
+          tx.update(s.pRef, { 
+            staffReserved: nextStaffReserved, 
+            quantity: nextQty, 
+            variants: updatedVariants,
+            updatedAt: Timestamp.now() 
           });
+          
+          // บันทึก history แต่ละ variant
+          const outSource = currentData.createdSource === 'customer' ? 'order_customer_pickup' : 'order_staff_pickup';
+          for (const vu of s.variantUpdates) {
+            const productHistoryCol = collection(s.pRef, 'inventory_history');
+            const histRef = doc(productHistoryCol);
+            tx.set(histRef, {
+              date: Timestamp.now(),
+              costPrice: s.costPrice ?? null,
+              quantity: vu.used,
+              type: 'out',
+              source: outSource,
+              orderId: withdrawalId,
+              actorUid: createdByUid,
+              variantSize: vu.variantSize,
+              variantColor: vu.variantColor,
+              createdAt: Timestamp.now(),
+            });
+          }
         }
 
         tx.update(ref, {
@@ -163,39 +207,82 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
         currentData.shippingStatus === 'รอดำเนินการ') {
       await runTransaction(db, async (tx) => {
         const items = currentData.items || [];
-        const states = [];
+        
+        // รวม items ที่มี productId เดียวกัน
+        const productMap = new Map();
         for (const it of items) {
-          const pRef = doc(db, 'products', it.productId);
-          const pSnap = await tx.get(pRef);
-          if (!pSnap.exists()) continue;
-          const pData = pSnap.data();
-          states.push({
-            pRef,
-            qty: parseInt(pData.quantity || 0),
-            reserved: parseInt(pData.reserved || 0),
+          const pid = it.productId;
+          if (!productMap.has(pid)) {
+            const pRef = doc(db, 'products', pid);
+            const pSnap = await tx.get(pRef);
+            if (!pSnap.exists()) continue;
+            const pData = pSnap.data();
+            productMap.set(pid, {
+              pRef,
+              qty: parseInt(pData.quantity || 0),
+              reserved: parseInt(pData.reserved || 0),
+              costPrice: parseFloat(pData.costPrice || 0),
+              variants: pData.variants || [],
+              totalUsed: 0,
+              variantUpdates: [],
+            });
+          }
+          const prod = productMap.get(pid);
+          prod.totalUsed += parseInt(it.quantity || 0);
+          prod.variantUpdates.push({
+            variantSize: it.variantSize || null,
+            variantColor: it.variantColor || null,
             used: parseInt(it.quantity || 0),
-            costPrice: parseFloat(pData.costPrice || 0),
           });
         }
 
-        for (const s of states) {
-          const nextReserved = Math.max(0, s.reserved - s.used);
-          const nextQty = Math.max(0, s.qty - s.used);
-          tx.update(s.pRef, { reserved: nextReserved, quantity: nextQty, updatedAt: Timestamp.now() });
-          const productHistoryCol = collection(s.pRef, 'inventory_history');
-          const histRef = doc(productHistoryCol);
-          const outSource = currentData.createdSource === 'customer' ? 'order_customer_ship_success' : 'order_staff_ship_success';
-          tx.set(histRef, {
-            date: Timestamp.now(),
-            costPrice: s.costPrice ?? null,
-            quantity: s.used,
-            type: 'out',
-            source: outSource,
-            orderId: withdrawalId,
-            actorUid: createdByUid,
-            createdAt: Timestamp.now(),
+        // ตัดสต๊อกแต่ละ product
+        for (const [pid, s] of productMap) {
+          const nextReserved = Math.max(0, s.reserved - s.totalUsed);
+          const nextQty = Math.max(0, s.qty - s.totalUsed);
+          
+          // ตัดสต๊อกระดับ variant
+          let updatedVariants = [...s.variants];
+          for (const vu of s.variantUpdates) {
+            if (updatedVariants.length > 0 && (vu.variantSize || vu.variantColor)) {
+              updatedVariants = updatedVariants.map(v => {
+                const sizeMatch = !vu.variantSize || v.size === vu.variantSize;
+                const colorMatch = !vu.variantColor || v.color === vu.variantColor;
+                if (sizeMatch && colorMatch) {
+                  return { ...v, quantity: Math.max(0, (v.quantity || 0) - vu.used) };
+                }
+                return v;
+              });
+            }
+          }
+          
+          tx.update(s.pRef, { 
+            reserved: nextReserved, 
+            quantity: nextQty, 
+            variants: updatedVariants,
+            updatedAt: Timestamp.now() 
           });
+          
+          // บันทึก history แต่ละ variant
+          const outSource = currentData.createdSource === 'customer' ? 'order_customer_ship_success' : 'order_staff_ship_success';
+          for (const vu of s.variantUpdates) {
+            const productHistoryCol = collection(s.pRef, 'inventory_history');
+            const histRef = doc(productHistoryCol);
+            tx.set(histRef, {
+              date: Timestamp.now(),
+              costPrice: s.costPrice ?? null,
+              quantity: vu.used,
+              type: 'out',
+              source: outSource,
+              orderId: withdrawalId,
+              actorUid: createdByUid,
+              variantSize: vu.variantSize,
+              variantColor: vu.variantColor,
+              createdAt: Timestamp.now(),
+            });
+          }
         }
+        
         tx.update(ref, {
           ...(updates.shippingCarrier !== undefined ? { shippingCarrier: updates.shippingCarrier } : {}),
           ...(updates.trackingNumber !== undefined ? { trackingNumber: updates.trackingNumber } : {}),

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProducts, getAllWithdrawals, isLowStock } from '../../services';
+import { getAllProducts, getAllWithdrawals, isLowStock, getLowStockVariants } from '../../services';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 
@@ -177,44 +177,76 @@ export default function AdminOverviewPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1.4fr',
+            gridTemplateColumns: '1fr 1.5fr',
             gap: 20,
             alignItems: 'stretch',
           }}
         >
           <Panel
             title="สินค้าสต๊อกต่ำ"
-            badge={lowStock.length > 0 ? `${lowStock.length} ชิ้น` : null}
+            badge={lowStock.length > 0 ? `${lowStock.length} รายการ` : null}
             emptyText="ยังไม่มีสินค้าที่สต็อกต่ำ"
+            onClick={() => navigate('/admin/alerts')}
           >
-            {lowStock.slice(0, 5).map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 0',
-                  borderBottom: '1px solid #f1f5f9',
-                  fontSize: 14,
-                }}
-              >
+            {lowStock.slice(0, 5).map((p) => {
+              const lowVariants = getLowStockVariants(p);
+              const unit = p.unit || 'ชิ้น';
+              return (
                 <div
+                  key={p.id}
                   style={{
-                    maxWidth: 200,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    color: '#1e293b',
+                    padding: '10px 0',
+                    borderBottom: '1px solid #f1f5f9',
+                    fontSize: 14,
                   }}
                 >
-                  {p.productName || 'ไม่มีชื่อสินค้า'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: lowVariants.length > 0 ? 6 : 0 }}>
+                    <div
+                      style={{
+                        maxWidth: 160,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        color: '#1e293b',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {p.productName || 'ไม่มีชื่อสินค้า'}
+                    </div>
+                    <div style={{ 
+                      color: (p.quantity || 0) === 0 ? '#dc2626' : '#f59e0b', 
+                      fontWeight: 600 
+                    }}>
+                      {(p.quantity ?? 0).toLocaleString()} {unit}
+                    </div>
+                  </div>
+                  {lowVariants.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {lowVariants.slice(0, 3).map((v, idx) => (
+                        <span 
+                          key={idx}
+                          style={{ 
+                            background: v.available === 0 ? '#fecaca' : v.available <= 5 ? '#fed7aa' : '#fef9c3',
+                            color: v.available === 0 ? '#dc2626' : v.available <= 5 ? '#ea580c' : '#a16207',
+                            padding: '2px 6px', 
+                            borderRadius: 4, 
+                            fontSize: 11, 
+                            fontWeight: 500,
+                          }}
+                        >
+                          {v.size}/{v.color}: {v.available}
+                        </span>
+                      ))}
+                      {lowVariants.length > 3 && (
+                        <span style={{ fontSize: 11, color: '#6b7280', padding: '2px 0' }}>
+                          +{lowVariants.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div style={{ color: '#3b82f6', fontWeight: 600 }}>
-                  {(p.quantity ?? 0).toLocaleString()} ชิ้น
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </Panel>
 
           <Panel title="กราฟรายได้ 7 วันที่ผ่านมา" emptyText="ยังไม่มีคำสั่งซื้อในช่วงนี้">
@@ -290,10 +322,11 @@ function RevenueCard({ title, value, subtext }) {
   );
 }
 
-function Panel({ title, badge, emptyText, children }) {
+function Panel({ title, badge, emptyText, children, onClick }) {
   const isEmpty = !children || (Array.isArray(children) && children.length === 0);
   return (
     <div
+      onClick={onClick}
       style={{
         background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
         borderRadius: 18,
@@ -304,6 +337,7 @@ function Panel({ title, badge, emptyText, children }) {
         display: 'flex',
         flexDirection: 'column',
         backdropFilter: 'blur(8px)',
+        cursor: onClick ? 'pointer' : 'default',
       }}
     >
       <div
