@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -7,6 +7,7 @@ import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart } from '.
 
 export default function CustomerPaymentPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
 
   const [items, setItems] = useState([]);
@@ -19,9 +20,15 @@ export default function CustomerPaymentPage() {
   const [formError, setFormError] = useState('');
   const [withdrawDate] = useState(new Date().toISOString().slice(0, 10));
   const total = useMemo(
-    () => items.reduce((s, it) => s + (it.price * (it.quantity || 0)), 0),
+    () =>
+      items.reduce((s, it) => {
+        const unitPrice = it.price ?? it.sellPrice ?? 0;
+        return s + unitPrice * (it.quantity || 0);
+      }, 0),
     [items]
   );
+
+  const shippingFromCart = location.state && location.state.shipping ? location.state.shipping : null;
 
   // Load cart items
   useEffect(() => {
@@ -85,6 +92,20 @@ export default function CustomerPaymentPage() {
     loadUser();
   }, [user?.uid, user?.displayName, user?.email, profile?.displayName]);
 
+  // ถ้ามีข้อมูลที่อยู่จากหน้าตะกร้า ให้ override ค่าในฟอร์ม (แต่ล็อกไม่ให้แก้ไขในหน้านี้)
+  useEffect(() => {
+    if (!shippingFromCart) return;
+    if (shippingFromCart.recipientName) {
+      setRequestedBy(shippingFromCart.recipientName);
+    }
+    if (shippingFromCart.recipientPhone) {
+      setPhone(shippingFromCart.recipientPhone);
+    }
+    if (shippingFromCart.recipientAddress) {
+      setRequestedAddress(shippingFromCart.recipientAddress);
+    }
+  }, [shippingFromCart]);
+
   const handleConfirm = async () => {
     setFormError('');
     if (!user?.uid) {
@@ -103,13 +124,18 @@ export default function CustomerPaymentPage() {
     setSaving(true);
     try {
       await createWithdrawal({
-        items: items.map(it => ({
-          productId: it.id,
-          productName: it.productName,
-          price: it.price,
-          quantity: it.quantity,
-          subtotal: it.price * it.quantity
-        })),
+        items: items.map(it => {
+          const unitPrice = it.price ?? it.sellPrice ?? 0;
+          return {
+            productId: it.productId ?? it.id,
+            productName: it.productName,
+            price: unitPrice,
+            quantity: it.quantity,
+            subtotal: unitPrice * it.quantity,
+            variantSize: it.variantSize || null,
+            variantColor: it.variantColor || null,
+          };
+        }),
         requestedBy: requestedBy.trim(),
         requestedAddress: requestedAddress.trim(),
         phone: phone.trim() || null,
@@ -211,7 +237,7 @@ export default function CustomerPaymentPage() {
               alignItems: 'flex-start'
             }}
           >
-            {/* Shipping form */}
+            {/* Left: Payment (manual transfer) + read-only shipping info */}
             <div
               style={{
                 background: '#f9fafb',
@@ -221,98 +247,216 @@ export default function CustomerPaymentPage() {
                 overflow: 'hidden'
               }}
             >
-              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>ที่อยู่จัดส่ง</h3>
+              {/* Payment section */}
+              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>ชำระเงิน</h3>
               <div
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 14,
-                  maxWidth: 460,
-                  padding: '0 8px',
-                  margin: '0 auto'
+                  background: '#ffffff',
+                  borderRadius: 16,
+                  padding: 16,
+                  border: '1px solid #e5e7eb',
+                  marginBottom: 14,
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      marginBottom: 6,
-                      color: '#374151'
-                    }}
-                  >
-                    ชื่อ - นามสกุล *
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: 260,
+                    margin: '0 auto 12px',
+                    borderRadius: 16,
+                    background: '#f1f5f9',
+                    border: '1px dashed #cbd5e1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 40, marginBottom: 4 }}>💳</div>
+                    <div style={{ fontSize: 13, color: '#475569' }}>สแกน QR หรือโอนด้วยตนเอง</div>
                   </div>
+                </div>
+                <div style={{ textAlign: 'center', fontSize: 12, color: '#64748b' }}>
+                  กรุณาโอนเงินภายใน <span style={{ fontWeight: 600 }}>6 นาที</span> หลังจากสร้างคำสั่งซื้อ
+                </div>
+              </div>
+
+              {/* Slip upload + basic transfer info (UI only) */}
+              <div
+                style={{
+                  background: '#ffffff',
+                  borderRadius: 16,
+                  padding: 16,
+                  border: '1px solid #e5e7eb',
+                  marginBottom: 18,
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#374151' }}>
+                  แจ้งชำระเงิน (อัปโหลดสลิป)
+                </div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>วันที่โอน</div>
+                    <input
+                      type="date"
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: 10,
+                        border: '1px solid #d1d5db',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+                  <div style={{ width: 120 }}>
+                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>เวลาโอน</div>
+                    <input
+                      type="time"
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: 10,
+                        border: '1px solid #d1d5db',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>ยอดที่โอน</div>
                   <input
                     type="text"
-                    value={requestedBy}
-                    onChange={(e) => setRequestedBy(e.target.value)}
-                    placeholder="เช่น สมชาย ใจดี"
+                    value={`฿${total.toLocaleString()}`}
+                    readOnly
                     style={{
                       width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 16,
+                      padding: '8px 10px',
+                      borderRadius: 10,
                       border: '1px solid #d1d5db',
-                      outline: 'none',
-                      fontSize: 14
+                      fontSize: 13,
+                      background: '#f9fafb',
                     }}
                   />
                 </div>
-
                 <div>
-                  <div
+                  <div style={{ fontSize: 12, marginBottom: 6, color: '#6b7280' }}>อัปโหลดสลิปโอนเงิน</div>
+                  <label
                     style={{
+                      display: 'block',
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      border: '1px dashed #cbd5e1',
+                      background: '#f8fafc',
+                      textAlign: 'center',
                       fontSize: 13,
-                      fontWeight: 600,
-                      marginBottom: 6,
-                      color: '#374151'
+                      color: '#475569',
+                      cursor: 'pointer',
                     }}
                   >
-                    เบอร์โทร *
+                    เลือกไฟล์สลิปจากเครื่อง
+                    <input type="file" accept="image/*" style={{ display: 'none' }} />
+                  </label>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                    รองรับไฟล์รูปภาพ .jpg, .png ขนาดไม่เกิน 5MB
                   </div>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="เช่น 0812345678"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 16,
-                      border: '1px solid #d1d5db',
-                      outline: 'none',
-                      fontSize: 14
-                    }}
-                  />
                 </div>
+              </div>
 
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      marginBottom: 6,
-                      color: '#374151'
-                    }}
-                  >
-                    ที่อยู่ *
+              {/* Shipping address (read-only) */}
+              <div
+                style={{
+                  background: '#f9fafb',
+                  borderRadius: 16,
+                  padding: 16,
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>ที่อยู่จัดส่ง</h4>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        marginBottom: 4,
+                        color: '#374151',
+                      }}
+                    >
+                      ชื่อ - นามสกุล
+                    </div>
+                    <input
+                      type="text"
+                      value={requestedBy}
+                      readOnly
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 999,
+                        border: '1px solid #d1d5db',
+                        background: '#ffffff',
+                        fontSize: 13,
+                      }}
+                    />
                   </div>
-                  <textarea
-                    value={requestedAddress}
-                    onChange={(e) => setRequestedAddress(e.target.value)}
-                    placeholder="บ้านเลขที่ / หมู่บ้าน / ถนน / เขต / จังหวัด / รหัสไปรษณีย์"
-                    rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 16,
-                      border: '1px solid #d1d5db',
-                      outline: 'none',
-                      resize: 'vertical',
-                      fontSize: 14,
-                      fontFamily: 'inherit'
-                    }}
-                  />
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        marginBottom: 4,
+                        color: '#374151',
+                      }}
+                    >
+                      เบอร์โทร
+                    </div>
+                    <input
+                      type="tel"
+                      value={phone}
+                      readOnly
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 999,
+                        border: '1px solid #d1d5db',
+                        background: '#ffffff',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        marginBottom: 4,
+                        color: '#374151',
+                      }}
+                    >
+                      ที่อยู่จัดส่ง
+                    </div>
+                    <textarea
+                      value={requestedAddress}
+                      readOnly
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 14,
+                        border: '1px solid #d1d5db',
+                        background: '#ffffff',
+                        fontSize: 13,
+                        resize: 'vertical',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -328,17 +472,20 @@ export default function CustomerPaymentPage() {
             >
               <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>สรุปรายการ</h3>
               <div style={{ marginBottom: 12, fontSize: 14, color: '#4b5563' }}>
-                {items.map((it) => (
-                  <div
-                    key={it.id}
-                    style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}
-                  >
-                    <span>
-                      {it.productName} x {it.quantity}
-                    </span>
-                    <span>฿{(it.price * it.quantity).toLocaleString()}</span>
-                  </div>
-                ))}
+                {items.map((it, idx) => {
+                  const unitPrice = it.price ?? it.sellPrice ?? 0;
+                  return (
+                    <div
+                      key={it.productId ?? it.id ?? idx}
+                      style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}
+                    >
+                      <span>
+                        {it.productName} x {it.quantity}
+                      </span>
+                      <span>฿{(unitPrice * (it.quantity || 0)).toLocaleString()}</span>
+                    </div>
+                  );
+                })}
               </div>
               <hr style={{ border: 0, borderTop: '1px solid #e5e7eb', margin: '10px 0' }} />
               <div

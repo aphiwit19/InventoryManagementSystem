@@ -60,7 +60,7 @@ const CustomerLayout = () => {
         <div
           style={{
             width: '100%',
-            maxWidth: 1200,
+            maxWidth: 1100,
             background:
               'linear-gradient(135deg, #1D4ED8 0%, #2563EB 28%, #22c1f1 60%, #4F46E5 100%)',
             padding: '22px 36px',

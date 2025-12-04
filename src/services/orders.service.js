@@ -36,38 +36,90 @@ export async function createWithdrawal(payload) {
     const newWithdrawRef = doc(userOrdersCol);
 
     await runTransaction(db, async (tx) => {
-      const productStates = [];
-      for (const it of withdrawDoc.items) {
-        const pRef = doc(db, 'products', it.productId);
-        const pSnap = await tx.get(pRef);
-        if (!pSnap.exists()) throw new Error('ไม่พบสินค้า');
-        const data = pSnap.data();
-        const qty = parseInt(data.quantity || 0);
-        const reserved = parseInt(data.reserved || 0);
-        const staffReserved = parseInt(data.staffReserved || 0);
-        const cost = parseFloat(data.costPrice || 0);
-        const req = parseInt(it.quantity || 0);
-        const availableForStaff = qty - reserved - staffReserved;
-        if (req <= 0) throw new Error('จำนวนที่สั่งไม่ถูกต้อง');
+      const items = withdrawDoc.items || [];
 
-        if (method === 'pickup' && (withdrawDoc.createdSource || '') === 'staff') {
-          if (availableForStaff < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
-        } else if (method !== 'pickup') {
-          const available = qty - reserved;
-          if (available < req) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
+      // รวมจำนวนตาม productId และเตรียมข้อมูลสำหรับอัปเดต variant
+      const productMap = new Map();
+      for (const it of items) {
+        const pid = it.productId;
+        const qtyReq = parseInt(it.quantity || 0);
+        if (!pid) throw new Error('ไม่พบรหัสสินค้าในบางรายการ');
+        if (qtyReq <= 0) throw new Error('จำนวนที่สั่งไม่ถูกต้อง');
+
+        if (!productMap.has(pid)) {
+          const pRef = doc(db, 'products', pid);
+          const pSnap = await tx.get(pRef);
+          if (!pSnap.exists()) throw new Error('ไม่พบสินค้า');
+          const data = pSnap.data();
+          productMap.set(pid, {
+            pRef,
+            qty: parseInt(data.quantity || 0),
+            reserved: parseInt(data.reserved || 0),
+            staffReserved: parseInt(data.staffReserved || 0),
+            costPrice: parseFloat(data.costPrice || 0),
+            variants: data.variants || [],
+            totalReq: 0,
+            variantUpdates: [],
+          });
         }
 
-        productStates.push({ pRef, qty, reserved, staffReserved, req, costPrice: cost });
+        const prod = productMap.get(pid);
+        prod.totalReq += qtyReq;
+        prod.variantUpdates.push({
+          variantSize: it.variantSize || null,
+          variantColor: it.variantColor || null,
+          used: qtyReq,
+        });
       }
 
-      for (const s of productStates) {
+      // ตรวจสต๊อกและจองสต๊อกทั้งระดับสินค้าและ variant
+      for (const [, s] of productMap) {
+        const availableForStaff = s.qty - s.reserved - s.staffReserved;
+
         if (method === 'pickup' && (withdrawDoc.createdSource || '') === 'staff') {
-          const nextStaffReserved = (s.staffReserved || 0) + s.req;
-          tx.update(s.pRef, { staffReserved: nextStaffReserved, updatedAt: Timestamp.now() });
+          if (availableForStaff < s.totalReq) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
         } else if (method !== 'pickup') {
-          tx.update(s.pRef, { reserved: s.reserved + s.req, updatedAt: Timestamp.now() });
+          const available = s.qty - s.reserved;
+          if (available < s.totalReq) throw new Error('สต๊อกไม่พอสำหรับบางรายการ');
+        }
+
+        let updatedVariants = [...s.variants];
+        if (updatedVariants.length > 0) {
+          for (const vu of s.variantUpdates) {
+            if (!vu.variantSize && !vu.variantColor) continue;
+            updatedVariants = updatedVariants.map(v => {
+              const sizeMatch = !vu.variantSize || v.size === vu.variantSize;
+              const colorMatch = !vu.variantColor || v.color === vu.variantColor;
+              if (!sizeMatch || !colorMatch) return v;
+
+              if (method === 'pickup' && (withdrawDoc.createdSource || '') === 'staff') {
+                const currentStaffReserved = parseInt(v.staffReserved || 0);
+                return { ...v, staffReserved: currentStaffReserved + vu.used };
+              }
+
+              const currentReserved = parseInt(v.reserved || 0);
+              return { ...v, reserved: currentReserved + vu.used };
+            });
+          }
+        }
+
+        if (method === 'pickup' && (withdrawDoc.createdSource || '') === 'staff') {
+          const nextStaffReserved = (s.staffReserved || 0) + s.totalReq;
+          tx.update(s.pRef, {
+            staffReserved: nextStaffReserved,
+            variants: updatedVariants,
+            updatedAt: Timestamp.now(),
+          });
+        } else if (method !== 'pickup') {
+          const nextReserved = (s.reserved || 0) + s.totalReq;
+          tx.update(s.pRef, {
+            reserved: nextReserved,
+            variants: updatedVariants,
+            updatedAt: Timestamp.now(),
+          });
         }
       }
+
       tx.set(newWithdrawRef, withdrawDoc);
     });
 

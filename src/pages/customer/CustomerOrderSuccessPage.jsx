@@ -46,7 +46,7 @@ export default function CustomerOrderSuccessPage() {
               fontSize: 14
             }}
           >
-            ดูคำสั่งซื้อของฉัน
+            ติดตามสถานะสั่งซื้อ
           </Link>
 
           <Link
@@ -62,7 +62,7 @@ export default function CustomerOrderSuccessPage() {
               boxShadow: '0 4px 12px rgba(37,99,235,0.35)'
             }}
           >
-            ดูสินค้าเพิ่มเติม
+            ซื้อสินค้าเพิ่ม
           </Link>
         </div>
       </div>

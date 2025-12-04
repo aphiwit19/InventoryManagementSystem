@@ -29,8 +29,14 @@ export default function StaffDashboard() {
     const loadProducts = async () => {
       try {
         const productsData = await getAllProducts();
-        // Filter only products with stock
-        const available = productsData.filter(p => (p.quantity || 0) > 0);
+        // Filter only products that still have available stock for staff
+        const available = productsData.filter(p => {
+          const qty = parseInt(p.quantity || 0);
+          const reserved = parseInt(p.reserved || 0);
+          const staffReserved = parseInt(p.staffReserved || 0);
+          const availableForStaff = qty - reserved - staffReserved;
+          return availableForStaff > 0;
+        });
         setProducts(available);
       } catch (error) {
         console.error('Error loading products:', error);
@@ -132,11 +138,16 @@ export default function StaffDashboard() {
         cartItem.variantSize = selectedVariant.size;
         cartItem.variantColor = selectedVariant.color;
         cartItem.sellPrice = selectedVariant.sellPrice;
-        // Staff uses staffReserved instead of reserved
-        cartItem.maxQuantity = Math.max(0, (selectedVariant.quantity || 0) - (selectedVariant.staffReserved || 0));
+        const vQty = parseInt(selectedVariant.quantity || 0);
+        const vReserved = parseInt(selectedVariant.reserved || 0);
+        const vStaffReserved = parseInt(selectedVariant.staffReserved || 0);
+        cartItem.maxQuantity = Math.max(0, vQty - vReserved - vStaffReserved);
       } else {
         cartItem.sellPrice = product.sellPrice || product.price || 0;
-        cartItem.maxQuantity = Math.max(0, (product.quantity || 0) - (product.staffReserved || 0));
+        const pQty = parseInt(product.quantity || 0);
+        const pReserved = parseInt(product.reserved || 0);
+        const pStaffReserved = parseInt(product.staffReserved || 0);
+        cartItem.maxQuantity = Math.max(0, pQty - pReserved - pStaffReserved);
       }
 
       await addToCart(user.uid, cartItem, 'staff');
@@ -157,9 +168,15 @@ export default function StaffDashboard() {
     if (!selectedProduct) return 0;
     const hasVariants = selectedProduct.hasVariants && Array.isArray(selectedProduct.variants);
     if (hasVariants && selectedVariant) {
-      return Math.max(0, (selectedVariant.quantity || 0) - (selectedVariant.staffReserved || 0));
+      const vQty = parseInt(selectedVariant.quantity || 0);
+      const vReserved = parseInt(selectedVariant.reserved || 0);
+      const vStaffReserved = parseInt(selectedVariant.staffReserved || 0);
+      return Math.max(0, vQty - vReserved - vStaffReserved);
     }
-    return Math.max(0, (selectedProduct.quantity || 0) - (selectedProduct.staffReserved || 0));
+    const pQty = parseInt(selectedProduct.quantity || 0);
+    const pReserved = parseInt(selectedProduct.reserved || 0);
+    const pStaffReserved = parseInt(selectedProduct.staffReserved || 0);
+    return Math.max(0, pQty - pReserved - pStaffReserved);
   };
 
   const getDisplayPrice = (product) => {
@@ -413,7 +430,17 @@ export default function StaffDashboard() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>{getDisplayPrice(product)}</span>
-                    <span style={{ fontSize: 12, color: '#6b7280' }}>คงเหลือ: {product.quantity} {product.unit || 'ชิ้น'}</span>
+                    {(() => {
+                      const qty = parseInt(product.quantity || 0);
+                      const reserved = parseInt(product.reserved || 0);
+                      const staffReserved = parseInt(product.staffReserved || 0);
+                      const availableForStaff = Math.max(0, qty - reserved - staffReserved);
+                      return (
+                        <span style={{ fontSize: 12, color: '#6b7280' }}>
+                          คงเหลือ: {availableForStaff} {product.unit || 'ชิ้น'}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
                     เพิ่มลงตะกร้า
@@ -457,7 +484,10 @@ export default function StaffDashboard() {
                   <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>เลือกแบบที่ต้องการ:</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
                     {selectedProduct.variants.map((variant, idx) => {
-                      const available = Math.max(0, (variant.quantity || 0) - (variant.staffReserved || 0));
+                      const vQty = parseInt(variant.quantity || 0);
+                      const vReserved = parseInt(variant.reserved || 0);
+                      const vStaffReserved = parseInt(variant.staffReserved || 0);
+                      const available = Math.max(0, vQty - vReserved - vStaffReserved);
                       const isSelected = selectedVariant === variant;
                       const isOutOfStock = available <= 0;
                       return (
