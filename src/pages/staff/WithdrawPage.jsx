@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { createWithdrawal, getAllProducts, getCart, updateCartItem, removeFromCart, clearCart, migrateLocalStorageCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
+import { db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function WithdrawPage() {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ export default function WithdrawPage() {
   const [requestedBy, setRequestedBy] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [receivedAddress, setReceivedAddress] = useState('');
+  const [profileAddress, setProfileAddress] = useState('');
   const [note, setNote] = useState('');
   const [withdrawDate, setWithdrawDate] = useState(new Date().toISOString().slice(0,10));
   const [deliveryMethod, setDeliveryMethod] = useState('shipping');
@@ -34,6 +37,50 @@ export default function WithdrawPage() {
     };
     load();
   }, []);
+
+  // Auto-fill staff name/address from Firestore profile when entering the page
+  useEffect(() => {
+    const loadStaffProfile = async () => {
+      try {
+        if (!user?.uid) return;
+        const userRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) return;
+        const data = snap.data() || {};
+
+        // Fill requestedBy (staff name) if empty
+        if (!requestedBy) {
+          const name = data.displayName || user?.displayName || user?.email || '';
+          if (name) setRequestedBy(name);
+        }
+
+        // Keep profile address reference
+        if (typeof data.address === 'string') {
+          setProfileAddress(data.address);
+        }
+
+        // Fill receivedAddress (shipping address) if empty and method is shipping
+        if (deliveryMethod === 'shipping' && !receivedAddress && data.address) {
+          setReceivedAddress(data.address);
+        }
+      } catch (e) {
+        console.error('Error loading staff profile:', e);
+      }
+    };
+    loadStaffProfile();
+    // We intentionally exclude requestedBy/receivedAddress from deps to avoid overriding user input after initial load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
+
+  // React to delivery method changes: clear address for pickup, restore for shipping if empty
+  useEffect(() => {
+    if (deliveryMethod === 'pickup') {
+      if (receivedAddress) setReceivedAddress('');
+    } else if (deliveryMethod === 'shipping') {
+      if (!receivedAddress && profileAddress) setReceivedAddress(profileAddress);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryMethod]);
 
   // Load cart from Firebase and migrate localStorage if needed
   useEffect(() => {
