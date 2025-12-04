@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { getAllProducts, deleteProduct, isLowStock, DEFAULT_CATEGORIES, addInventoryHistory, updateProductQuantity } from '../../services';
+import { getAllProducts, deleteProduct, isLowStock, DEFAULT_CATEGORIES, addInventoryHistory } from '../../services';
 import { db } from '../../firebase';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 

@@ -146,7 +146,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
         }
 
         // ตัดสต๊อกแต่ละ product
-        for (const [pid, s] of productMap) {
+        for (const [, s] of productMap) {
           const nextStaffReserved = Math.max(0, (s.staffReserved || 0) - s.totalUsed);
           const nextQty = Math.max(0, s.qty - s.totalUsed);
           
@@ -237,7 +237,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
         }
 
         // ตัดสต๊อกแต่ละ product
-        for (const [pid, s] of productMap) {
+        for (const [, s] of productMap) {
           const nextReserved = Math.max(0, s.reserved - s.totalUsed);
           const nextQty = Math.max(0, s.qty - s.totalUsed);
           
