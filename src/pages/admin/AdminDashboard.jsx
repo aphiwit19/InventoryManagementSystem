@@ -19,6 +19,7 @@ export default function AdminDashboard() {
     description: '',
     purchaseLocation: '',
     costPrice: '',
+    sellPrice: '',
     image: '',
     addDate: '',
     quantity: ''
@@ -251,7 +252,7 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              {/* ราคา + จำนวนสินค้า (2 คอลัมน์) */}
+              {/* ราคา (ต้นทุน/ขาย) + จำนวนสินค้า (2 คอลัมน์) */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <div>
                   <label
@@ -264,7 +265,7 @@ export default function AdminDashboard() {
                       color: '#374151',
                     }}
                   >
-                    ราคา (บาท) <span style={{ color: '#ef4444' }}>*</span>
+                    ราคาต้นทุน (บาท) <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -275,7 +276,49 @@ export default function AdminDashboard() {
                     required
                     min="0"
                     step="0.01"
-                    placeholder="กรอกราคาสินค้า"
+                    placeholder="กรอกราคาต้นทุน"
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: 15,
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 10,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      background: '#f9fafb',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.background = '#fff';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.background = '#f9fafb';
+                    }}
+                  />
+
+                  <label
+                    htmlFor="sellPrice"
+                    style={{
+                      display: 'block',
+                      margin: '14px 0 8px',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: '#374151',
+                    }}
+                  >
+                    ราคาขาย (บาท) <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="sellPrice"
+                    name="sellPrice"
+                    value={formData.sellPrice}
+                    onChange={handleChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="กรอกราคาขาย"
                     style={{
                       width: '100%',
                       padding: '14px 16px',

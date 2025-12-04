@@ -17,6 +17,7 @@ export default function ProductsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const lowStock = filteredProducts.filter(p => isLowStock(p));
+  const gridColumns = '96px 1.6fr 1fr 1fr 1fr 1fr 1fr';
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -180,40 +181,51 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)', overflow: 'hidden', marginBottom: 20, border: '1px solid rgba(255,255,255,0.9)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.6fr 1fr 1fr 1fr 1fr', padding: '14px 20px', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', fontWeight: 600, fontSize: 13, color: '#1e40af' }}>
-            <div>รูปภาพ</div>
-            <div>ชื่อสินค้า</div>
-            <div>วันที่เพิ่ม</div>
-            <div>ราคา</div>
-            <div>จำนวนสินค้า</div>
-            <div>จัดการ</div>
-          </div>
-          {currentProducts.map((product) => {
-            const price = (product.price ?? product.costPrice ?? 0).toLocaleString();
-            const qty = product.quantity ?? 0;
-            const low = isLowStock(product);
-            return (
-              <div key={product.id} style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.6fr 1fr 1fr 1fr 1fr', padding: '10px 16px', borderTop: '1px solid #EEF2F7', alignItems: 'center', fontSize: 13 }}>
-                <div>
-                  <div style={{ width: 56, height: 56, borderRadius: 8, background: '#F3F4F6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {product.image ? <img src={product.image} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9CA3AF', fontSize: 11 }}>No Image</span>}
+          <div style={{ display: 'table', width: '100%', tableLayout: 'fixed', borderSpacing: 0 }}>
+            {/* Header */}
+            <div style={{ display: 'table-row', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#1e40af', fontWeight: 600, fontSize: 13 }}>
+              <div style={{ display: 'table-cell', width: 96, padding: '14px 20px', boxSizing: 'border-box' }}>รูปภาพ</div>
+              <div style={{ display: 'table-cell', padding: '14px 20px', boxSizing: 'border-box' }}>ชื่อสินค้า</div>
+              <div style={{ display: 'table-cell', padding: '14px 20px', boxSizing: 'border-box' }}>วันที่เพิ่ม</div>
+              <div style={{ display: 'table-cell', padding: '14px 20px', boxSizing: 'border-box' }}>ราคาต้นทุน</div>
+              <div style={{ display: 'table-cell', padding: '14px 20px', boxSizing: 'border-box' }}>ราคาขาย</div>
+              <div style={{ display: 'table-cell', padding: '14px 20px', boxSizing: 'border-box' }}>จำนวน</div>
+              <div style={{ display: 'table-cell', width: 200, padding: '14px 20px', boxSizing: 'border-box' }}>จัดการ</div>
+            </div>
+            {/* Rows */}
+            {currentProducts.map((product) => {
+              const sell = (product.sellPrice ?? product.price ?? 0);
+              const cost = (product.costPrice ?? 0);
+              const sellText = sell.toLocaleString();
+              const costText = cost.toLocaleString();
+              const qty = product.quantity ?? 0;
+              const low = isLowStock(product);
+              return (
+                <div key={product.id} style={{ display: 'table-row', fontSize: 13 }}>
+                  <div style={{ display: 'table-cell', width: 96, padding: '14px 20px', verticalAlign: 'middle' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 8, background: '#F3F4F6', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {product.image ? <img src={product.image} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9CA3AF', fontSize: 11 }}>No Image</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'table-cell', padding: '14px 20px', color: '#111827', fontWeight: 500, verticalAlign: 'middle' }}>{product.productName || 'ไม่มีชื่อสินค้า'}</div>
+                  <div style={{ display: 'table-cell', padding: '14px 20px', color: '#4B5563', verticalAlign: 'middle' }}>{product.createdAt ? formatDate(product.createdAt) : '-'}</div>
+                  <div style={{ display: 'table-cell', padding: '14px 20px', color: '#1f2937', fontWeight: 600, verticalAlign: 'middle' }}>฿{costText}</div>
+                  <div style={{ display: 'table-cell', padding: '14px 20px', color: '#16A34A', fontWeight: 700, verticalAlign: 'middle' }}>฿{sellText}</div>
+                  <div style={{ display: 'table-cell', padding: '14px 20px', verticalAlign: 'middle' }}>
+                    <div style={{ fontWeight: 600, color: low ? '#EA580C' : '#111827' }}>{qty} ชิ้น</div>
+                    {low && <div style={{ marginTop: 2, fontSize: 11, color: '#EA580C' }}>สต็อกต่ำ</div>}
+                  </div>
+                  <div style={{ display: 'table-cell', width: 200, padding: '14px 20px', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => handleOpenQuantityModal(product)} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600, boxShadow: '0 1px 6px rgba(34,197,94,0.25)', display: 'flex', alignItems: 'center' }}>เพิ่ม</button>
+                      <Link to={`/admin/products/${product.id}/edit`} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 11, fontWeight: 600, textDecoration: 'none', boxShadow: '0 1px 6px rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center' }}>แก้ไข</Link>
+                      <button onClick={() => handleDeleteProduct(product.id, product.productName)} disabled={isDeleting} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: isDeleting ? '#94a3b8' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#fff', cursor: isDeleting ? 'not-allowed' : 'pointer', fontSize: 11, fontWeight: 600, boxShadow: '0 1px 6px rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center' }}>ลบ</button>
+                    </div>
                   </div>
                 </div>
-                <div style={{ fontWeight: 500, color: '#111827' }}>{product.productName || 'ไม่มีชื่อสินค้า'}</div>
-                <div style={{ color: '#4B5563', fontSize: 12 }}>{product.createdAt ? formatDate(product.createdAt) : '-'}</div>
-                <div style={{ fontWeight: 600, color: '#16A34A' }}>฿{price}</div>
-                <div>
-                  <div style={{ fontWeight: 600, color: low ? '#EA580C' : '#111827' }}>{qty} ชิ้น</div>
-                  {low && <div style={{ marginTop: 2, fontSize: 11, color: '#EA580C' }}>สต็อกต่ำ</div>}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => handleOpenQuantityModal(product)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, boxShadow: '0 2px 8px rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ fontSize: 14 }}>+</span> เพิ่ม</button>
-                  <Link to={`/admin/products/${product.id}/edit`} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.3)', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ fontSize: 13 }}>✎</span> แก้ไข</Link>
-                  <button onClick={() => handleDeleteProduct(product.id, product.productName)} disabled={isDeleting} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: isDeleting ? '#94a3b8' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#fff', cursor: isDeleting ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, boxShadow: isDeleting ? 'none' : '0 2px 8px rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ fontSize: 13 }}>✕</span> ลบ</button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 

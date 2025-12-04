@@ -12,6 +12,7 @@ export default function EditProductPage() {
     description: '',
     purchaseLocation: '',
     costPrice: '',
+    sellPrice: '',
     image: '',
     addDate: '',
     quantity: ''
@@ -36,6 +37,7 @@ export default function EditProductPage() {
           description: product.description || '',
           purchaseLocation: product.purchaseLocation || '',
           costPrice: product.costPrice || product.price || '',
+          sellPrice: product.sellPrice || product.price || '',
           image: product.image || '',
           addDate: formattedDate,
           quantity: product.quantity || ''
@@ -165,34 +167,6 @@ export default function EditProductPage() {
               />
             </div>
 
-            {/* คำอธิบาย - เต็มแถว */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
-                คำอธิบายสินค้า *
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                required
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  fontSize: 15,
-                  border: '2px solid #e2e8f0',
-                  borderRadius: 12,
-                  resize: 'vertical',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  fontFamily: 'inherit',
-                  transition: 'border-color 0.2s',
-                }}
-                onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
-                onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
-              />
-            </div>
-
             {/* ที่ตั้งซื้อ - เต็มแถว */}
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
@@ -219,16 +193,41 @@ export default function EditProductPage() {
               />
             </div>
 
-            {/* ราคา + จำนวน - 2 คอลัมน์ */}
+            {/* ราคา (ต้นทุน/ขาย) + จำนวน - 2 คอลัมน์ */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
-                  ราคา (บาท) *
+                  ราคาต้นทุน (บาท) *
                 </label>
                 <input
                   type="number"
                   name="costPrice"
                   value={formData.costPrice}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: 15,
+                    border: '2px solid #e2e8f0',
+                    borderRadius: 12,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                  onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                />
+
+                <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                  ราคาขาย (บาท) *
+                </label>
+                <input
+                  type="number"
+                  name="sellPrice"
+                  value={formData.sellPrice}
                   onChange={handleChange}
                   required
                   min="0"
@@ -272,6 +271,34 @@ export default function EditProductPage() {
                   onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
                 />
               </div>
+            </div>
+
+            {/* คำอธิบาย - เต็มแถว */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1e40af' }}>
+                คำอธิบายสินค้า *
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                required
+                rows={4}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  fontSize: 15,
+                  border: '2px solid #e2e8f0',
+                  borderRadius: 12,
+                  resize: 'vertical',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+                onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+              />
             </div>
 
             {/* รูปภาพ + วันที่ + ปุ่ม - 2 คอลัมน์ */}

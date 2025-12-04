@@ -17,11 +17,14 @@ import { addInventoryHistory } from './inventory.service';
 export async function addProduct(productData) {
   try {
     const costPrice = parseFloat(productData.costPrice);
+    const sellPrice = parseFloat(productData.sellPrice ?? productData.price ?? productData.costPrice);
     const data = {
       productName: productData.productName,
       description: productData.description,
-      price: costPrice,
+      // Keep legacy price field as sell price for compatibility with existing UI
+      price: sellPrice,
       costPrice: costPrice,
+      sellPrice: sellPrice,
       image: productData.image,
       purchaseLocation: productData.purchaseLocation || '',
       addDate: Timestamp.fromDate(new Date(productData.addDate)),
@@ -86,12 +89,15 @@ export async function updateProduct(productId, productData) {
     } else {
       addDateValue = productData.addDate;
     }
-    const costPrice = parseFloat(productData.costPrice || productData.price || 0);
+    const costPrice = parseFloat(productData.costPrice ?? productData.price ?? 0);
+    const sellPrice = parseFloat(productData.sellPrice ?? productData.price ?? costPrice ?? 0);
     const data = {
       productName: productData.productName,
       description: productData.description,
-      price: costPrice,
+      // Keep legacy price field synced to sell price
+      price: sellPrice,
       costPrice: costPrice,
+      sellPrice: sellPrice,
       image: productData.image,
       purchaseLocation: productData.purchaseLocation ?? current?.purchaseLocation ?? '',
       addDate: addDateValue,
