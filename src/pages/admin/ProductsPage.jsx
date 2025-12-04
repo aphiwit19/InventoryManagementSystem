@@ -17,7 +17,6 @@ export default function ProductsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const lowStock = filteredProducts.filter(p => isLowStock(p));
-  const gridColumns = '96px 1.6fr 1fr 1fr 1fr 1fr 1fr';
 
   useEffect(() => {
     const loadProducts = async () => {
