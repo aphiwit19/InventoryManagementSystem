@@ -158,9 +158,10 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+    <div style={{ padding: '16px 24px 32px', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>สินค้าทั้งหมด</h1>
           <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>เลือกสินค้าที่ต้องการเพิ่มลงตะกร้า</div>
@@ -175,20 +176,20 @@ export default function CustomerDashboard() {
             {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
-      </div>
+        </div>
 
-      {/* Products Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดสินค้า...</p>
-        </div>
-      ) : currentProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าในระบบ'}</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, marginBottom: 24 }}>
-          {currentProducts.map((product) => {
+        {/* Products Grid */}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+            <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดสินค้า...</p>
+          </div>
+        ) : currentProducts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+            <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าในระบบ'}</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, marginBottom: 24 }}>
+            {currentProducts.map((product) => {
             const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
             return (
               <div key={product.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 6px 24px rgba(15,23,42,0.1)', transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(15,23,42,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(15,23,42,0.1)'; }}>
@@ -229,18 +230,19 @@ export default function CustomerDashboard() {
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-          <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ก่อนหน้า</button>
-          <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>หน้า {currentPage} / {totalPages}</span>
-          <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ถัดไป</button>
-        </div>
-      )}
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+            <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ก่อนหน้า</button>
+            <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>หน้า {currentPage} / {totalPages}</span>
+            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ถัดไป</button>
+          </div>
+        )}
+      </div>
 
       {/* Variant Selection Modal */}
       {selectedProduct && (
