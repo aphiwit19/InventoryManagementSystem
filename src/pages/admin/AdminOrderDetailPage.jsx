@@ -18,7 +18,7 @@ export default function AdminOrderDetailPage() {
     trackingNumber: initialOrder?.trackingNumber || '',
     shippingStatus: initialOrder?.shippingStatus || 'รอดำเนินการ',
   });
-  const [paymentStatus, setPaymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
+  const [paymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
   const [saving, setSaving] = useState(false);
 
   const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';

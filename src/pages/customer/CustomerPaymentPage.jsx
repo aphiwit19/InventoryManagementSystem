@@ -24,7 +24,7 @@ export default function CustomerPaymentPage() {
   const [paymentAccount, setPaymentAccount] = useState({ bankName: '', accountName: '', accountNumber: '', note: '', qrUrl: '' });
   const [paymentAccountError, setPaymentAccountError] = useState('');
   const [slipFile, setSlipFile] = useState(null);
-  const [slipUploading, setSlipUploading] = useState(false);
+  const [, setSlipUploading] = useState(false);
   const [slipPreviewText, setSlipPreviewText] = useState('ยังไม่ได้เลือกไฟล์');
   const total = useMemo(
     () =>
