@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCart, updateCartItem, removeFromCart, clearCart, createWithdrawal } from '../../services';
+import { getCart, updateCartItem, removeFromCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 
 export default function CustomerWithdrawPage() {
@@ -65,18 +65,6 @@ export default function CustomerWithdrawPage() {
       window.dispatchEvent(new Event('customer-cart-updated'));
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
-    }
-  };
-
-  const handleClearCart = async () => {
-    if (!window.confirm('ต้องการล้างตะกร้าทั้งหมด?')) return;
-    try {
-      await clearCart(user.uid);
-      setCart([]);
-      window.dispatchEvent(new Event('customer-cart-updated'));
-    } catch (error) {
-      console.error('Error clearing cart:', error);
       alert('เกิดข้อผิดพลาด: ' + error.message);
     }
   };

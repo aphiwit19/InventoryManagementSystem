@@ -1,10 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getAllProducts, addToCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 
 export default function CustomerDashboard() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
