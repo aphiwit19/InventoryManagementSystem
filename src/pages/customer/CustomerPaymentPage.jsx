@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
-import { db } from '../../firebase';
+import { db, storage } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart } from '../../services';
 
 export default function CustomerPaymentPage() {
@@ -13,12 +14,18 @@ export default function CustomerPaymentPage() {
   const [items, setItems] = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingPaymentAccount, setLoadingPaymentAccount] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requestedBy, setRequestedBy] = useState('');
   const [phone, setPhone] = useState('');
   const [requestedAddress, setRequestedAddress] = useState('');
   const [formError, setFormError] = useState('');
   const [withdrawDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentAccount, setPaymentAccount] = useState({ bankName: '', accountName: '', accountNumber: '', note: '', qrUrl: '' });
+  const [paymentAccountError, setPaymentAccountError] = useState('');
+  const [slipFile, setSlipFile] = useState(null);
+  const [slipUploading, setSlipUploading] = useState(false);
+  const [slipPreviewText, setSlipPreviewText] = useState('ยังไม่ได้เลือกไฟล์');
   const total = useMemo(
     () =>
       items.reduce((s, it) => {
@@ -92,6 +99,35 @@ export default function CustomerPaymentPage() {
     loadUser();
   }, [user?.uid, user?.displayName, user?.email, profile?.displayName]);
 
+  // Load payment account (QR + bank info) from admin settings
+  useEffect(() => {
+    const loadPaymentAccount = async () => {
+      setLoadingPaymentAccount(true);
+      setPaymentAccountError('');
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'paymentAccount'));
+        if (snap.exists()) {
+          const data = snap.data() || {};
+          setPaymentAccount({
+            bankName: data.bankName || '',
+            accountName: data.accountName || '',
+            accountNumber: data.accountNumber || '',
+            note: data.note || '',
+            qrUrl: data.qrUrl || '',
+          });
+        } else {
+          setPaymentAccountError('ยังไม่ได้ตั้งค่าบัญชีสำหรับชำระเงิน');
+        }
+      } catch (e) {
+        console.error('load paymentAccount failed:', e);
+        setPaymentAccountError('โหลดข้อมูลบัญชีสำหรับชำระเงินไม่สำเร็จ');
+      } finally {
+        setLoadingPaymentAccount(false);
+      }
+    };
+    loadPaymentAccount();
+  }, []);
+
   // ถ้ามีข้อมูลที่อยู่จากหน้าตะกร้า ให้ override ค่าในฟอร์ม (แต่ล็อกไม่ให้แก้ไขในหน้านี้)
   useEffect(() => {
     if (!shippingFromCart) return;
@@ -121,8 +157,26 @@ export default function CustomerPaymentPage() {
       return;
     }
 
+    if (!paymentAccount.bankName || !paymentAccount.accountName || !paymentAccount.accountNumber) {
+      setFormError('ไม่สามารถทำรายการได้: ระบบยังไม่ได้ตั้งค่าบัญชีสำหรับชำระเงิน');
+      return;
+    }
+
+    if (!slipFile) {
+      setFormError('กรุณาอัปโหลดสลิปการโอนเงิน');
+      return;
+    }
+
     setSaving(true);
     try {
+      // Upload slip image to Firebase Storage
+      setSlipUploading(true);
+      const path = `customer/payment-slips/${user.uid}/${Date.now()}_${slipFile.name}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, slipFile);
+      const slipUrl = await getDownloadURL(storageRef);
+      setSlipUploading(false);
+
       await createWithdrawal({
         items: items.map(it => {
           const unitPrice = it.price ?? it.sellPrice ?? 0;
@@ -141,6 +195,15 @@ export default function CustomerPaymentPage() {
         phone: phone.trim() || null,
         withdrawDate,
         total,
+        paymentMethod: 'bank_transfer_qr',
+        paymentAccount: {
+          bankName: paymentAccount.bankName,
+          accountName: paymentAccount.accountName,
+          accountNumber: paymentAccount.accountNumber,
+          note: paymentAccount.note || null,
+          qrUrl: paymentAccount.qrUrl || null,
+        },
+        paymentSlipUrl: slipUrl,
         createdByUid: user.uid,
         createdByEmail: user.email || null,
         createdSource: 'customer'
@@ -154,6 +217,7 @@ export default function CustomerPaymentPage() {
       alert('ไม่สามารถยืนยันคำสั่งซื้อได้: ' + (e?.message || ''));
     } finally {
       setSaving(false);
+      setSlipUploading(false);
     }
   };
 
@@ -164,7 +228,7 @@ export default function CustomerPaymentPage() {
       {/* Step indicator */}
       <div
         style={{
-          maxWidth: 960,
+          maxWidth: 930,
           margin: '0 auto 20px',
           background: '#fff',
           borderRadius: 16,
@@ -199,12 +263,13 @@ export default function CustomerPaymentPage() {
 
       <div
         style={{
-          maxWidth: 960,
+          maxWidth: 930,
           margin: '0 auto',
           background: '#fff',
           borderRadius: 24,
-          padding: '30px 32px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.08)'
+          padding: '24px 24px 28px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+          boxSizing: 'border-box',
         }}
       >
         <h2 style={{ textAlign: 'center', margin: '0 0 24px', fontSize: 24 }}>ชำระเงิน</h2>
@@ -232,9 +297,9 @@ export default function CustomerPaymentPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '1.4fr 1fr',
+              gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)',
               gap: 24,
-              alignItems: 'flex-start'
+              alignItems: 'flex-start',
             }}
           >
             {/* Left: Payment (manual transfer) + read-only shipping info */}
@@ -272,14 +337,59 @@ export default function CustomerPaymentPage() {
                     padding: 16,
                   }}
                 >
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 40, marginBottom: 4 }}>💳</div>
-                    <div style={{ fontSize: 13, color: '#475569' }}>สแกน QR หรือโอนด้วยตนเอง</div>
+                  {paymentAccount.qrUrl ? (
+                    <img
+                      src={paymentAccount.qrUrl}
+                      alt="QR สำหรับชำระเงิน"
+                      style={{ maxWidth: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 12 }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 40, marginBottom: 4 }}>💳</div>
+                      <div style={{ fontSize: 13, color: '#475569' }}>
+                        {loadingPaymentAccount
+                          ? 'กำลังโหลดข้อมูลบัญชีสำหรับชำระเงิน...'
+                          : 'ยังไม่มี QR สำหรับชำระเงิน'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* removed time limit helper text */}
+                {paymentAccount.bankName && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      background: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      fontSize: 13,
+                      color: '#1e40af',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700 }}>{paymentAccount.bankName}</div>
+                    <div style={{ marginTop: 2 }}>{paymentAccount.accountName}</div>
+                    <div style={{ marginTop: 2 }}>เลขที่บัญชี: {paymentAccount.accountNumber}</div>
+                    {paymentAccount.note && (
+                      <div style={{ marginTop: 4, fontSize: 12, color: '#334155' }}>{paymentAccount.note}</div>
+                    )}
                   </div>
-                </div>
-                <div style={{ textAlign: 'center', fontSize: 12, color: '#64748b' }}>
-                  กรุณาโอนเงินภายใน <span style={{ fontWeight: 600 }}>6 นาที</span> หลังจากสร้างคำสั่งซื้อ
-                </div>
+                )}
+                {paymentAccountError && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: '8px 10px',
+                      borderRadius: 10,
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      color: '#b91c1c',
+                      fontSize: 12,
+                    }}
+                  >
+                    {paymentAccountError}
+                  </div>
+                )}
               </div>
 
               {/* Slip upload + basic transfer info (UI only) */}
@@ -301,7 +411,8 @@ export default function CustomerPaymentPage() {
                     <input
                       type="date"
                       style={{
-                        width: '100%',
+                        width: 'calc(100% - 50px)',
+                        margin: '0 auto',
                         padding: '8px 10px',
                         borderRadius: 10,
                         border: '1px solid #d1d5db',
@@ -314,7 +425,8 @@ export default function CustomerPaymentPage() {
                     <input
                       type="time"
                       style={{
-                        width: '100%',
+                        width: 'calc(100% - 50px)',
+                        margin: '0 auto',
                         padding: '8px 10px',
                         borderRadius: 10,
                         border: '1px solid #d1d5db',
@@ -330,7 +442,8 @@ export default function CustomerPaymentPage() {
                     value={`฿${total.toLocaleString()}`}
                     readOnly
                     style={{
-                      width: '100%',
+                      width: 'calc(100% - 50px)',
+                      margin: '0 auto',
                       padding: '8px 10px',
                       borderRadius: 10,
                       border: '1px solid #d1d5db',
@@ -346,19 +459,40 @@ export default function CustomerPaymentPage() {
                       display: 'block',
                       padding: '10px 12px',
                       borderRadius: 12,
-                      border: '1px dashed #cbd5e1',
-                      background: '#f8fafc',
+                      border: slipFile ? '1px solid #4ade80' : '1px dashed #cbd5e1',
+                      background: slipFile ? '#ecfdf3' : '#f8fafc',
                       textAlign: 'center',
                       fontSize: 13,
-                      color: '#475569',
+                      color: slipFile ? '#166534' : '#475569',
                       cursor: 'pointer',
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    เลือกไฟล์สลิปจากเครื่อง
-                    <input type="file" accept="image/*" style={{ display: 'none' }} />
+                    {slipFile ? 'อัปโหลดสลิปแล้ว (คลิกเพื่อเปลี่ยนไฟล์)' : 'เลือกไฟล์สลิปจากเครื่อง'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setSlipFile(file);
+                        setSlipPreviewText(file.name);
+                      }}
+                    />
                   </label>
-                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-                    รองรับไฟล์รูปภาพ .jpg, .png ขนาดไม่เกิน 5MB
+                  {slipFile && (
+                    <div style={{ fontSize: 11, color: '#16a34a', marginTop: 4 }}>
+                      เพิ่มสลิปแล้ว: {slipPreviewText}
+                    </div>
+                  )}
+                  {!slipFile && (
+                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                      {slipPreviewText}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+                    รองรับไฟล์รูปภาพ .jpg, .png ขนาดไม่เกิน ~5MB
                   </div>
                 </div>
               </div>
@@ -396,7 +530,8 @@ export default function CustomerPaymentPage() {
                       value={requestedBy}
                       readOnly
                       style={{
-                        width: '100%',
+                        width: 'calc(100% - 50px)',
+                        margin: '0 auto',
                         padding: '8px 12px',
                         borderRadius: 999,
                         border: '1px solid #d1d5db',
@@ -421,7 +556,8 @@ export default function CustomerPaymentPage() {
                       value={phone}
                       readOnly
                       style={{
-                        width: '100%',
+                        width: 'calc(100% - 50px)',
+                        margin: '0 auto',
                         padding: '8px 12px',
                         borderRadius: 999,
                         border: '1px solid #d1d5db',
@@ -446,7 +582,8 @@ export default function CustomerPaymentPage() {
                       readOnly
                       rows={3}
                       style={{
-                        width: '100%',
+                        width: 'calc(100% - 50px)',
+                        margin: '0 auto',
                         padding: '8px 12px',
                         borderRadius: 14,
                         border: '1px solid #d1d5db',

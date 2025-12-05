@@ -6,6 +6,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
+import AdminBankAccountPage from './pages/admin/AdminBankAccountPage';
 import AdminAlertsPage from './pages/admin/AdminAlertsPage';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import StaffLayout from './pages/staff/StaffLayout';
@@ -61,6 +62,7 @@ function App() {
               <Route path="products/:id/edit" element={<EditProductPage />} />
               <Route path="products/:id/history" element={<InventoryHistoryPage />} />
               <Route path="inventory_history" element={<InventoryHistoryIndex />} />
+              <Route path="payment-account" element={<AdminBankAccountPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>

@@ -118,6 +118,9 @@ const AdminLayout = () => {
         <Link to="/admin/inventory_history" style={getLinkStyle(isActiveLink('/admin/inventory_history'))}>
           ประวัติสินค้าเข้า–ออกคลัง
         </Link>
+        <Link to="/admin/payment-account" style={getLinkStyle(isActiveLink('/admin/payment-account'))}>
+          จัดการบัญชีรับโอนเงิน
+        </Link>
         <Link to="/admin/alerts" style={getLinkStyle(isActiveLink('/admin/alerts'))}>
           แจ้งเตือนสต็อกต่ำ
         </Link>

@@ -18,6 +18,7 @@ export default function AdminOrderDetailPage() {
     trackingNumber: initialOrder?.trackingNumber || '',
     shippingStatus: initialOrder?.shippingStatus || 'รอดำเนินการ',
   });
+  const [paymentStatus, setPaymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
   const [saving, setSaving] = useState(false);
 
   const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';
@@ -40,7 +41,7 @@ export default function AdminOrderDetailPage() {
 
   const canSave = () => {
     if (!order) return false;
-    return !!form.shippingStatus;
+    return !!form.shippingStatus && !!paymentStatus;
   };
 
   const handleSave = async () => {
@@ -52,6 +53,7 @@ export default function AdminOrderDetailPage() {
         shippingCarrier: form.shippingCarrier,
         trackingNumber: form.trackingNumber.trim(),
         shippingStatus: form.shippingStatus,
+        paymentStatus,
       }, order.createdByUid);
       console.log('Order saved successfully');
       // หลังบันทึก พยายามย้อนกลับไปหน้าที่มาแบบเดียวกับปุ่มย้อนกลับ
@@ -259,6 +261,102 @@ export default function AdminOrderDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* การตรวจสอบการชำระเงิน Card */}
+        <div
+          style={{
+            background: '#ffffff',
+            borderRadius: 16,
+            padding: '20px 24px',
+            boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
+            marginBottom: 10,
+          }}
+        >
+          <h3 style={{ margin: '0 0 10px', fontSize: 15, color: '#374151', fontWeight: 600 }}>การชำระเงิน</h3>
+
+          {/* Payment info + slip */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 16, marginBottom: 14 }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg,#eff6ff,#e0f2fe)',
+                borderRadius: 14,
+                padding: 14,
+                border: '1px solid #bfdbfe',
+                boxShadow: '0 4px 14px rgba(59,130,246,0.15)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a8a' }}>บัญชีที่ลูกค้าโอนเข้า</div>
+                {order.paymentAccount?.bankName && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      background: 'rgba(59,130,246,0.12)',
+                      color: '#1d4ed8',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {order.paymentAccount.bankName}
+                  </span>
+                )}
+              </div>
+              {order.paymentAccount ? (
+                <>
+                  <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 600 }}>{order.paymentAccount.accountName || '-'}</div>
+                  <div style={{ fontSize: 13, color: '#0f172a', marginTop: 4 }}>เลขที่บัญชี: {order.paymentAccount.accountNumber || '-'}</div>
+                  {order.paymentAccount.note && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: '#475569',
+                        marginTop: 8,
+                        padding: '8px 10px',
+                        borderRadius: 10,
+                        background: 'rgba(255,255,255,0.8)',
+                      }}
+                    >
+                      {order.paymentAccount.note}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontSize: 13, color: '#9ca3af' }}>ไม่มีข้อมูลบัญชีที่ใช้โอนเงิน</div>
+              )}
+            </div>
+
+            <div
+              style={{
+                background: '#f9fafb',
+                borderRadius: 12,
+                padding: 12,
+                border: '1px solid #e5e7eb',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 8 }}>สลิปการโอน</div>
+              {order.paymentSlipUrl ? (
+                <a
+                  href={order.paymentSlipUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: 'inline-block', borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}
+                >
+                  <img
+                    src={order.paymentSlipUrl}
+                    alt="สลิปการชำระเงิน"
+                    style={{ maxWidth: 180, maxHeight: 220, objectFit: 'cover', display: 'block' }}
+                  />
+                </a>
+              ) : (
+                <div style={{ fontSize: 13, color: '#9ca3af' }}>ยังไม่มีสลิปการโอนจากลูกค้า</div>
+              )}
+            </div>
+          </div>
+
+          {/* Payment status controls removed as requested */}
         </div>
 
         {/* สถานะการจัดส่ง Card */}

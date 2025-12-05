@@ -186,7 +186,6 @@ export default function EditProductPage() {
         });
       }
 
-      alert('อัพเดตข้อมูลสินค้าสำเร็จ!');
       navigate('/admin/products');
     } catch (err) {
       console.error('Error updating product:', err);
