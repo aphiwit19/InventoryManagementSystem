@@ -71,6 +71,7 @@ export default function AdminBankAccountPage() {
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileChange = (e) => {

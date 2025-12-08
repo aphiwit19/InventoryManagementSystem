@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 export default function CustomerOrderDetailPage() {
+  // eslint-disable-next-line no-unused-vars
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();

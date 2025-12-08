@@ -27,7 +27,7 @@ export default function InventoryHistoryPage() {
       }
     };
     loadData();
-  }, [id]);
+  }, [id, t]); // Added 't' as a dependency
 
   const formatDateOnly = (timestamp) => {
     if (!timestamp) return '';

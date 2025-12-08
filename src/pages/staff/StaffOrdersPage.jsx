@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
 import { useTranslation } from 'react-i18next';
 
+// eslint-disable-next-line no-unused-vars
 const statuses = ['รอดำเนินการ', 'รับของแล้ว', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
 
 const getStatusStyle = (status) => {
