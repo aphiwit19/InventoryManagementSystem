@@ -76,7 +76,9 @@
     "all_roles": "All Roles",
     "all_status": "All Status",
     "optional": "optional",
-    "save_changes": "Save Changes"
+    "save_changes": "Save Changes",
+    "from_date": "From Date",
+    "to_date": "To Date"
   },
   "auth": {
     "login": "Login",

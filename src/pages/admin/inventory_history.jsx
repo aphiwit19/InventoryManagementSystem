@@ -1,16 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getAllProducts, getInventoryHistory } from '../../services';
 import { useTranslation } from 'react-i18next';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { th, enUS } from 'date-fns/locale';
+import 'react-datepicker/dist/react-datepicker.css';
+
+// Register locales
+registerLocale('th', th);
+registerLocale('en', enUS);
 
 export default function InventoryHistoryIndex() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [search, setSearch] = useState('');
   const [history, setHistory] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all'); // all | in | out
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  
+  // Get current locale for datepicker
+  const currentLocale = i18n.language?.startsWith('en') ? 'en' : 'th';
+  const dateFormat = currentLocale === 'en' ? 'MM/dd/yyyy' : 'dd/MM/yyyy';
   const [page, setPage] = useState(1);
   const [pageSize] = useState(8);
 
@@ -76,6 +87,7 @@ export default function InventoryHistoryIndex() {
         return ts <= end.getTime();
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (typeFilter !== 'all') rows = rows.filter(r => (r.type || 'in') === typeFilter);
 
     // sort by date desc (latest first)
@@ -210,34 +222,58 @@ export default function InventoryHistoryIndex() {
           >
             {t('common.clear')}
           </button>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={e => setFromDate(e.target.value)}
-            style={{
-              padding: '12px 16px',
-              border: '2px solid #e2e8f0',
-              borderRadius: 12,
-              fontSize: 14,
-              outline: 'none',
-              color: '#1e40af',
-              fontWeight: 500,
-            }}
-          />
-          <input
-            type="date"
-            value={toDate}
-            onChange={e => setToDate(e.target.value)}
-            style={{
-              padding: '12px 16px',
-              border: '2px solid #e2e8f0',
-              borderRadius: 12,
-              fontSize: 14,
-              outline: 'none',
-              color: '#1e40af',
-              fontWeight: 500,
-            }}
-          />
+          <div style={{ width: 150, flexShrink: 0 }}>
+            <DatePicker
+              selected={fromDate}
+              onChange={(date) => setFromDate(date)}
+              locale={currentLocale}
+              dateFormat={dateFormat}
+              placeholderText={t('common.from_date')}
+              isClearable
+              customInput={
+                <input
+                  style={{
+                    padding: '12px 16px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: 12,
+                    fontSize: 14,
+                    outline: 'none',
+                    color: '#1e40af',
+                    fontWeight: 500,
+                    width: '100%',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              }
+            />
+          </div>
+          <div style={{ width: 150, flexShrink: 0 }}>
+            <DatePicker
+              selected={toDate}
+              onChange={(date) => setToDate(date)}
+              locale={currentLocale}
+              dateFormat={dateFormat}
+              placeholderText={t('common.to_date')}
+              isClearable
+              customInput={
+                <input
+                  style={{
+                    padding: '12px 16px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: 12,
+                    fontSize: 14,
+                    outline: 'none',
+                    color: '#1e40af',
+                    fontWeight: 500,
+                    width: '100%',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              }
+            />
+          </div>
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}

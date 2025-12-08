@@ -4,7 +4,7 @@ import { getProductById, getInventoryHistory } from '../../services';
 import { useTranslation } from 'react-i18next';
 
 export default function InventoryHistoryPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
@@ -32,7 +32,10 @@ export default function InventoryHistoryPage() {
   const formatDateOnly = (timestamp) => {
     if (!timestamp) return '';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('th-TH', {
+    // Check if language starts with 'en' (could be 'en', 'en-US', 'en-GB', etc.)
+    const isEnglish = i18n.language?.startsWith('en');
+    const locale = isEnglish ? 'en-US' : 'th-TH';
+    return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
