@@ -337,7 +337,15 @@
     "withdraw_date": "วันที่เบิก",
     "requested_by": "ผู้ขอเบิก",
     "confirm_withdraw": "ยืนยันการเบิก",
-    "withdraw_success": "เบิกสินค้าสำเร็จ"
+    "withdraw_success": "เบิกสินค้าสำเร็จ",
+    "order_not_found": "ไม่พบข้อมูลคำสั่งเบิก",
+    "back_to_orders": "กลับไปหน้าติดตามคำสั่งเบิก",
+    "withdraw_order": "คำสั่งเบิก",
+    "requester_info": "ข้อมูลผู้เบิก",
+    "items_in_order": "สินค้าในคำสั่งเบิก",
+    "receive_address": "ที่อยู่รับของ",
+    "shipping_instruction": "สำหรับคำสั่งจัดส่งแบบจัดส่ง ให้เลือกสถานะเป็น \"ส่งของแล้ว\" เมื่อผู้รับสินค้าของหรือ",
+    "current_status": "สถานะปัจจุบัน"
   },
   "payment": {
     "payment": "ชำระเงิน",

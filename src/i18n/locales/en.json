@@ -337,7 +337,15 @@
     "withdraw_date": "Withdraw Date",
     "requested_by": "Requested By",
     "confirm_withdraw": "Confirm Withdraw",
-    "withdraw_success": "Withdraw successful"
+    "withdraw_success": "Withdraw successful",
+    "order_not_found": "Withdraw order not found",
+    "back_to_orders": "Back to Withdraw Orders",
+    "withdraw_order": "Withdraw Order",
+    "requester_info": "Requester Information",
+    "items_in_order": "Items in Order",
+    "receive_address": "Receive Address",
+    "shipping_instruction": "For shipping orders, select status as \"Shipped\" when the recipient receives the goods",
+    "current_status": "Current Status"
   },
   "payment": {
     "payment": "Payment",

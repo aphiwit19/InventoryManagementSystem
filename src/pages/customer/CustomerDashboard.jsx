@@ -175,7 +175,7 @@ export default function CustomerDashboard() {
           </div>
           <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 14px', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
             <option value="">{t('common.all_categories')}</option>
-            {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {uniqueCategories.map(cat => <option key={cat} value={cat}>{t(`categories.${cat}`, cat)}</option>)}
           </select>
         </div>
         </div>

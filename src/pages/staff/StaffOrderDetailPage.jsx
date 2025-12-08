@@ -2,8 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 export default function StaffOrderDetailPage() {
-  // eslint-disable-next-line no-unused-vars
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,7 +23,7 @@ export default function StaffOrderDetailPage() {
           padding: 32,
           boxShadow: '0 10px 40px rgba(30,64,175,0.1)',
         }}>
-          <p style={{ fontSize: 16, color: '#374151', marginBottom: 16 }}>ไม่พบข้อมูลคำสั่งเบิก</p>
+          <p style={{ fontSize: 16, color: '#374151', marginBottom: 16 }}>{t('withdraw.order_not_found')}</p>
           <button
             type="button"
             onClick={() => navigate('/staff/orders')}
@@ -39,7 +38,7 @@ export default function StaffOrderDetailPage() {
               fontSize: 14,
             }}
           >
-            กลับไปหน้าติดตามคำสั่งเบิก
+            {t('withdraw.back_to_orders')}
           </button>
         </div>
       </div>
@@ -50,13 +49,14 @@ export default function StaffOrderDetailPage() {
   const totalText = typeof order.total === 'number'
     ? order.total.toLocaleString()
     : (parseFloat(order.total || 0) || 0).toLocaleString();
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'th-TH';
   const dateText = new Date(
     order.withdrawDate?.seconds
       ? order.withdrawDate.seconds * 1000
       : order.withdrawDate
-  ).toLocaleDateString('th-TH');
+  ).toLocaleDateString(dateLocale);
 
-  const deliveryMethod = (order.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง';
+  const deliveryMethod = (order.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping');
   const status = order.shippingStatus || 'รอดำเนินการ';
 
   return (
@@ -84,7 +84,7 @@ export default function StaffOrderDetailPage() {
               letterSpacing: '0.1em',
               marginBottom: 8,
             }}>
-              ORDER DETAIL
+              {t('order.order_detail').toUpperCase()}
             </div>
             <div style={{ 
               display: 'flex', 
@@ -100,14 +100,14 @@ export default function StaffOrderDetailPage() {
                   fontWeight: 700, 
                   color: '#1e40af',
                 }}>
-                  คำสั่งเบิก #{order.id?.slice(0, 20) || id}
+                  {t('withdraw.withdraw_order')} #{order.id?.slice(0, 20) || id}
                 </h1>
                 <div style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
-                  วันที่เบิก: {dateText}
+                  {t('withdraw.withdraw_date')}: {dateText}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>ยอดรวม</div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>{t('order.order_total')}</div>
                 <div style={{ 
                   fontSize: 32, 
                   fontWeight: 700, 
@@ -156,7 +156,7 @@ export default function StaffOrderDetailPage() {
                   fontWeight: 600, 
                   color: '#1e40af',
                 }}>
-                  ข้อมูลผู้เบิก
+                  {t('withdraw.requester_info')}
                 </span>
               </div>
               <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>
@@ -164,7 +164,7 @@ export default function StaffOrderDetailPage() {
               </div>
               {order.phone && (
                 <div style={{ fontSize: 14, color: '#4b5563', marginTop: 6 }}>
-                  โทร: {order.phone}
+                  {t('common.phone')}: {order.phone}
                 </div>
               )}
               {order.note && (
@@ -177,7 +177,7 @@ export default function StaffOrderDetailPage() {
                   padding: '10px 12px',
                   borderRadius: 8,
                 }}>
-                  หมายเหตุ: {order.note}
+                  {t('order.order_note')}: {order.note}
                 </div>
               )}
             </div>
@@ -212,11 +212,11 @@ export default function StaffOrderDetailPage() {
                   fontWeight: 600, 
                   color: '#1e40af',
                 }}>
-                  สินค้าในคำสั่งเบิก
+                  {t('withdraw.items_in_order')}
                 </span>
               </div>
               {items.length === 0 ? (
-                <div style={{ fontSize: 14, color: '#6b7280' }}>ไม่มีสินค้า</div>
+                <div style={{ fontSize: 14, color: '#6b7280' }}>{t('order.no_items')}</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {items.map((it, idx) => (
@@ -235,7 +235,7 @@ export default function StaffOrderDetailPage() {
                           {it.productName || '-'}
                         </div>
                         <div style={{ fontSize: 12, color: '#6b7280' }}>
-                          จำนวน {it.quantity || 0} ชิ้น
+                          {t('common.quantity')} {it.quantity || 0} {t('common.piece')}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -243,7 +243,7 @@ export default function StaffOrderDetailPage() {
                           ฿{(it.subtotal || 0).toLocaleString()}
                         </div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                          ฿{(it.price || 0).toLocaleString()} / ชิ้น
+                          ฿{(it.price || 0).toLocaleString()} / {t('common.piece')}
                         </div>
                       </div>
                     </div>
@@ -284,7 +284,7 @@ export default function StaffOrderDetailPage() {
                 fontWeight: 600, 
                 color: '#1e40af',
               }}>
-                ข้อมูลการจัดส่ง
+                {t('order.shipping_info')}
               </span>
             </div>
 
@@ -294,18 +294,18 @@ export default function StaffOrderDetailPage() {
               gap: 16,
             }}>
               <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>วิธีรับ:</div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>{t('order.delivery_method')}:</div>
                 <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{deliveryMethod}</div>
               </div>
               {order.receivedBy && (
                 <div>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>ผู้รับ:</div>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>{t('order.receiver')}:</div>
                   <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{order.receivedBy}</div>
                 </div>
               )}
               {order.receivedAddress && (
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>ที่อยู่รับของ:</div>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>{t('withdraw.receive_address')}:</div>
                   <div style={{ fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>{order.receivedAddress}</div>
                 </div>
               )}
@@ -342,7 +342,7 @@ export default function StaffOrderDetailPage() {
                 fontWeight: 600, 
                 color: '#1e40af',
               }}>
-                สถานะการจัดส่ง
+                {t('order.shipping_status')}
               </span>
             </div>
 
@@ -355,7 +355,7 @@ export default function StaffOrderDetailPage() {
               fontSize: 13,
               color: '#92400e',
             }}>
-              สำหรับคำสั่งจัดส่งแบบจัดส่ง ให้เลือกสถานะเป็น "ส่งของแล้ว" เมื่อผู้รับสินค้าของหรือ
+              {t('withdraw.shipping_instruction')}
             </div>
 
             <div style={{ 
@@ -365,7 +365,7 @@ export default function StaffOrderDetailPage() {
               marginBottom: 20,
             }}>
               <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>ขนส่ง</div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{t('order.carrier')}</div>
                 <div style={{
                   padding: '12px 16px',
                   background: '#f9fafb',
@@ -378,7 +378,7 @@ export default function StaffOrderDetailPage() {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>เลขติดตาม</div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{t('order.tracking_number')}</div>
                 <div style={{
                   padding: '12px 16px',
                   background: '#f9fafb',
@@ -394,7 +394,7 @@ export default function StaffOrderDetailPage() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>สถานะปัจจุบัน</div>
+              <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{t('withdraw.current_status')}</div>
               <div style={{
                 padding: '12px 16px',
                 background: status === 'ส่งสำเร็จ' || status === 'รับของแล้ว' 
@@ -440,7 +440,7 @@ export default function StaffOrderDetailPage() {
                 boxShadow: '0 4px 14px rgba(107,114,128,0.3)',
               }}
             >
-              ← กลับไปหน้าติดตามคำสั่งเบิก
+              ← {t('withdraw.back_to_orders')}
             </button>
           </div>
         </div>
