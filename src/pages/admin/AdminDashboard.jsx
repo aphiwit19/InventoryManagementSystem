@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { addProduct, DEFAULT_UNITS, DEFAULT_CATEGORIES, DEFAULT_SIZES, DEFAULT_COLORS } from '../../services';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const isAddProductPage = location.pathname === '/admin/addproduct';
@@ -148,8 +150,8 @@ export default function AdminDashboard() {
     <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
         <div style={{ background: '#fff', borderRadius: 18, padding: '32px 40px', boxShadow: '0 10px 40px rgba(15,23,42,0.12)' }}>
-          <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: 28, fontWeight: 700 }}>เพิ่มสินค้าใหม่</h1>
-          <p style={{ margin: '0 0 28px', color: '#3b82f6', fontSize: 14 }}>กรอกข้อมูลสินค้าของคุณ</p>
+          <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: 28, fontWeight: 700 }}>{t('product.add_product')}</h1>
+          <p style={{ margin: '0 0 28px', color: '#3b82f6', fontSize: 14 }}>{t('product.fill_product_info')}</p>
 
           {error && (
             <div style={{ padding: '12px 16px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: 10, marginBottom: 20, fontSize: 14, border: '1px solid #fecaca' }}>
@@ -161,7 +163,7 @@ export default function AdminDashboard() {
             {/* ชื่อสินค้า */}
             <div>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                ชื่อสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                {t('product.product_name')} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="text"
@@ -169,7 +171,7 @@ export default function AdminDashboard() {
                 value={formData.productName}
                 onChange={handleChange}
                 required
-                placeholder="กรอกชื่อสินค้า"
+                placeholder={t('product.enter_product_name')}
                 style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, outline: 'none', boxSizing: 'border-box', background: '#f9fafb' }}
               />
             </div>
@@ -177,14 +179,14 @@ export default function AdminDashboard() {
             {/* คำอธิบาย */}
             <div>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                คำอธิบายสินค้า
+                {t('product.description')}
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows={3}
-                placeholder="รายละเอียดสินค้า"
+                placeholder={t('product.enter_description')}
                 style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', background: '#f9fafb' }}
               />
             </div>
@@ -194,7 +196,7 @@ export default function AdminDashboard() {
               {/* หน่วย */}
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  หน่วยสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                  {t('common.unit')} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 {!showCustomUnit ? (
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -205,15 +207,15 @@ export default function AdminDashboard() {
                       required
                       style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
                     >
-                      <option value="">-- เลือกหน่วย --</option>
-                      {DEFAULT_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                      <option value="">-- {t('product.select_unit')} --</option>
+                      {DEFAULT_UNITS.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
                     </select>
                     <button 
                       type="button" 
                       onClick={() => { setShowCustomUnit(true); setFormData(prev => ({ ...prev, unit: '' })); }}
                       style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', border: 'none', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}
                     >
-                      + เพิ่มใหม่
+                      + {t('common.add')}
                     </button>
                   </div>
                 ) : (
@@ -224,12 +226,12 @@ export default function AdminDashboard() {
                       value={formData.unit}
                       onChange={handleChange}
                       required
-                      placeholder="พิมพ์หน่วยใหม่"
+                      placeholder={t('product.type_new_unit')}
                       style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '2px solid #8b5cf6', borderRadius: 10, background: '#faf5ff' }}
                     />
                     <button type="button" onClick={() => { setShowCustomUnit(false); setFormData(prev => ({ ...prev, unit: '' })); }}
                       style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', border: 'none', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 13 }}>
-                      ยกเลิก
+                      {t('common.cancel')}
                     </button>
                   </div>
                 )}
@@ -238,7 +240,7 @@ export default function AdminDashboard() {
               {/* ประเภท */}
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  ประเภทสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                  {t('product.category')} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 {!showCustomCategory ? (
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -249,15 +251,15 @@ export default function AdminDashboard() {
                       required
                       style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
                     >
-                      <option value="">-- เลือกประเภท --</option>
-                      {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">-- {t('product.select_category')} --</option>
+                      {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
                     </select>
                     <button 
                       type="button" 
                       onClick={() => { setShowCustomCategory(true); setFormData(prev => ({ ...prev, category: '' })); }}
                       style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', border: 'none', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(245,158,11,0.3)' }}
                     >
-                      + เพิ่มใหม่
+                      + {t('common.add')}
                     </button>
                   </div>
                 ) : (
@@ -268,12 +270,12 @@ export default function AdminDashboard() {
                       value={formData.category}
                       onChange={handleChange}
                       required
-                      placeholder="พิมพ์ประเภทใหม่"
+                      placeholder={t('product.type_new_category')}
                       style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '2px solid #f59e0b', borderRadius: 10, background: '#fffbeb' }}
                     />
                     <button type="button" onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
                       style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', border: 'none', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 13 }}>
-                      ยกเลิก
+                      {t('common.cancel')}
                     </button>
                   </div>
                 )}
@@ -290,8 +292,8 @@ export default function AdminDashboard() {
                   style={{ width: 20, height: 20, cursor: 'pointer' }}
                 />
                 <div>
-                  <div style={{ fontWeight: 600, color: '#0369a1' }}>สินค้ามีหลาย Variants (ไซส์/สี)</div>
-                  <div style={{ fontSize: 13, color: '#0284c7' }}>เปิดใช้งานเมื่อสินค้ามีหลายขนาดหรือสี เช่น เสื้อผ้า รองเท้า</div>
+                  <div style={{ fontWeight: 600, color: '#0369a1' }}>{t('product.has_variants')}</div>
+                  <div style={{ fontSize: 13, color: '#0284c7' }}>{t('product.variants_description')}</div>
                 </div>
               </label>
             </div>
@@ -301,7 +303,7 @@ export default function AdminDashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    ราคาต้นทุน (บาท) <span style={{ color: '#ef4444' }}>*</span>
+                    {t('product.cost_price')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -317,7 +319,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    ราคาขาย (บาท) <span style={{ color: '#ef4444' }}>*</span>
+                    {t('product.sell_price')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -333,7 +335,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    จำนวนสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                    {t('common.quantity')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -353,18 +355,18 @@ export default function AdminDashboard() {
             {hasVariants && (
               <div style={{ background: '#fefce8', padding: '20px', borderRadius: 12, border: '1px solid #fde047' }}>
                 <h3 style={{ margin: '0 0 16px', color: '#854d0e', fontSize: 16 }}>
-                  📦 Variants ({variants.length} รายการ, รวม {totalVariantQuantity} {formData.unit || 'ชิ้น'})
+                  📦 Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
                 </h3>
 
                 {/* Existing Variants */}
                 {variants.length > 0 && (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 100px 100px 40px', gap: 8, padding: '8px 12px', background: '#fef9c3', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#713f12' }}>
-                      <div>ไซส์</div>
-                      <div>สี</div>
-                      <div>จำนวน</div>
-                      <div>ต้นทุน</div>
-                      <div>ราคาขาย</div>
+                      <div>{t('product.size')}</div>
+                      <div>{t('product.color')}</div>
+                      <div>{t('common.quantity')}</div>
+                      <div>{t('product.cost_price')}</div>
+                      <div>{t('product.sell_price')}</div>
                       <div></div>
                     </div>
                     {variants.map(v => (
@@ -382,11 +384,11 @@ export default function AdminDashboard() {
 
                 {/* Add New Variant */}
                 <div style={{ background: '#fff', padding: '16px', borderRadius: 10, border: '1px dashed #d1d5db' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>+ เพิ่ม Variant ใหม่</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>+ {t('product.add_variant')}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                     {/* Size */}
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>ไซส์</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.size')}</label>
                       {!showCustomSize ? (
                         <select
                           name="size"
@@ -401,9 +403,9 @@ export default function AdminDashboard() {
                           }}
                           style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                         >
-                          <option value="">-- เลือกไซส์ --</option>
+                          <option value="">-- {t('product.select_size')} --</option>
                           {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                          <option value="__custom__">+ เพิ่มไซส์ใหม่...</option>
+                          <option value="__custom__">+ {t('product.add_new_size')}</option>
                         </select>
                       ) : (
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -412,7 +414,7 @@ export default function AdminDashboard() {
                             name="size"
                             value={newVariant.size}
                             onChange={handleNewVariantChange}
-                            placeholder="พิมพ์ไซส์"
+                            placeholder={t('product.type_size')}
                             style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                           />
                           <button type="button" onClick={() => { setShowCustomSize(false); setNewVariant(prev => ({ ...prev, size: '' })); }}
@@ -423,7 +425,7 @@ export default function AdminDashboard() {
 
                     {/* Color */}
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>สี</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.color')}</label>
                       {!showCustomColor ? (
                         <select
                           name="color"
@@ -438,9 +440,9 @@ export default function AdminDashboard() {
                           }}
                           style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                         >
-                          <option value="">-- เลือกสี --</option>
-                          {DEFAULT_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
-                          <option value="__custom__">+ เพิ่มสีใหม่...</option>
+                          <option value="">-- {t('product.select_color')} --</option>
+                          {DEFAULT_COLORS.map(c => <option key={c} value={c}>{t(`colors.${c}`, c)}</option>)}
+                          <option value="__custom__">+ {t('product.add_new_color')}</option>
                         </select>
                       ) : (
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -449,7 +451,7 @@ export default function AdminDashboard() {
                             name="color"
                             value={newVariant.color}
                             onChange={handleNewVariantChange}
-                            placeholder="พิมพ์สี"
+                            placeholder={t('product.type_color')}
                             style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                           />
                           <button type="button" onClick={() => { setShowCustomColor(false); setNewVariant(prev => ({ ...prev, color: '' })); }}
@@ -461,7 +463,7 @@ export default function AdminDashboard() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>จำนวน</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('common.quantity')}</label>
                       <input
                         type="number"
                         name="quantity"
@@ -473,7 +475,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>ราคาต้นทุน</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.cost_price')}</label>
                       <input
                         type="number"
                         name="costPrice"
@@ -486,7 +488,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>ราคาขาย</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.sell_price')}</label>
                       <input
                         type="number"
                         name="sellPrice"
@@ -505,7 +507,7 @@ export default function AdminDashboard() {
                     onClick={addVariant}
                     style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
                   >
-                    + เพิ่ม Variant
+                    + {t('product.add_variant')}
                   </button>
                 </div>
               </div>
@@ -514,12 +516,12 @@ export default function AdminDashboard() {
             {/* รูปภาพ + วันที่ */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>รูปภาพสินค้า</label>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.product_image')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label htmlFor="image" style={{ padding: '10px 20px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#374151' }}>
-                    เลือกไฟล์
+                    {t('product.select_file')}
                   </label>
-                  <span style={{ fontSize: 14, color: '#6b7280' }}>{formData.image ? 'เลือกไฟล์แล้ว' : 'ไม่ได้เลือกไฟล์ใด'}</span>
+                  <span style={{ fontSize: 14, color: '#6b7280' }}>{formData.image ? t('product.file_selected') : t('product.no_file_selected')}</span>
                 </div>
                 <input
                   type="file"
@@ -546,7 +548,7 @@ export default function AdminDashboard() {
                   }}
                   style={{ display: 'none' }}
                 />
-                {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>กำลังอัพโหลดรูปภาพ...</div>}
+                {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>{t('product.uploading_image')}</div>}
                 {uploadError && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 13 }}>{uploadError}</div>}
                 {imagePreview && (
                   <div style={{ marginTop: 12, width: 120, height: 120, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
@@ -557,7 +559,7 @@ export default function AdminDashboard() {
 
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  วันที่เพิ่มสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                  {t('product.date_added')} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="date"
@@ -572,13 +574,13 @@ export default function AdminDashboard() {
 
             {/* ที่ตั้งซื้อ */}
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>ที่ตั้งซื้อ / แหล่งที่ซื้อ</label>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.purchase_location')}</label>
               <input
                 type="text"
                 name="purchaseLocation"
                 value={formData.purchaseLocation}
                 onChange={handleChange}
-                placeholder="เช่น ร้าน A สาขา B หรือแหล่งที่มา"
+                placeholder={t('product.purchase_location_placeholder')}
                 style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
               />
             </div>
@@ -600,14 +602,14 @@ export default function AdminDashboard() {
                   boxShadow: loading || uploading ? 'none' : '0 4px 14px rgba(37,99,235,0.4)',
                 }}
               >
-                {loading ? 'กำลังบันทึก...' : uploading ? 'กำลังอัพโหลดรูป...' : 'บันทึกสินค้า'}
+                {loading ? t('message.saving') : uploading ? t('product.uploading_image') : t('product.save_product')}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/admin/products')}
                 style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 10, cursor: 'pointer' }}
               >
-                ยกเลิก
+                {t('common.cancel')}
               </button>
             </div>
           </form>

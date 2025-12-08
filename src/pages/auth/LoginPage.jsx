@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,8 +47,14 @@ export default function LoginPage() {
         borderRadius: '24px',
         boxShadow: '0 25px 80px rgba(15, 23, 42, 0.15), 0 10px 40px rgba(37, 99, 235, 0.1)',
         padding: '48px 40px',
-        animation: 'fadeIn 0.5s ease-in'
+        animation: 'fadeIn 0.5s ease-in',
+        position: 'relative'
       }}>
+        {/* Language Switcher */}
+        <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+          <LanguageSwitcher />
+        </div>
+
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <img 
@@ -65,14 +74,14 @@ export default function LoginPage() {
             color: '#1e40af',
             letterSpacing: '-0.5px'
           }}>
-            เข้าสู่ระบบ
+            {t('auth.login_title')}
           </h1>
           <p style={{
             margin: 0,
             color: '#64748b',
             fontSize: '15px'
           }}>
-            จัดการสต็อกสินค้าและคำสั่งซื้อของคุณได้ง่ายๆ ในที่เดียว
+            {t('auth.login_subtitle')}
           </p>
         </div>
 
@@ -88,7 +97,7 @@ export default function LoginPage() {
                 fontWeight: '500',
                 color: '#64748b'
               }}>
-                อีเมล *
+                {t('auth.email')} *
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{
@@ -108,7 +117,7 @@ export default function LoginPage() {
                 </span>
                 <input
                   type="email"
-                  placeholder="example@gmail.com"
+                  placeholder={t('auth.email_placeholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -143,7 +152,7 @@ export default function LoginPage() {
                 fontWeight: '500',
                 color: '#64748b'
               }}>
-                รหัสผ่าน *
+                {t('auth.password')} *
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{
@@ -163,7 +172,7 @@ export default function LoginPage() {
                 </span>
                 <input
                   type="password"
-                  placeholder="รหัสผ่าน"
+                  placeholder={t('auth.password_placeholder')}
                   
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -258,11 +267,11 @@ export default function LoginPage() {
                     animation: 'spin 0.8s linear infinite',
                     display: 'inline-block'
                   }}></span>
-                  กำลังเข้าสู่ระบบ...
+                  {t('auth.logging_in')}
                 </>
               ) : (
                 <>
-                  เข้าสู่ระบบ
+                  {t('auth.login')}
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
@@ -300,7 +309,7 @@ export default function LoginPage() {
                 e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.04)';
               }}
             >
-              ยังไม่มีบัญชี? สมัครสมาชิก
+              {t('auth.no_account')}
             </Link>
           </div>
         </form>

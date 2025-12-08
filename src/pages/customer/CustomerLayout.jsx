@@ -4,8 +4,11 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useAuth } from '../../auth/AuthContext';
 import { getCart, migrateLocalStorageCart } from '../../services';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 const CustomerLayout = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [cartCount, setCartCount] = useState(0);
@@ -122,7 +125,7 @@ const CustomerLayout = () => {
                     fontWeight: 400,
                   }}
                 >
-                  ระบบจัดการสต็อกสินค้า
+                  {t('admin.system_management')}
                 </div>
               </div>
             </div>
@@ -202,7 +205,7 @@ const CustomerLayout = () => {
                     border: 'none',
                     padding: 0,
                   }}
-                  title={profile?.displayName || 'โปรไฟล์ลูกค้า'}
+                  title={profile?.displayName || t('common.profile')}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
                     e.currentTarget.style.transform = 'scale(1.05)';
@@ -240,7 +243,7 @@ const CustomerLayout = () => {
                         borderBottom: '1px solid #e5e7eb',
                       }}
                     >
-                      โปรไฟล์
+                      {t('common.profile')}
                     </Link>
                     <Link
                       to="/customer/orders"
@@ -253,7 +256,7 @@ const CustomerLayout = () => {
                         textDecoration: 'none',
                       }}
                     >
-                      ติดตามสถานะ
+                      {t('order.track_status')}
                     </Link>
                   </div>
                 )}
@@ -284,8 +287,10 @@ const CustomerLayout = () => {
                 }}
               >
                 <span>🚪</span>
-                <span>ออกจากระบบ</span>
+                <span>{t('common.logout')}</span>
               </button>
+              {/* Language Switcher */}
+              <LanguageSwitcher variant="nav" />
             </div>
           </div>
         </div>

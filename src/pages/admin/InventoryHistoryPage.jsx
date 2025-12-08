@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getProductById, getInventoryHistory } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 export default function InventoryHistoryPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
@@ -19,7 +21,7 @@ export default function InventoryHistoryPage() {
         setHistory(historyData);
       } catch (error) {
         console.error('Error loading data:', error);
-        alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        alert(t('common.error_loading_data'));
       } finally {
         setLoading(false);
       }
@@ -50,7 +52,7 @@ export default function InventoryHistoryPage() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 20px'
           }}></div>
-          <p style={{ color: '#666' }}>กำลังโหลดข้อมูล...</p>
+          <p style={{ color: '#666' }}>{t('common.loading')}</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -68,11 +70,11 @@ export default function InventoryHistoryPage() {
           fontWeight: '700',
           color: '#333'
         }}>
-          ประวัติการเข้าคลังสินค้า
+          {t('admin.inventory_history')}
         </h1>
         {product && (
           <p style={{ margin: 0, color: '#666', fontSize: '16px' }}>
-            สินค้า: <strong>{product.productName}</strong>
+            {t('product.products')}: <strong>{product.productName}</strong>
           </p>
         )}
       </div>
@@ -90,20 +92,20 @@ export default function InventoryHistoryPage() {
           gap: '20px'
         }}>
           <div>
-            <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>จำนวนปัจจุบัน</p>
+            <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>{t('inventory.current_stock')}</p>
             <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#4CAF50' }}>
-              {product.quantity || 0} ชิ้น
+              {product.quantity || 0} {t('common.piece')}
             </p>
           </div>
           <div>
-            <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>ราคาขาย</p>
+            <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>{t('product.sell_price')}</p>
             <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#2196F3' }}>
               ฿{product.price?.toLocaleString() || '0'}
             </p>
           </div>
           {product.costPrice && (
             <div>
-              <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>ราคาทุนล่าสุด</p>
+              <p style={{ margin: '0 0 5px 0', color: '#666', fontSize: '14px' }}>{t('inventory.latest_cost_price')}</p>
               <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#FF9800' }}>
                 ฿{product.costPrice.toLocaleString()}
               </p>
@@ -126,7 +128,7 @@ export default function InventoryHistoryPage() {
             color: '#999'
           }}>
             <div style={{ fontSize: '48px', marginBottom: '15px' }}>📭</div>
-            <p style={{ fontSize: '16px', margin: 0 }}>ยังไม่มีประวัติการเข้าคลัง</p>
+            <p style={{ fontSize: '16px', margin: 0 }}>{t('inventory.no_history')}</p>
           </div>
         ) : (
           <>
@@ -141,7 +143,7 @@ export default function InventoryHistoryPage() {
                 fontWeight: '600',
                 color: '#333'
               }}>
-                รายการประวัติการเข้าคลัง ({history.length} รายการ)
+                {t('inventory.history_list')} ({history.length} {t('common.items')})
               </h2>
             </div>
             <div style={{ overflowX: 'auto' }}>
@@ -154,12 +156,12 @@ export default function InventoryHistoryPage() {
                     backgroundColor: '#f8f9fa',
                     borderBottom: '2px solid #e0e0e0'
                   }}>
-                    <th style={{ padding: '16px', textAlign: 'left' }}>ลำดับ</th>
-                    <th style={{ padding: '16px', textAlign: 'left' }}>วันที่</th>
-                    <th style={{ padding: '16px', textAlign: 'left' }}>ประเภท</th>
-                    <th style={{ padding: '16px', textAlign: 'left' }}>ที่มา</th>
-                    <th style={{ padding: '16px', textAlign: 'right' }}>จำนวน (+/−)</th>
-                    <th style={{ padding: '16px', textAlign: 'right' }}>ราคาทุน</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>{t('common.number')}</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>{t('common.date')}</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>{t('inventory.history_type')}</th>
+                    <th style={{ padding: '16px', textAlign: 'left' }}>{t('inventory.history_source')}</th>
+                    <th style={{ padding: '16px', textAlign: 'right' }}>{t('inventory.history_quantity')} (+/−)</th>
+                    <th style={{ padding: '16px', textAlign: 'right' }}>{t('product.cost_price')}</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -3,8 +3,11 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 const AdminLayout = () => {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const location = useLocation();
 
@@ -98,37 +101,42 @@ const AdminLayout = () => {
             ADMIN
           </div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
-            {profile?.displayName || 'ผู้ดูแลระบบ'}
+            {profile?.displayName || t('user.role_admin')}
           </div>
+        </div>
+
+        {/* Language Switcher */}
+        <div style={{ marginBottom: 10 }}>
+          <LanguageSwitcher style={{ width: '100%' }} />
         </div>
 
         {/* Menu Links */}
         <Link to="/admin/dashboard" style={getLinkStyle(isActiveLink('/admin/dashboard'))}>
-          แดชบอร์ด
+          {t('common.dashboard')}
         </Link>
         <Link to="/admin/products" style={getLinkStyle(isActiveLink('/admin/products'))}>
-          จัดการสินค้า
+          {t('admin.products')}
         </Link>
         <Link to="/admin/orders?source=customer" style={getLinkStyle(isOrdersActive('customer'))}>
-          รายการคำสั่งซื้อ
+          {t('order.customer_orders')}
         </Link>
         <Link to="/admin/orders?source=staff" style={getLinkStyle(isOrdersActive('staff'))}>
-          รายการคำสั่งเบิก
+          {t('order.staff_orders')}
         </Link>
         <Link to="/admin/inventory_history" style={getLinkStyle(isActiveLink('/admin/inventory_history'))}>
-          ประวัติสินค้าเข้า–ออกคลัง
+          {t('admin.inventory_history')}
         </Link>
         <Link to="/admin/payment-account" style={getLinkStyle(isActiveLink('/admin/payment-account'))}>
-          จัดการบัญชีรับโอนเงิน
+          {t('admin.payment_settings')}
         </Link>
         <Link to="/admin/alerts" style={getLinkStyle(isActiveLink('/admin/alerts'))}>
-          แจ้งเตือนสต็อกต่ำ
+          {t('admin.low_stock_alert')}
         </Link>
         <Link to="/admin/users" style={getLinkStyle(isActiveLink('/admin/users'))}>
-          จัดการสิทธิ์ผู้ใช้
+          {t('user.user_management')}
         </Link>
         <Link to="/admin/profile" style={getLinkStyle(isActiveLink('/admin/profile'))}>
-          โปรไฟล์
+          {t('common.profile')}
         </Link>
 
         {/* Logout Button */}
@@ -154,7 +162,7 @@ const AdminLayout = () => {
             }}
           >
             <span>🚪</span>
-            <span>ออกจากระบบ</span>
+            <span>{t('common.logout')}</span>
           </button>
         </div>
       </div>

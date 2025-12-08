@@ -3,8 +3,11 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -55,8 +58,13 @@ export default function RegisterPage() {
         borderRadius: '24px',
         boxShadow: '0 25px 80px rgba(15, 23, 42, 0.15), 0 10px 40px rgba(37, 99, 235, 0.1)',
         padding: '48px 40px',
-        animation: 'fadeIn 0.5s ease-in'
+        animation: 'fadeIn 0.5s ease-in',
+        position: 'relative'
       }}>
+        {/* Language Switcher */}
+        <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+          <LanguageSwitcher />
+        </div>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <img 
@@ -76,14 +84,14 @@ export default function RegisterPage() {
             color: '#1e40af',
             letterSpacing: '-0.5px'
           }}>
-            ลงทะเบียน
+            {t('auth.register_title')}
           </h1>
           <p style={{
             margin: 0,
             color: '#64748b',
             fontSize: '15px'
           }}>
-            สร้างบัญชีใหม่เพื่อเริ่มต้นใช้งานระบบ
+            {t('auth.register_subtitle')}
           </p>
         </div>
 
@@ -99,7 +107,7 @@ export default function RegisterPage() {
                 fontWeight: '500',
                 color: '#64748b'
               }}>
-                ชื่อ-นามสกุล *
+                {t('auth.full_name')} *
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{
@@ -119,7 +127,7 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="text"
-                  placeholder="กรอกชื่อ-นามสกุล"
+                  placeholder={t('auth.name_placeholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={{
@@ -154,7 +162,7 @@ export default function RegisterPage() {
                 fontWeight: '500',
                 color: '#64748b'
               }}>
-                อีเมล *
+                {t('auth.email')} *
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{
@@ -174,7 +182,7 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="email"
-                  placeholder="example@gmail.com"
+                  placeholder={t('auth.email_placeholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -209,7 +217,7 @@ export default function RegisterPage() {
                 fontWeight: '500',
                 color: '#64748b'
               }}>
-                รหัสผ่าน *
+                {t('auth.password')} *
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{
@@ -229,7 +237,7 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="password"
-                  placeholder="อย่างน้อย 8 ตัวอักษร"
+                  placeholder={t('auth.password_hint')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
@@ -255,7 +263,7 @@ export default function RegisterPage() {
               </div>
               {password && password.length < 6 && (
                 <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#ef4444' }}>
-                  ต้องการอีก {6 - password.length} ตัวอักษร
+                  {t('auth.password_too_short', { count: 6 - password.length })}
                 </p>
               )}
             </div>
@@ -328,11 +336,11 @@ export default function RegisterPage() {
                     animation: 'spin 0.8s linear infinite',
                     display: 'inline-block'
                   }}></span>
-                  กำลังสร้างบัญชี...
+                  {t('auth.registering')}
                 </>
               ) : (
                 <>
-                  ลงทะเบียน
+                  {t('auth.register')}
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
@@ -370,7 +378,7 @@ export default function RegisterPage() {
                 e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.04)';
               }}
             >
-              มีบัญชีอยู่แล้ว? เข้าสู่ระบบ
+              {t('auth.have_account')}
             </Link>
           </div>
         </form>

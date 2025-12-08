@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getAllWithdrawals } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -18,16 +20,12 @@ export default function AdminOrdersPage() {
   const itemsPerPage = 8;
 
   const headingTitle = sourceFilter === 'customer'
-    ? 'จัดการคำสั่งซื้อ'
+    ? t('order.customer_orders')
     : sourceFilter === 'staff'
-      ? 'จัดการคำสั่งเบิก'
-      : 'จัดการคำสั่งซื้อ/การจัดส่ง';
+      ? t('order.staff_orders')
+      : t('order.all_orders');
 
-  const searchPlaceholder = sourceFilter === 'customer'
-    ? 'ค้นหา (ชื่อผู้สั่งซื้อ/ที่อยู่/Tracking)'
-    : sourceFilter === 'staff'
-      ? 'ค้นหา (ชื่อผู้เบิก/ผู้รับ/Tracking)'
-      : 'ค้นหา (ชื่อผู้เบิก/ผู้รับ/Tracking)';
+  const searchPlaceholder = t('common.search');
 
   // ซิงก์ sourceFilter เมื่อ query string เปลี่ยน (เช่น คลิกเมนู Sidebar คนละประเภท)
   useEffect(() => {
@@ -56,7 +54,7 @@ export default function AdminOrdersPage() {
       o.requestedBy?.toLowerCase().includes(search.toLowerCase()) ||
       o.receivedBy?.toLowerCase().includes(search.toLowerCase())
     );
-    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
+    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'pending') === statusFilter;
     const sourceOk = sourceFilter === 'all' || (o.createdSource || '') === sourceFilter;
     const deliveryOk = deliveryFilter === 'all' || ((o.deliveryMethod || 'shipping') === deliveryFilter);
     return hit && statusOk && sourceOk && deliveryOk;
@@ -114,7 +112,7 @@ export default function AdminOrdersPage() {
       }}>
         <div>
           <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>{headingTitle}</h1>
-          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>จัดการคำสั่งซื้อและการจัดส่งทั้งหมด</div>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('admin.system_management')}</div>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
@@ -150,9 +148,9 @@ export default function AdminOrdersPage() {
                 cursor: 'pointer',
               }}
             >
-              <option value="all">ทุกประเภท</option>
-              <option value="customer">คำสั่งซื้อ</option>
-              <option value="staff">คำสั่งเบิก</option>
+              <option value="all">{t('common.all_types')}</option>
+              <option value="customer">{t('order.source_customer')}</option>
+              <option value="staff">{t('order.source_staff')}</option>
             </select>
           )}
           {sourceFilter === 'staff' && (
@@ -172,7 +170,7 @@ export default function AdminOrdersPage() {
                   fontWeight: 600,
                 }}
               >
-                📦 จัดส่ง
+                📦 {t('order.shipping')}
               </button>
               <button
                 type="button"
@@ -189,7 +187,7 @@ export default function AdminOrdersPage() {
                   fontWeight: 600,
                 }}
               >
-                🏪 รับเอง
+                🏪 {t('order.pickup')}
               </button>
             </div>
           )}
@@ -197,9 +195,9 @@ export default function AdminOrdersPage() {
       </div>
 
       {loading ? (
-        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)', color: '#64748b' }}>กำลังโหลด...</div>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)', color: '#64748b' }}>{t('common.loading')}</div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', color:'#64748b', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>ไม่พบรายการ</div>
+        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: 50, borderRadius: 18, textAlign: 'center', color:'#64748b', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>{t('common.no_data')}</div>
       ) : (
         <>
           <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', borderRadius: 18, overflowX:'auto', boxShadow:'0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)', border: '1px solid rgba(255,255,255,0.9)' }}>
@@ -218,12 +216,12 @@ export default function AdminOrdersPage() {
                   color: '#1e40af',
                 }}
               >
-                <div>วันที่</div>
-                <div>ผู้สั่งซื้อ</div>
-                <div>สินค้า / จำนวน</div>
-                <div>ยอดรวม</div>
-                <div>ที่อยู่</div>
-                <div style={{ textAlign: 'center' }}>จัดการ</div>
+                <div>{t('common.date')}</div>
+                <div>{t('withdraw.requested_by')}</div>
+                <div>{t('order.order_items')}</div>
+                <div>{t('common.total')}</div>
+                <div>{t('common.address')}</div>
+                <div style={{ textAlign: 'center' }}>{t('common.action')}</div>
               </div>
               {currentOrders.map((o) => {
                 const dateText = new Date(
@@ -244,7 +242,7 @@ export default function AdminOrdersPage() {
                       )
                       .join('\n')
                   : '-';
-                const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
+                const isProcessed = (o.shippingStatus || 'pending') !== 'pending';
 
                 return (
                   <div
@@ -300,7 +298,7 @@ export default function AdminOrdersPage() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {isProcessed ? '✓ เสร็จสิ้น' : 'จัดการ'}
+                        {isProcessed ? t('order.status_completed') : t('order.manage')}
                       </button>
                     </div>
                   </div>
@@ -321,14 +319,14 @@ export default function AdminOrdersPage() {
                   color: '#1e40af',
                 }}
               >
-                <div>วันที่</div>
-                <div>ผู้เบิก</div>
-                <div>ผู้รับ</div>
-                <div>สินค้า / จำนวน</div>
-                <div>วิธีรับ</div>
-                <div>ที่อยู่</div>
-                <div>หมายเหตุ</div>
-                <div style={{ textAlign: 'center' }}>จัดการ</div>
+                <div>{t('common.date')}</div>
+                <div>{t('withdraw.requested_by')}</div>
+                <div>{t('order.receiver')}</div>
+                <div>{t('order.order_items')}</div>
+                <div>{t('order.delivery_method')}</div>
+                <div>{t('common.address')}</div>
+                <div>{t('order.order_note')}</div>
+                <div style={{ textAlign: 'center' }}>{t('order.manage')}</div>
               </div>
               {currentOrders.map((o) => {
                 // filter ตาม deliveryFilter แต่ตารางเรียบง่ายขึ้น ไม่มี inline shipping fields แล้ว
@@ -337,14 +335,14 @@ export default function AdminOrdersPage() {
 
                 const address = o.receivedAddress || '-';
                 const note = o.note || '-';
-                const deliveryText = (o.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง';
+                const deliveryText = (o.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping');
                 const items = o.items || [];
                 const itemsText = items.length
                   ? items
                       .map((it) => `${it.productName || ''} x${it.quantity || 0}`)
                       .join('\n')
                   : '-';
-                const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
+                const isProcessed = (o.shippingStatus || 'pending') !== 'pending';
 
                 return (
                   <div
@@ -394,7 +392,7 @@ export default function AdminOrdersPage() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {isProcessed ? '✓ เสร็จสิ้น' : 'จัดการ'}
+                        {isProcessed ? t('order.status_completed') : t('order.manage')}
                       </button>
                     </div>
                   </div>
@@ -435,7 +433,7 @@ export default function AdminOrdersPage() {
                   fontWeight: 600,
                 }}
               >
-                Previous
+                {t('common.previous')}
               </button>
               {buildPageRange().map((page) => (
                 <button
@@ -479,7 +477,7 @@ export default function AdminOrdersPage() {
                   fontWeight: 600,
                 }}
               >
-                Next
+                {t('common.next')}
               </button>
             </div>
           )}

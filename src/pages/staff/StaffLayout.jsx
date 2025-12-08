@@ -3,8 +3,11 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 const StaffLayout = () => {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const location = useLocation();
 
@@ -64,8 +67,13 @@ const StaffLayout = () => {
             STAFF
           </div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
-            {profile?.displayName || 'ผู้ใช้งานสตาฟ'}
+            {profile?.displayName || t('user.role_staff')}
           </div>
+        </div>
+
+        {/* Language Switcher */}
+        <div style={{ marginBottom: 10 }}>
+          <LanguageSwitcher style={{ width: '100%' }} />
         </div>
 
         <Link
@@ -90,7 +98,7 @@ const StaffLayout = () => {
                 : 'none',
           }}
         >
-          รายการสินค้า
+          {t('product.product_list')}
         </Link>
         <Link
           to="/staff/withdraw"
@@ -114,7 +122,7 @@ const StaffLayout = () => {
                 : 'none',
           }}
         >
-          คำสั่งเบิก
+          {t('withdraw.withdraw_request')}
         </Link>
         <Link
           to="/staff/orders"
@@ -138,7 +146,7 @@ const StaffLayout = () => {
                 : 'none',
           }}
         >
-          ติดตามสถานะ
+          {t('order.track_status')}
         </Link>
         <Link
           to="/staff/profile"
@@ -162,7 +170,7 @@ const StaffLayout = () => {
                 : 'none',
           }}
         >
-          โปรไฟล์
+          {t('common.profile')}
         </Link>
 
         <div style={{ marginTop: 'auto', paddingTop: 16 }}>
@@ -187,7 +195,7 @@ const StaffLayout = () => {
             }}
           >
             <span>🚪</span>
-            <span>ออกจากระบบ</span>
+            <span>{t('common.logout')}</span>
           </button>
         </div>
 

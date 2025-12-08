@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { db, storage } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
 
 // Admin page for managing bank account info + QR code
 // Uses a single Firestore document: settings/paymentAccount
 export default function AdminBankAccountPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [accounts, setAccounts] = useState([]); // all accounts in settings/paymentAccount.accounts
@@ -63,7 +65,7 @@ export default function AdminBankAccountPage() {
         }
       } catch (e) {
         console.error('load paymentAccount failed:', e);
-        setError('โหลดข้อมูลบัญชีไม่สำเร็จ');
+        setError(t('payment.load_account_failed'));
       } finally {
         setLoading(false);
       }
@@ -75,7 +77,7 @@ export default function AdminBankAccountPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setError('กรุณาเลือกไฟล์รูปภาพสำหรับ QR Code');
+      setError(t('payment.please_select_image_qr'));
       return;
     }
     setError('');
@@ -94,7 +96,7 @@ export default function AdminBankAccountPage() {
     setSuccess('');
 
     if (!bankName.trim() || !accountName.trim() || !accountNumber.trim()) {
-      setError('กรุณากรอกชื่อธนาคาร ชื่อบัญชี และเลขบัญชีให้ครบ');
+      setError(t('payment.please_fill_account_info'));
       return;
     }
 
@@ -189,11 +191,11 @@ export default function AdminBankAccountPage() {
       );
 
       setAccounts(nextAccounts);
-      setSuccess('บันทึกข้อมูลบัญชีเรียบร้อยแล้ว');
+      setSuccess(t('payment.account_saved_success'));
       setQrFile(null);
     } catch (e) {
       console.error('save paymentAccount failed:', e);
-      setError('บันทึกข้อมูลบัญชีไม่สำเร็จ');
+      setError(t('payment.save_account_failed'));
     } finally {
       setSaving(false);
     }
@@ -204,9 +206,9 @@ export default function AdminBankAccountPage() {
       <div style={{ maxWidth: 880, margin: '0 auto' }}>
         <div style={{ background: '#fff', borderRadius: 18, padding: '24px 26px', boxShadow: '0 10px 40px rgba(15,23,42,0.12)' }}>
           <div style={{ marginBottom: 20 }}>
-            <h1 style={{ margin: 0, fontSize: 24, color: '#1e40af', fontWeight: 700 }}>จัดการบัญชีสำหรับชำระเงิน</h1>
+            <h1 style={{ margin: 0, fontSize: 24, color: '#1e40af', fontWeight: 700 }}>{t('payment.manage_payment_account')}</h1>
             <p style={{ margin: '6px 0 0', fontSize: 14, color: '#64748b' }}>
-              ตั้งค่าบัญชีโอนเงินสำหรับลูกค้า สามารถอัปโหลดหรือเปลี่ยน QR Code และแก้ไขชื่อบัญชี / เลขบัญชีได้
+              {t('payment.manage_payment_account_desc')}
             </p>
           </div>
 
@@ -240,9 +242,9 @@ export default function AdminBankAccountPage() {
                   cursor: 'pointer',
                 }}
               >
-                {acc.bankName || acc.accountName || `บัญชี ${idx + 1}`}
+                {acc.bankName || acc.accountName || `${t('payment.account')} ${idx + 1}`}
                 {acc.isPrimary && (
-                  <span style={{ marginLeft: 6, fontSize: 11 }}>(หลัก)</span>
+                  <span style={{ marginLeft: 6, fontSize: 11 }}>({t('payment.primary')})</span>
                 )}
               </button>
             ))}
@@ -281,7 +283,7 @@ export default function AdminBankAccountPage() {
                 cursor: 'pointer',
               }}
             >
-              + เพิ่มบัญชี
+              + {t('payment.add_account')}
             </button>
           </div>
 
@@ -304,7 +306,7 @@ export default function AdminBankAccountPage() {
               }}
             >
             <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8', marginBottom: 10 }}>
-              QR Code สำหรับชำระเงิน
+              {t('payment.qr_code_for_payment')}
             </div>
             <div
               style={{
@@ -328,7 +330,7 @@ export default function AdminBankAccountPage() {
               ) : (
                 <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
                   <div style={{ fontSize: 40, marginBottom: 4 }}>📷</div>
-                  <div>ยังไม่ได้อัปโหลดรูป QR Code</div>
+                  <div>{t('payment.no_qr_uploaded')}</div>
                 </div>
               )}
             </div>
@@ -349,11 +351,11 @@ export default function AdminBankAccountPage() {
                 boxShadow: '0 6px 16px rgba(37,99,235,0.4)',
               }}
             >
-              <span>อัปโหลด QR Code</span>
+              <span>{t('payment.upload_qr_code')}</span>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
             </label>
             <div style={{ marginTop: 6, fontSize: 11, color: '#64748b' }}>
-              รองรับไฟล์รูปภาพ .jpg, .png ขนาดไม่เกิน ~5MB
+              {t('payment.file_hint')}
             </div>
             </div>
 
@@ -368,9 +370,9 @@ export default function AdminBankAccountPage() {
               }}
             >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>ข้อมูลบัญชีธนาคาร</h2>
+              <h2 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>{t('payment.bank_account_info')}</h2>
               {loading && (
-                <span style={{ fontSize: 12, color: '#6b7280' }}>กำลังโหลด...</span>
+                <span style={{ fontSize: 12, color: '#6b7280' }}>{t('common.loading')}</span>
               )}
             </div>
 
@@ -408,13 +410,13 @@ export default function AdminBankAccountPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  ชื่อธนาคาร
+                  {t('payment.bank_name')}
                 </label>
                 <input
                   type="text"
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  placeholder="เช่น กสิกรไทย, ไทยพาณิชย์"
+                  placeholder={t('payment.bank_name_placeholder')}
                   style={{
                     width: 'calc(100% - 50px)',
                     margin: '0 auto',
@@ -427,13 +429,13 @@ export default function AdminBankAccountPage() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  ชื่อบัญชี
+                  {t('payment.account_name')}
                 </label>
                 <input
                   type="text"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="เช่น บริษัท เอ บี ซี จำกัด"
+                  placeholder={t('payment.account_name_placeholder')}
                   style={{
                     width: 'calc(100% - 50px)',
                     margin: '0 auto',
@@ -446,13 +448,13 @@ export default function AdminBankAccountPage() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  เลขที่บัญชี
+                  {t('payment.account_number')}
                 </label>
                 <input
                   type="text"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder="เช่น 123-4-56789-0"
+                  placeholder={t('payment.account_number_placeholder')}
                   style={{
                     width: 'calc(100% - 50px)',
                     margin: '0 auto',
@@ -465,13 +467,13 @@ export default function AdminBankAccountPage() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  หมายเหตุ (ถ้ามี)
+                  {t('payment.payment_note')} ({t('common.optional')})
                 </label>
                 <textarea
                   rows={3}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="เช่น ใช้สำหรับโอนชำระค่าสินค้าเท่านั้น"
+                  placeholder={t('payment.note_placeholder')}
                   style={{
                     width: 'calc(100% - 50px)',
                     margin: '0 auto',
@@ -492,7 +494,7 @@ export default function AdminBankAccountPage() {
                   onChange={(e) => setIsPrimary(e.target.checked)}
                 />
                 <label htmlFor="primary-account-checkbox" style={{ fontSize: 13, color: '#374151' }}>
-                  ตั้งเป็นบัญชีหลักที่ใช้แสดงในหน้าลูกค้า
+                  {t('payment.set_as_primary')}
                 </label>
               </div>
             </div>
@@ -517,7 +519,7 @@ export default function AdminBankAccountPage() {
                   boxShadow: saving ? 'none' : '0 6px 16px rgba(37,99,235,0.4)',
                 }}
               >
-                {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
+                {saving ? t('message.saving') : t('common.save_changes')}
               </button>
             </div>
             </div>

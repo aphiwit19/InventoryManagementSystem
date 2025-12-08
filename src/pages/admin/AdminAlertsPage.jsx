@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllProducts, isLowStock, getLowStockVariants } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminAlertsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
@@ -82,10 +84,10 @@ export default function AdminAlertsPage() {
               letterSpacing: '0.02em',
             }}
           >
-            แจ้งเตือนสินค้าสต็อกต่ำ
+            {t('admin.low_stock_alert')}
           </h1>
           <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>
-            รายการสินค้าที่มีจำนวนคงเหลือต่ำกว่าระดับที่กำหนด
+            {t('product.low_stock_products')}
           </div>
         </div>
 
@@ -101,7 +103,7 @@ export default function AdminAlertsPage() {
               boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
             }}
           >
-            กำลังโหลดข้อมูล...
+            {t('common.loading')}
           </div>
         ) : lowStock.length === 0 ? (
           <div
@@ -114,7 +116,7 @@ export default function AdminAlertsPage() {
               boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
             }}
           >
-            ✅ ยังไม่มีสินค้าที่อยู่ในสถานะสต็อกต่ำ
+            ✅ {t('common.no_data')}
           </div>
         ) : (
           <div
@@ -137,15 +139,15 @@ export default function AdminAlertsPage() {
                 color: '#1e40af',
               }}
             >
-              <div>สินค้า</div>
-              <div>Variant ที่สต๊อกต่ำ</div>
-              <div style={{ textAlign: 'right' }}>จำนวนรวม</div>
-              <div style={{ textAlign: 'right' }}>จัดการ</div>
+              <div>{t('product.products')}</div>
+              <div>{t('product.low_stock')}</div>
+              <div style={{ textAlign: 'right' }}>{t('common.quantity')}</div>
+              <div style={{ textAlign: 'right' }}>{t('common.action')}</div>
             </div>
 
             {currentItems.map((p) => {
               const lowVariants = getLowStockVariants(p);
-              const unit = p.unit || 'ชิ้น';
+              const unit = p.unit || t('common.piece');
               
               return (
                 <div
@@ -173,7 +175,7 @@ export default function AdminAlertsPage() {
                       )}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 15 }}>{p.productName || 'ไม่มีชื่อสินค้า'}</div>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 15 }}>{p.productName || t('product.no_name')}</div>
                       <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                         {p.category && <span style={{ background: '#eff6ff', color: '#1e40af', padding: '2px 8px', borderRadius: 4, marginRight: 6 }}>{p.category}</span>}
                         {p.hasVariants && <span style={{ color: '#6b7280' }}>{p.variants?.length || 0} variants</span>}
@@ -209,7 +211,7 @@ export default function AdminAlertsPage() {
                         fontSize: 12, 
                         fontWeight: 500 
                       }}>
-                        สต๊อกรวมต่ำ
+                        {t('alerts.total_stock_low')}
                       </span>
                     )}
                   </div>
@@ -237,7 +239,7 @@ export default function AdminAlertsPage() {
                         boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
                       }}
                     >
-                      เพิ่มสต๊อก
+                      {t('product.add_stock')}
                     </button>
                   </div>
                 </div>
@@ -277,7 +279,7 @@ export default function AdminAlertsPage() {
               fontWeight: 600,
             }}
           >
-            Previous
+            {t('common.previous')}
           </button>
           {buildPageRange().map((page) => (
             <button
@@ -321,7 +323,7 @@ export default function AdminAlertsPage() {
               fontWeight: 600,
             }}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getAllUsers, updateUserRole } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +123,7 @@ export default function UsersPage() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 20px'
           }}></div>
-          <p style={{ color: '#666', fontSize: '16px' }}>กำลังโหลดข้อมูลผู้ใช้...</p>
+          <p style={{ color: '#666', fontSize: '16px' }}>{t('common.loading')}</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -153,17 +155,17 @@ export default function UsersPage() {
       >
         <div>
           <h1 style={{ margin: 0, fontSize: 24, color: '#1e40af', fontWeight: 700 }}>
-            จัดการผู้ใช้
+            {t('user.user_management')}
           </h1>
           <p style={{ margin: '6px 0 0 0', color: '#3b82f6', fontSize: 14 }}>
-            จัดการสิทธิ์และบทบาทของผู้ใช้ทั้งหมด
+            {t('user.manage_roles')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <input
               type="text"
-              placeholder="ค้นหาผู้ใช้..."
+              placeholder={t('user.search_users')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -199,10 +201,10 @@ export default function UsersPage() {
               outline: 'none',
             }}
           >
-            <option value="all">ทุกบทบาท</option>
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
-            <option value="customer">Customer</option>
+            <option value="all">{t('common.all_roles')}</option>
+            <option value="admin">{t('user.role_admin')}</option>
+            <option value="staff">{t('user.role_staff')}</option>
+            <option value="customer">{t('user.role_customer')}</option>
           </select>
         </div>
       </div>
@@ -228,16 +230,16 @@ export default function UsersPage() {
             color: '#1e40af',
           }}
         >
-          <div>อีเมล</div>
-          <div>ชื่อ</div>
-          <div>บทบาทปัจจุบัน</div>
-          <div>เปลี่ยนบทบาท</div>
+          <div>{t('common.email')}</div>
+          <div>{t('common.name')}</div>
+          <div>{t('user.current_role')}</div>
+          <div>{t('user.change_role')}</div>
         </div>
         
         <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
           {filteredUsers.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-              ไม่พบผู้ใช้ที่ตรงกับเงื่อนไขการค้นหา
+              {t('user.no_users')}
             </div>
           ) : (
             filteredUsers.map((user) => {

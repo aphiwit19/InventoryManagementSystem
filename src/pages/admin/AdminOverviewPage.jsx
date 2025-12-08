@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { getAllProducts, getAllWithdrawals, isLowStock, getLowStockVariants } from '../../services';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminOverviewPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
@@ -111,10 +113,10 @@ export default function AdminOverviewPage() {
               letterSpacing: '0.02em',
             }}
           >
-            แดชบอร์ดผู้ดูแลระบบ
+            {t('admin.dashboard')}
           </h1>
           <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>
-            ภาพรวมสินค้า ยอดขาย และสถิติข้อมูลสำคัญ
+            {t('admin.overview')}
           </div>
         </div>
 
@@ -128,21 +130,21 @@ export default function AdminOverviewPage() {
           }}
         >
           <SummaryCard
-            title="จำนวนสินค้าทั้งหมด"
+            title={t('admin.total_products')}
             value={products.length.toLocaleString()}
-            subtext="รายการสินค้าในระบบ"
+            subtext={t('product.products')}
             onClick={() => navigate('/admin/products')}
           />
           <SummaryCard
-            title="คำสั่งซื้อที่รอดำเนินการ"
+            title={t('admin.pending_orders')}
             value={pendingCustomerOrders.length.toLocaleString()}
-            subtext="คำสั่งซื้อจากลูกค้า"
+            subtext={t('order.customer_orders')}
             onClick={() => navigate('/admin/orders?source=customer')}
           />
           <SummaryCard
-            title="คำสั่งเบิกที่รอดำเนินการ"
+            title={t('order.staff_orders')}
             value={pendingWithdrawals.length.toLocaleString()}
-            subtext="คำสั่งเบิกจากสตาฟ"
+            subtext={t('order.pending_orders')}
             onClick={() => navigate('/admin/orders?source=staff')}
           />
         </div>
@@ -157,19 +159,19 @@ export default function AdminOverviewPage() {
           }}
         >
           <SummaryCard
-            title="ผู้ใช้ทั้งหมด"
+            title={t('admin.total_users')}
             value={userCounts.total.toLocaleString()}
-            subtext={`ลูกค้า ${userCounts.customers} | สตาฟ ${userCounts.staff}`}
+            subtext={`${t('user.role_customer')} ${userCounts.customers} | ${t('user.role_staff')} ${userCounts.staff}`}
           />
           <RevenueCard
-            title="รายได้วันนี้"
+            title={t('admin.today_revenue')}
             value={todayRevenue}
-            subtext="ยอดสั่งซื้อจากลูกค้าวันนี้"
+            subtext={t('order.today_orders')}
           />
           <RevenueCard
-            title="รายได้สะสมทั้งหมด"
+            title={t('admin.total_revenue')}
             value={totalRevenue}
-            subtext="ยอดสั่งซื้อจากลูกค้าทั้งหมด"
+            subtext={t('order.all_orders')}
           />
         </div>
 
@@ -183,9 +185,9 @@ export default function AdminOverviewPage() {
           }}
         >
           <Panel
-            title="สินค้าสต๊อกต่ำ"
-            badge={lowStock.length > 0 ? `${lowStock.length} รายการ` : null}
-            emptyText="ยังไม่มีสินค้าที่สต็อกต่ำ"
+            title={t('product.low_stock')}
+            badge={lowStock.length > 0 ? `${lowStock.length} ${t('common.items')}` : null}
+            emptyText={t('common.no_data')}
             onClick={() => navigate('/admin/alerts')}
           >
             {lowStock.slice(0, 5).map((p) => {

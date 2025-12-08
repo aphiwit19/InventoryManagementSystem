@@ -5,8 +5,10 @@ import { db, storage } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 export default function CustomerPaymentPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
@@ -25,7 +27,7 @@ export default function CustomerPaymentPage() {
   const [paymentAccountError, setPaymentAccountError] = useState('');
   const [slipFile, setSlipFile] = useState(null);
   const [, setSlipUploading] = useState(false);
-  const [slipPreviewText, setSlipPreviewText] = useState('ยังไม่ได้เลือกไฟล์');
+  const [slipPreviewText, setSlipPreviewText] = useState('');
   const total = useMemo(
     () =>
       items.reduce((s, it) => {
@@ -245,11 +247,11 @@ export default function CustomerPaymentPage() {
             fontWeight: 600
           }}
         >
-          <span style={{ color: '#4CAF50' }}>1 ตะกร้า</span>
+          <span style={{ color: '#4CAF50' }}>1 {t('payment.step_cart')}</span>
           <span style={{ color: '#2e7d32', borderBottom: '2px solid #2e7d32', paddingBottom: 4 }}>
-            2 ชำระเงิน
+            2 {t('payment.step_payment')}
           </span>
-          <span style={{ color: '#9e9e9e' }}>3 เสร็จสิ้น</span>
+          <span style={{ color: '#9e9e9e' }}>3 {t('payment.step_complete')}</span>
         </div>
         <div
           style={{
@@ -272,13 +274,13 @@ export default function CustomerPaymentPage() {
           boxSizing: 'border-box',
         }}
       >
-        <h2 style={{ textAlign: 'center', margin: '0 0 24px', fontSize: 24 }}>ชำระเงิน</h2>
+        <h2 style={{ textAlign: 'center', margin: '0 0 24px', fontSize: 24 }}>{t('payment.payment')}</h2>
 
         {isLoading ? (
-          <p style={{ textAlign: 'center', color: '#777', padding: 40 }}>กำลังโหลดข้อมูล...</p>
+          <p style={{ textAlign: 'center', color: '#777', padding: 40 }}>{t('common.loading')}</p>
         ) : items.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: '#777', marginBottom: 16 }}>ยังไม่มีสินค้าในตะกร้า</p>
+            <p style={{ color: '#777', marginBottom: 16 }}>{t('cart.cart_empty_message')}</p>
             <Link
               to="/customer"
               style={{
@@ -290,7 +292,7 @@ export default function CustomerPaymentPage() {
                 fontWeight: 600
               }}
             >
-              ไปเลือกซื้อสินค้า
+              {t('cart.go_shopping')}
             </Link>
           </div>
         ) : (
@@ -313,7 +315,7 @@ export default function CustomerPaymentPage() {
               }}
             >
               {/* Payment section */}
-              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>ชำระเงิน</h3>
+              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>{t('payment.payment')}</h3>
               <div
                 style={{
                   background: '#ffffff',
@@ -348,8 +350,8 @@ export default function CustomerPaymentPage() {
                       <div style={{ fontSize: 40, marginBottom: 4 }}>💳</div>
                       <div style={{ fontSize: 13, color: '#475569' }}>
                         {loadingPaymentAccount
-                          ? 'กำลังโหลดข้อมูลบัญชีสำหรับชำระเงิน...'
-                          : 'ยังไม่มี QR สำหรับชำระเงิน'}
+                          ? t('payment.loading_payment_account')
+                          : t('payment.no_qr')}
                       </div>
                     </div>
                   )}
@@ -369,7 +371,7 @@ export default function CustomerPaymentPage() {
                   >
                     <div style={{ fontWeight: 700 }}>{paymentAccount.bankName}</div>
                     <div style={{ marginTop: 2 }}>{paymentAccount.accountName}</div>
-                    <div style={{ marginTop: 2 }}>เลขที่บัญชี: {paymentAccount.accountNumber}</div>
+                    <div style={{ marginTop: 2 }}>{t('payment.account_number')}: {paymentAccount.accountNumber}</div>
                     {paymentAccount.note && (
                       <div style={{ marginTop: 4, fontSize: 12, color: '#334155' }}>{paymentAccount.note}</div>
                     )}
@@ -403,11 +405,11 @@ export default function CustomerPaymentPage() {
                 }}
               >
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#374151' }}>
-                  แจ้งชำระเงิน (อัปโหลดสลิป)
+                  {t('payment.notify_payment')}
                 </div>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
                   <div style={{ flex: 1, minWidth: 120 }}>
-                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>วันที่โอน</div>
+                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_date')}</div>
                     <input
                       type="date"
                       style={{
@@ -421,7 +423,7 @@ export default function CustomerPaymentPage() {
                     />
                   </div>
                   <div style={{ width: 120 }}>
-                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>เวลาโอน</div>
+                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_time')}</div>
                     <input
                       type="time"
                       style={{
@@ -436,7 +438,7 @@ export default function CustomerPaymentPage() {
                   </div>
                 </div>
                 <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>ยอดที่โอน</div>
+                  <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_amount')}</div>
                   <input
                     type="text"
                     value={`฿${total.toLocaleString()}`}
@@ -453,7 +455,7 @@ export default function CustomerPaymentPage() {
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, marginBottom: 6, color: '#6b7280' }}>อัปโหลดสลิปโอนเงิน</div>
+                  <div style={{ fontSize: 12, marginBottom: 6, color: '#6b7280' }}>{t('order.upload_slip')}</div>
                   <label
                     style={{
                       display: 'block',
@@ -468,7 +470,7 @@ export default function CustomerPaymentPage() {
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    {slipFile ? 'อัปโหลดสลิปแล้ว (คลิกเพื่อเปลี่ยนไฟล์)' : 'เลือกไฟล์สลิปจากเครื่อง'}
+                    {slipFile ? `${t('order.slip_uploaded')} (${t('order.click_to_change')})` : t('order.select_slip_file')}
                     <input
                       type="file"
                       accept="image/*"
@@ -483,7 +485,7 @@ export default function CustomerPaymentPage() {
                   </label>
                   {slipFile && (
                     <div style={{ fontSize: 11, color: '#16a34a', marginTop: 4 }}>
-                      เพิ่มสลิปแล้ว: {slipPreviewText}
+                      {t('order.slip_uploaded')}: {slipPreviewText}
                     </div>
                   )}
                   {!slipFile && (
@@ -492,7 +494,7 @@ export default function CustomerPaymentPage() {
                     </div>
                   )}
                   <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-                    รองรับไฟล์รูปภาพ .jpg, .png ขนาดไม่เกิน ~5MB
+                    {t('order.slip_file_hint')}
                   </div>
                 </div>
               </div>
@@ -506,7 +508,7 @@ export default function CustomerPaymentPage() {
                   border: '1px solid #e5e7eb',
                 }}
               >
-                <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>ที่อยู่จัดส่ง</h4>
+                <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>{t('order.shipping_address')}</h4>
                 <div
                   style={{
                     display: 'flex',
@@ -523,7 +525,7 @@ export default function CustomerPaymentPage() {
                         color: '#374151',
                       }}
                     >
-                      ชื่อ - นามสกุล
+                      {t('auth.full_name')}
                     </div>
                     <input
                       type="text"
@@ -549,7 +551,7 @@ export default function CustomerPaymentPage() {
                         color: '#374151',
                       }}
                     >
-                      เบอร์โทร
+                      {t('common.phone')}
                     </div>
                     <input
                       type="tel"
@@ -575,7 +577,7 @@ export default function CustomerPaymentPage() {
                         color: '#374151',
                       }}
                     >
-                      ที่อยู่จัดส่ง
+                      {t('order.shipping_address')}
                     </div>
                     <textarea
                       value={requestedAddress}
@@ -607,7 +609,7 @@ export default function CustomerPaymentPage() {
                 border: '1px solid #e5e7eb'
               }}
             >
-              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>สรุปรายการ</h3>
+              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>{t('order.order_summary')}</h3>
               <div style={{ marginBottom: 12, fontSize: 14, color: '#4b5563' }}>
                 {items.map((it, idx) => {
                   const unitPrice = it.price ?? it.sellPrice ?? 0;
@@ -633,7 +635,7 @@ export default function CustomerPaymentPage() {
                   fontSize: 14
                 }}
               >
-                <span>ค่าสินค้า</span>
+                <span>{t('order.product_total')}</span>
                 <span>฿{total.toLocaleString()}</span>
               </div>
               <div
@@ -644,8 +646,8 @@ export default function CustomerPaymentPage() {
                   fontSize: 14
                 }}
               >
-                <span>ค่าจัดส่ง</span>
-                <span>คำนวณตอนจัดส่ง</span>
+                <span>{t('order.shipping_fee')}</span>
+                <span>{t('order.shipping_fee_note')}</span>
               </div>
               <div
                 style={{
@@ -655,7 +657,7 @@ export default function CustomerPaymentPage() {
                   marginBottom: 16
                 }}
               >
-                <span style={{ fontWeight: 600 }}>ยอดรวม</span>
+                <span style={{ fontWeight: 600 }}>{t('order.grand_total')}</span>
                 <span style={{ fontWeight: 700, fontSize: 20 }}>
                   ฿{total.toLocaleString()}
                 </span>
@@ -695,7 +697,7 @@ export default function CustomerPaymentPage() {
                   boxShadow: '0 4px 10px rgba(37,99,235,0.35)'
                 }}
               >
-                {saving ? 'กำลังยืนยัน...' : 'ยืนยันคำสั่งซื้อ'}
+                {saving ? t('order.confirming_order') : t('order.confirm_order')}
               </button>
             </div>
           </div>

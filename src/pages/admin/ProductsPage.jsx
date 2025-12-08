@@ -3,8 +3,10 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { getAllProducts, deleteProduct, isLowStock, DEFAULT_CATEGORIES, addInventoryHistory } from '../../services';
 import { db } from '../../firebase';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [products, setProducts] = useState([]);
@@ -206,36 +208,36 @@ export default function ProductsPage() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', border: '1px solid rgba(255,255,255,0.9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>จัดการสินค้า</h1>
-          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>ดู แก้ไข และจัดการสต็อกสินค้าทั้งหมดในระบบ</div>
+          <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>{t('product.product_list')}</h1>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('admin.system_management')}</div>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
-            <input type="text" placeholder="ค้นหาชื่อสินค้า" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 240, background: '#fff', outline: 'none' }} />
+            <input type="text" placeholder={t('product.search_products')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 240, background: '#fff', outline: 'none' }} />
             <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', fontSize: 16 }}>🔍</span>
           </div>
-          <button type="button" onClick={() => navigate('/admin/addproduct')} style={{ padding: '10px 20px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 20px rgba(37,99,235,0.4)' }}>+ เพิ่มสินค้าใหม่</button>
+          <button type="button" onClick={() => navigate('/admin/addproduct')} style={{ padding: '10px 20px', borderRadius: 999, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 20px rgba(37,99,235,0.4)' }}>+ {t('product.add_product')}</button>
         </div>
       </div>
 
       {/* Filter Bar */}
       <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '16px 24px', borderRadius: 14, marginBottom: 16, boxShadow: '0 4px 16px rgba(15,23,42,0.08)', border: '1px solid rgba(255,255,255,0.9)', display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>กรอง:</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('common.filter')}:</span>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           style={{ padding: '8px 14px', borderRadius: 8, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer', minWidth: 140 }}
         >
-          <option value="">ประเภท: ทั้งหมด</option>
+          <option value="">{t('common.all_categories')}</option>
           {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </select>
         {categoryFilter && (
           <button onClick={() => setCategoryFilter('')} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            ล้างตัวกรอง
+            {t('common.clear')}
           </button>
         )}
         <span style={{ marginLeft: 'auto', fontSize: 13, color: '#6b7280' }}>
-          แสดง {filteredProducts.length} จาก {products.length} รายการ
+          {filteredProducts.length} / {products.length} {t('common.items')}
         </span>
       </div>
 
@@ -257,7 +259,7 @@ export default function ProductsPage() {
           }}
         >
           <div style={{ color: '#92400e', fontWeight: 600, fontSize: 15 }}>
-            ⚠️ <strong>แจ้งเตือนสต็อกต่ำ:</strong> พบ {lowStock.length} รายการ
+            ⚠️ <strong>{t('admin.low_stock_alert')}:</strong> {lowStock.length} {t('common.items')}
           </div>
           <span style={{ 
             background: '#f59e0b', 
@@ -267,7 +269,7 @@ export default function ProductsPage() {
             fontSize: 13, 
             fontWeight: 600 
           }}>
-            ดูรายละเอียด →
+            {t('common.details')} →
           </span>
         </div>
       )}
@@ -275,23 +277,23 @@ export default function ProductsPage() {
       {/* Products Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดข้อมูลสินค้า...</p>
+          <p style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</p>
         </div>
       ) : currentProducts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าในระบบ'}</p>
+          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? t('product.no_products_found') : t('product.no_products')}</p>
         </div>
       ) : (
         <div style={{ background: '#fff', borderRadius: 18, boxShadow: '0 10px 40px rgba(15,23,42,0.12)', overflow: 'hidden', marginBottom: 20, border: '1px solid rgba(255,255,255,0.9)' }}>
           {/* Table Header */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', gap: 0, padding: '14px 20px', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#1e40af', fontWeight: 600, fontSize: 13 }}>
-            <div>รูปภาพ</div>
-            <div>ชื่อสินค้า</div>
-            <div>วันที่เพิ่ม</div>
-            <div>ราคาต้นทุน</div>
-            <div>ราคาขาย</div>
-            <div>จำนวน</div>
-            <div>จัดการ</div>
+            <div>{t('common.image')}</div>
+            <div>{t('product.product_name')}</div>
+            <div>{t('product.date_added')}</div>
+            <div>{t('product.cost_price')}</div>
+            <div>{t('product.sell_price')}</div>
+            <div>{t('common.quantity')}</div>
+            <div>{t('common.action')}</div>
           </div>
 
           {/* Table Rows */}
@@ -299,7 +301,7 @@ export default function ProductsPage() {
             const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
             const isExpanded = expandedProduct === product.id;
             const qty = product.quantity ?? 0;
-            const unit = product.unit || 'ชิ้น';
+            const unit = product.unit || t('common.piece');
             const low = isLowStock(product);
             const priceRange = hasVariants
               ? (() => {
@@ -321,7 +323,7 @@ export default function ProductsPage() {
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {product.productName || 'ไม่มีชื่อสินค้า'}
+                      {product.productName || t('product.no_name')}
                       {hasVariants && (
                         <button
                           onClick={() => toggleExpand(product.id)}
@@ -351,12 +353,12 @@ export default function ProductsPage() {
                   <div style={{ color: '#16a34a', fontWeight: 600 }}>{priceRange}</div>
                   <div>
                     <div style={{ fontWeight: 600, color: low ? '#ea580c' : '#111827' }}>{qty} {unit}</div>
-                    {low && <div style={{ fontSize: 10, color: '#ea580c' }}>สต็อกต่ำ</div>}
+                    {low && <div style={{ fontSize: 10, color: '#ea580c' }}>{t('product.low_stock')}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => openAddStockModal(product)} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>เพิ่ม</button>
-                    <Link to={`/admin/products/${product.id}/edit`} style={{ padding: '6px 12px', borderRadius: 6, background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>แก้ไข</Link>
-                    <button onClick={() => openDeleteModal(product)} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>ลบ</button>
+                    <button onClick={() => openAddStockModal(product)} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>{t('common.add')}</button>
+                    <Link to={`/admin/products/${product.id}/edit`} style={{ padding: '6px 12px', borderRadius: 6, background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>{t('common.edit')}</Link>
+                    <button onClick={() => openDeleteModal(product)} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>{t('common.delete')}</button>
                   </div>
                 </div>
 
@@ -364,11 +366,11 @@ export default function ProductsPage() {
                 {hasVariants && isExpanded && (
                   <div style={{ background: '#fefce8', padding: '12px 16px 12px 86px', borderBottom: '1px solid #fde047' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '100px 100px 80px 100px 100px', gap: 8, padding: '6px 0', fontSize: 11, fontWeight: 600, color: '#854d0e', borderBottom: '1px solid #fde68a' }}>
-                      <div>ไซส์</div>
-                      <div>สี</div>
-                      <div>จำนวน</div>
-                      <div>ต้นทุน</div>
-                      <div>ราคาขาย</div>
+                      <div>{t('product.size')}</div>
+                      <div>{t('product.color')}</div>
+                      <div>{t('common.quantity')}</div>
+                      <div>{t('product.cost_price')}</div>
+                      <div>{t('product.sell_price')}</div>
                     </div>
                     {product.variants.map((v, idx) => (
                       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px 100px 80px 100px 100px', gap: 8, padding: '8px 0', fontSize: 12, color: '#374151', borderBottom: '1px solid #fef3c7' }}>
@@ -422,7 +424,7 @@ export default function ProductsPage() {
             {/* Modal Header */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#166534' }}>เพิ่มสต็อกสินค้า</h2>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#166534' }}>{t('product.add_stock')}</h2>
                 <button onClick={closeAddStockModal} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#6b7280' }}>×</button>
               </div>
             </div>
@@ -436,15 +438,15 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 16, color: '#111827', marginBottom: 4 }}>{addStockModal.productName}</div>
-                  <div style={{ fontSize: 13, color: '#6b7280' }}>สต็อกปัจจุบัน: <strong>{addStockModal.quantity || 0}</strong> {addStockModal.unit || 'ชิ้น'}</div>
-                  {addStockModal.category && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>หมวดหมู่: {addStockModal.category}</div>}
+                  <div style={{ fontSize: 13, color: '#6b7280' }}>{t('inventory.current_stock')}: <strong>{addStockModal.quantity || 0}</strong> {addStockModal.unit || t('common.piece')}</div>
+                  {addStockModal.category && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{t('common.category')}: {addStockModal.category}</div>}
                 </div>
               </div>
 
               {/* Variant Selection (if has variants) */}
               {addStockModal.hasVariants && Array.isArray(addStockModal.variants) && addStockModal.variants.length > 0 ? (
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: 'block', marginBottom: 10, fontSize: 14, fontWeight: 600, color: '#374151' }}>เลือก Variant ที่ต้องการเพิ่มสต็อก:</label>
+                  <label style={{ display: 'block', marginBottom: 10, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.select_variant_to_add')}:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
                     {addStockModal.variants.map((variant, idx) => (
                       <button
@@ -462,7 +464,7 @@ export default function ProductsPage() {
                       >
                         <div style={{ fontWeight: 600, fontSize: 13, color: addStockVariantIdx === idx ? '#166534' : '#111827' }}>{variant.size || '-'}</div>
                         <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{variant.color || '-'}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>คงเหลือ: {variant.quantity || 0}</div>
+                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{t('product.remaining')}: {variant.quantity || 0}</div>
                       </button>
                     ))}
                   </div>
@@ -471,7 +473,7 @@ export default function ProductsPage() {
 
               {/* Quantity Input */}
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', marginBottom: 10, fontSize: 14, fontWeight: 600, color: '#374151' }}>จำนวนที่ต้องการเพิ่ม:</label>
+                <label style={{ display: 'block', marginBottom: 10, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.quantity_to_add')}:</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <button onClick={() => setAddStockQty(Math.max(1, addStockQty - 1))} style={{ width: 44, height: 44, borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', fontSize: 20, cursor: 'pointer', color: '#374151' }}>-</button>
                   <input 
@@ -482,26 +484,26 @@ export default function ProductsPage() {
                     style={{ width: 100, padding: '12px', textAlign: 'center', fontSize: 18, fontWeight: 600, border: '2px solid #e5e7eb', borderRadius: 10 }} 
                   />
                   <button onClick={() => setAddStockQty(addStockQty + 1)} style={{ width: 44, height: 44, borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', fontSize: 20, cursor: 'pointer', color: '#374151' }}>+</button>
-                  <span style={{ fontSize: 14, color: '#6b7280' }}>{addStockModal.unit || 'ชิ้น'}</span>
+                  <span style={{ fontSize: 14, color: '#6b7280' }}>{addStockModal.unit || t('common.piece')}</span>
                 </div>
               </div>
 
               {/* Summary */}
               <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, border: '1px solid #bbf7d0', marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#374151' }}>สต็อกหลังเพิ่ม:</span>
+                  <span style={{ color: '#374151' }}>{t('product.stock_after_add')}:</span>
                   <span style={{ fontWeight: 700, fontSize: 18, color: '#16a34a' }}>
                     {addStockModal.hasVariants && addStockVariantIdx !== null
                       ? (addStockModal.variants[addStockVariantIdx]?.quantity || 0) + addStockQty
                       : (addStockModal.quantity || 0) + addStockQty
-                    } {addStockModal.unit || 'ชิ้น'}
+                    } {addStockModal.unit || t('common.piece')}
                   </span>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: 12 }}>
-                <button onClick={closeAddStockModal} style={{ flex: 1, padding: '14px', borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ยกเลิก</button>
+                <button onClick={closeAddStockModal} style={{ flex: 1, padding: '14px', borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>{t('common.cancel')}</button>
                 <button
                   onClick={handleAddStock}
                   disabled={isAddingStock || (addStockModal.hasVariants && addStockVariantIdx === null)}
@@ -518,7 +520,7 @@ export default function ProductsPage() {
                     boxShadow: (isAddingStock || (addStockModal.hasVariants && addStockVariantIdx === null)) ? 'none' : '0 6px 20px rgba(16,185,129,0.4)',
                   }}
                 >
-                  {isAddingStock ? 'กำลังเพิ่ม...' : 'ยืนยันเพิ่มสต็อก'}
+                  {isAddingStock ? t('product.adding_stock') : t('product.confirm_add_stock')}
                 </button>
               </div>
             </div>
@@ -533,7 +535,7 @@ export default function ProductsPage() {
             {/* Modal Header */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #fecaca', background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', borderRadius: '20px 20px 0 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#dc2626' }}>ยืนยันการลบสินค้า</h2>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#dc2626' }}>{t('product.confirm_delete')}</h2>
                 <button onClick={closeDeleteModal} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#6b7280' }}>×</button>
               </div>
             </div>
@@ -547,19 +549,19 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 15, color: '#111827', marginBottom: 4 }}>{deleteModal.productName}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>สต็อก: {deleteModal.quantity || 0} {deleteModal.unit || 'ชิ้น'}</div>
-                  {deleteModal.category && <div style={{ fontSize: 12, color: '#6b7280' }}>หมวดหมู่: {deleteModal.category}</div>}
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{t('inventory.current_stock')}: {deleteModal.quantity || 0} {deleteModal.unit || t('common.piece')}</div>
+                  {deleteModal.category && <div style={{ fontSize: 12, color: '#6b7280' }}>{t('common.category')}: {deleteModal.category}</div>}
                 </div>
               </div>
 
               <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
-                คุณต้องการลบสินค้านี้ใช่หรือไม่?<br/>
-                <span style={{ color: '#dc2626', fontWeight: 500 }}>การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
+                {t('product.delete_confirm_message')}<br/>
+                <span style={{ color: '#dc2626', fontWeight: 500 }}>{t('product.delete_warning')}</span>
               </p>
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: 12 }}>
-                <button onClick={closeDeleteModal} style={{ flex: 1, padding: '14px', borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ยกเลิก</button>
+                <button onClick={closeDeleteModal} style={{ flex: 1, padding: '14px', borderRadius: 10, border: '2px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>{t('common.cancel')}</button>
                 <button
                   onClick={handleDeleteProduct}
                   disabled={isDeleting}
@@ -576,7 +578,7 @@ export default function ProductsPage() {
                     boxShadow: isDeleting ? 'none' : '0 6px 20px rgba(239,68,68,0.4)',
                   }}
                 >
-                  {isDeleting ? 'กำลังลบ...' : 'ยืนยันลบสินค้า'}
+                  {isDeleting ? t('product.deleting') : t('product.confirm_delete_product')}
                 </button>
               </div>
             </div>

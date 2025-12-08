@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 const statuses = ['รอดำเนินการ', 'รับของแล้ว', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
 
@@ -21,6 +22,7 @@ const getStatusStyle = (status) => {
 };
 
 export default function StaffOrdersPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -111,10 +113,10 @@ export default function StaffOrdersPage() {
       >
         <div>
           <h1 style={{ margin: '0 0 6px', color: '#fff', fontSize: 26, fontWeight: 700 }}>
-            ติดตามสถานะคำสั่งเบิก
+            {t('order.track_status')}
           </h1>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
-            ตรวจสอบสถานะการจัดส่งและติดตามสถานะคำสั่งเบิกของคุณ
+            {t('withdraw.withdraw_history')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -122,7 +124,7 @@ export default function StaffOrdersPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหา (ชื่อลูกค้า/Tracking)"
+              placeholder={t('common.search')}
               style={{
                 padding: '12px 44px 12px 16px',
                 borderRadius: 12,
@@ -151,10 +153,11 @@ export default function StaffOrdersPage() {
               minWidth: 160,
             }}
           >
-            <option value="all" style={{ color: '#374151', background: '#fff' }}>สถานะทั้งหมด</option>
-            {statuses.map((s) => (
-              <option key={s} value={s} style={{ color: '#374151', background: '#fff' }}>{s}</option>
-            ))}
+            <option value="all" style={{ color: '#374151', background: '#fff' }}>{t('common.all_status')}</option>
+            <option value="รอดำเนินการ" style={{ color: '#374151', background: '#fff' }}>{t('order.status_pending')}</option>
+            <option value="รับของแล้ว" style={{ color: '#374151', background: '#fff' }}>{t('order.status_picked_up')}</option>
+            <option value="กำลังดำเนินการส่ง" style={{ color: '#374151', background: '#fff' }}>{t('order.status_shipping')}</option>
+            <option value="ส่งสำเร็จ" style={{ color: '#374151', background: '#fff' }}>{t('order.status_delivered')}</option>
           </select>
         </div>
       </div>
@@ -162,11 +165,11 @@ export default function StaffOrdersPage() {
       {/* Table */}
       {loading ? (
         <div style={{ background: '#fff', padding: 50, borderRadius: 16, textAlign: 'center', boxShadow: '0 4px 20px rgba(15,23,42,0.08)' }}>
-          <div style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลด...</div>
+          <div style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</div>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ background: '#fff', padding: 50, borderRadius: 16, textAlign: 'center', boxShadow: '0 4px 20px rgba(15,23,42,0.08)' }}>
-          <div style={{ color: '#64748b', fontSize: 15 }}>ไม่พบรายการ</div>
+          <div style={{ color: '#64748b', fontSize: 15 }}>{t('common.no_data')}</div>
         </div>
       ) : (
         <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(15,23,42,0.08)' }}>
@@ -183,15 +186,15 @@ export default function StaffOrdersPage() {
               borderBottom: '2px solid #e0e7ff',
             }}
           >
-            <div>วันที่เบิก</div>
-            <div>ผู้เบิก</div>
-            <div>ผู้รับ</div>
-            <div>สินค้า / จำนวน</div>
-            <div>ที่อยู่รับของ</div>
-            <div>ขนส่ง</div>
+            <div>{t('withdraw.withdraw_date')}</div>
+            <div>{t('withdraw.requested_by')}</div>
+            <div>{t('order.recipient_name')}</div>
+            <div>{t('order.order_items')}</div>
+            <div>{t('order.shipping_address')}</div>
+            <div>{t('order.shipping')}</div>
             <div>TRACKING</div>
-            <div>สถานะ</div>
-            <div style={{ textAlign: 'right' }}>ราคารวม</div>
+            <div>{t('common.status')}</div>
+            <div style={{ textAlign: 'right' }}>{t('common.total')}</div>
           </div>
 
           {/* Table Rows */}
@@ -283,7 +286,7 @@ export default function StaffOrdersPage() {
               fontWeight: 600,
             }}
           >
-            Previous
+            {t('common.previous')}
           </button>
           {buildPageRange().map((page) => (
             <button
@@ -327,7 +330,7 @@ export default function StaffOrdersPage() {
               fontWeight: 600,
             }}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}

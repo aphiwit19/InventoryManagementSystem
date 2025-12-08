@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
-
-const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
+import { useTranslation } from 'react-i18next';
 
 export default function CustomerOrdersPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -129,10 +129,10 @@ export default function CustomerOrdersPage() {
                 marginTop: 4,
               }}
             >
-              คำสั่งซื้อของฉัน
+              {t('order.my_orders')}
             </div>
             <div style={{ fontSize: 14, opacity: 0.9, marginTop: 6 }}>
-              ดูสถานะการจัดส่งและรายละเอียดคำสั่งซื้อทั้งหมดของคุณ
+              {t('order.order_history')}
             </div>
           </div>
 
@@ -157,7 +157,7 @@ export default function CustomerOrdersPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ค้นหา (ขนส่ง / Tracking)"
+                placeholder={t('common.search')}
                 style={{
                   width: '100%',
                   padding: '8px 34px 8px 14px',
@@ -201,12 +201,10 @@ export default function CustomerOrdersPage() {
                 outline: 'none',
               }}
             >
-              <option value="all" style={{ color: '#374151', background: '#fff' }}>สถานะทั้งหมด</option>
-              {statuses.map((s) => (
-                <option key={s} value={s} style={{ color: '#374151', background: '#fff' }}>
-                  {s}
-                </option>
-              ))}
+              <option value="all" style={{ color: '#374151', background: '#fff' }}>{t('common.all_status')}</option>
+              <option value="รอดำเนินการ" style={{ color: '#374151', background: '#fff' }}>{t('order.status_pending')}</option>
+              <option value="กำลังดำเนินการส่ง" style={{ color: '#374151', background: '#fff' }}>{t('order.status_shipping')}</option>
+              <option value="ส่งสำเร็จ" style={{ color: '#374151', background: '#fff' }}>{t('order.status_delivered')}</option>
             </select>
           </div>
         </div>
@@ -241,7 +239,7 @@ export default function CustomerOrdersPage() {
                 whiteSpace: 'nowrap',
               }}
             >
-              รวม {filtered.length} รายการ
+              {t('common.total')} {filtered.length} {t('common.items')}
             </div>
           </div>
           {loading ? (
@@ -255,7 +253,7 @@ export default function CustomerOrdersPage() {
                 boxShadow: '0 4px 12px rgba(15,23,42,0.08)'
               }}
             >
-              กำลังโหลดคำสั่งซื้อของคุณ...
+              {t('common.loading')}
             </div>
           ) : filtered.length === 0 ? (
             <div
@@ -268,7 +266,7 @@ export default function CustomerOrdersPage() {
                 boxShadow: '0 4px 12px rgba(15,23,42,0.08)'
               }}
             >
-              ยังไม่มีคำสั่งซื้อที่ตรงกับเงื่อนไข
+              {t('order.no_orders_found')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -309,13 +307,13 @@ export default function CustomerOrdersPage() {
                   }}
                 >
                   <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: '#6B7280' }}>เลขคำสั่งซื้อ</div>
+                    <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.order_id')}</div>
                     <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
                       {o.trackingNumber || '-'}
                     </div>
-                    <div style={{ fontSize: 13, color: '#6B7280' }}>วันที่สั่งซื้อ</div>
+                    <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.order_date')}</div>
                     <div style={{ fontSize: 14, marginBottom: 6 }}>{dateStr}</div>
-                    <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>สินค้า / จำนวน</div>
+                    <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>{t('order.order_items')}</div>
                     <div
                       style={{
                         fontSize: 13,
@@ -329,7 +327,7 @@ export default function CustomerOrdersPage() {
                   </div>
 
                   <div style={{ flex: '1.4 1 260px', minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: '#6B7280' }}>ที่อยู่จัดส่ง</div>
+                    <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.shipping_address')}</div>
                     <div
                       style={{
                         fontSize: 14,
@@ -342,7 +340,7 @@ export default function CustomerOrdersPage() {
                       {o.requestedAddress || '-'}
                     </div>
                     <div style={{ marginTop: 10 }}>
-                      <div style={{ fontSize: 13, color: '#6B7280' }}>ขนส่ง</div>
+                      <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.shipping')}</div>
                       <div style={{ fontSize: 14, color: '#374151' }}>
                         {o.shippingCarrier || '-'}
                       </div>
@@ -360,7 +358,7 @@ export default function CustomerOrdersPage() {
                     }}
                   >
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, color: '#6B7280' }}>สถานะการจัดส่ง</div>
+                      <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.order_status')}</div>
                       <span
                         style={{
                           display: 'inline-block',
@@ -377,7 +375,7 @@ export default function CustomerOrdersPage() {
                       </span>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, color: '#6B7280' }}>ยอดรวม</div>
+                      <div style={{ fontSize: 13, color: '#6B7280' }}>{t('common.total')}</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>
                         ฿{(o.total || 0).toLocaleString()}
                       </div>
@@ -421,7 +419,7 @@ export default function CustomerOrdersPage() {
                 fontWeight: 600,
               }}
             >
-              Previous
+              {t('common.previous')}
             </button>
             {buildPageRange().map((page) => (
               <button
@@ -465,7 +463,7 @@ export default function CustomerOrdersPage() {
                 fontWeight: 600,
               }}
             >
-              Next
+              {t('common.next')}
             </button>
           </div>
         )}

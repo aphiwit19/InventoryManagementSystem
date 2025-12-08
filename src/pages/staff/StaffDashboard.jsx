@@ -2,8 +2,10 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllProducts, addToCart, getCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function StaffDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
@@ -246,7 +248,7 @@ export default function StaffDashboard() {
                 Inventory Hub
               </button>
               <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 400 }}>
-                ระบบจัดการสต็อกสินค้า
+                {t('admin.system_management')}
               </div>
             </div>
           </div>
@@ -349,7 +351,7 @@ export default function StaffDashboard() {
                     onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    👤 โปรไฟล์
+                    👤 {t('common.profile')}
                   </button>
                   <button
                     onClick={() => { setShowProfileMenu(false); navigate('/staff/orders'); }}
@@ -369,7 +371,7 @@ export default function StaffDashboard() {
                     onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    📦 ติดตามสถานะ
+                    📦 {t('order.track_status')}
                   </button>
                 </div>
               )}
@@ -381,16 +383,16 @@ export default function StaffDashboard() {
       {/* Search & Filter Bar */}
       <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '16px 24px', borderRadius: 14, marginBottom: 20, boxShadow: '0 4px 16px rgba(15,23,42,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ margin: 0, color: '#1e40af', fontSize: 20, fontWeight: 700 }}>สินค้าทั้งหมด</h2>
-          <div style={{ fontSize: 13, color: '#3b82f6', marginTop: 4 }}>เลือกสินค้าที่ต้องการเพิ่มลงตะกร้า</div>
+          <h2 style={{ margin: 0, color: '#1e40af', fontSize: 20, fontWeight: 700 }}>{t('product.all_products')}</h2>
+          <div style={{ fontSize: 13, color: '#3b82f6', marginTop: 4 }}>{t('product.select_to_add')}</div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
-            <input type="text" placeholder="ค้นหาสินค้า..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 200, background: '#fff', outline: 'none' }} />
+            <input type="text" placeholder={t('product.search_products')} value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 200, background: '#fff', outline: 'none' }} />
             <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', fontSize: 16 }}>🔍</span>
           </div>
           <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 14px', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
-            <option value="">ทุกประเภท</option>
+            <option value="">{t('common.all_categories')}</option>
             {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
@@ -399,11 +401,11 @@ export default function StaffDashboard() {
       {/* Products Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>กำลังโหลดสินค้า...</p>
+          <p style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</p>
         </div>
       ) : currentProducts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าในระบบ'}</p>
+          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? t('product.no_products_found') : t('product.no_products')}</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, marginBottom: 24 }}>
@@ -419,14 +421,14 @@ export default function StaffDashboard() {
                 <div style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{product.productName}</h3>
-                    {hasVariants && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 500 }}>{product.variants.length} แบบ</span>}
+                    {hasVariants && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 500 }}>{product.variants.length} {t('product.variants')}</span>}
                   </div>
                   {product.description && (
                     <p style={{ margin: '0 0 8px', fontSize: 12, color: '#6b7280', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
                   )}
                   <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                     {product.category && <span style={{ background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.category}</span>}
-                    <span style={{ background: '#f8fafc', color: '#64748b', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.unit || 'ชิ้น'}</span>
+                    <span style={{ background: '#f8fafc', color: '#64748b', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.unit || t('common.piece')}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>{getDisplayPrice(product)}</span>
@@ -437,13 +439,13 @@ export default function StaffDashboard() {
                       const availableForStaff = Math.max(0, qty - reserved - staffReserved);
                       return (
                         <span style={{ fontSize: 12, color: '#6b7280' }}>
-                          คงเหลือ: {availableForStaff} {product.unit || 'ชิ้น'}
+                          {t('product.remaining')}: {availableForStaff} {product.unit || t('common.piece')}
                         </span>
                       );
                     })()}
                   </div>
                   <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
-                    เพิ่มลงตะกร้า
+                    {t('cart.add_to_cart')}
                   </button>
                 </div>
               </div>
@@ -455,9 +457,9 @@ export default function StaffDashboard() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-          <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ก่อนหน้า</button>
-          <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>หน้า {currentPage} / {totalPages}</span>
-          <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>ถัดไป</button>
+          <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>{t('common.previous')}</button>
+          <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>{t('common.page')} {currentPage} / {totalPages}</span>
+          <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>{t('common.next')}</button>
         </div>
       )}
 
@@ -481,7 +483,7 @@ export default function StaffDashboard() {
               {/* Variant Selection - Button Grid */}
               {selectedProduct.hasVariants && Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0 ? (
                 <div style={{ marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>เลือกแบบที่ต้องการ:</h3>
+                  <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.select_variant')}:</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
                     {selectedProduct.variants.map((variant, idx) => {
                       const vQty = parseInt(variant.quantity || 0);
@@ -510,7 +512,7 @@ export default function StaffDashboard() {
                           <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{variant.color}</div>
                           <div style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', marginTop: 6 }}>฿{(variant.sellPrice || 0).toLocaleString()}</div>
                           <div style={{ fontSize: 10, color: isOutOfStock ? '#ef4444' : '#6b7280', marginTop: 4 }}>
-                            {isOutOfStock ? 'หมด' : `เหลือ ${available}`}
+                            {isOutOfStock ? t('product.out_of_stock') : `${t('product.remaining')} ${available}`}
                           </div>
                         </button>
                       );
@@ -520,12 +522,12 @@ export default function StaffDashboard() {
               ) : (
                 <div style={{ marginBottom: 20, padding: '16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 14, color: '#374151' }}>ราคา:</span>
+                    <span style={{ fontSize: 14, color: '#374151' }}>{t('common.price')}:</span>
                     <span style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>฿{(selectedProduct.sellPrice || selectedProduct.price || 0).toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                    <span style={{ fontSize: 13, color: '#6b7280' }}>คงเหลือ:</span>
-                    <span style={{ fontSize: 13, color: '#6b7280' }}>{getAvailableQuantity()} {selectedProduct.unit || 'ชิ้น'}</span>
+                    <span style={{ fontSize: 13, color: '#6b7280' }}>{t('product.remaining')}:</span>
+                    <span style={{ fontSize: 13, color: '#6b7280' }}>{getAvailableQuantity()} {selectedProduct.unit || t('common.piece')}</span>
                   </div>
                 </div>
               )}
@@ -533,7 +535,7 @@ export default function StaffDashboard() {
               {/* Selected Variant Info */}
               {selectedVariant && (
                 <div style={{ marginBottom: 20, padding: '16px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe' }}>
-                  <div style={{ fontSize: 13, color: '#1e40af', fontWeight: 600, marginBottom: 8 }}>เลือกแล้ว:</div>
+                  <div style={{ fontSize: 13, color: '#1e40af', fontWeight: 600, marginBottom: 8 }}>{t('common.selected')}:</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, color: '#374151' }}>{selectedVariant.size} / {selectedVariant.color}</span>
                     <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>฿{(selectedVariant.sellPrice || 0).toLocaleString()}</span>
@@ -543,12 +545,12 @@ export default function StaffDashboard() {
 
               {/* Quantity */}
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>จำนวน:</label>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('common.quantity')}:</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ width: 40, height: 40, borderRadius: 10, border: '2px solid #e2e8f0', background: '#fff', fontSize: 20, cursor: 'pointer', color: '#374151' }}>-</button>
                   <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, Math.min(getAvailableQuantity(), parseInt(e.target.value) || 1)))} min="1" max={getAvailableQuantity()} style={{ width: 80, padding: '10px', textAlign: 'center', fontSize: 16, fontWeight: 600, border: '2px solid #e2e8f0', borderRadius: 10 }} />
                   <button onClick={() => setQuantity(Math.min(getAvailableQuantity(), quantity + 1))} style={{ width: 40, height: 40, borderRadius: 10, border: '2px solid #e2e8f0', background: '#fff', fontSize: 20, cursor: 'pointer', color: '#374151' }}>+</button>
-                  <span style={{ fontSize: 13, color: '#6b7280' }}>/ {getAvailableQuantity()} {selectedProduct.unit || 'ชิ้น'}</span>
+                  <span style={{ fontSize: 13, color: '#6b7280' }}>/ {getAvailableQuantity()} {selectedProduct.unit || t('common.piece')}</span>
                 </div>
               </div>
 
@@ -569,7 +571,7 @@ export default function StaffDashboard() {
                   boxShadow: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? 'none' : '0 6px 20px rgba(37,99,235,0.4)',
                 }}
               >
-                {addingToCart ? 'กำลังเพิ่ม...' : getAvailableQuantity() <= 0 ? 'สินค้าหมด' : `เพิ่มลงตะกร้า (฿${((selectedVariant?.sellPrice || selectedProduct.sellPrice || selectedProduct.price || 0) * quantity).toLocaleString()})`}
+                {addingToCart ? t('cart.adding_to_cart') : getAvailableQuantity() <= 0 ? t('product.out_of_stock') : `${t('cart.add_to_cart')} (฿${((selectedVariant?.sellPrice || selectedProduct.sellPrice || selectedProduct.price || 0) * quantity).toLocaleString()})`}
               </button>
             </div>
           </div>

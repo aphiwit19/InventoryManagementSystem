@@ -5,9 +5,11 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
 
 // Shared ProfilePage component for Admin, Staff, and Customer
 export default function ProfilePage({ headerTitle, headerSubtitle }) {
+  const { t } = useTranslation();
   const { user, profile } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -108,14 +110,14 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
       setPhone(editForm.phone.trim());
       setAddress(editForm.address.trim());
       setPhotoURL(finalPhoto || '');
-      setSuccess('อัพเดตข้อมูลโปรไฟล์สำเร็จ!');
+      setSuccess(t('profile.update_success'));
       setIsEditing(false);
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('เกิดข้อผิดพลาดในการอัพเดตข้อมูล: ' + err.message);
+      setError(t('profile.update_error') + ': ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -135,13 +137,13 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
   const getRoleLabel = (role) => {
     switch (role) {
       case 'admin':
-        return { label: 'ผู้ดูแลระบบ', color: '#f44336', bg: '#ffebee' };
+        return { label: t('profile.role_admin'), color: '#f44336', bg: '#ffebee' };
       case 'staff':
-        return { label: 'พนักงาน', color: '#2196F3', bg: '#e3f2fd' };
+        return { label: t('profile.role_staff'), color: '#2196F3', bg: '#e3f2fd' };
       case 'customer':
-        return { label: 'ลูกค้า', color: '#4CAF50', bg: '#e8f5e9' };
+        return { label: t('profile.role_customer'), color: '#4CAF50', bg: '#e8f5e9' };
       default:
-        return { label: 'ไม่ระบุ', color: '#9e9e9e', bg: '#f5f5f5' };
+        return { label: t('profile.role_unknown'), color: '#9e9e9e', bg: '#f5f5f5' };
     }
   };
 
@@ -171,7 +173,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 20px'
           }}></div>
-          <p style={{ color: '#666' }}>กำลังโหลดข้อมูลโปรไฟล์...</p>
+          <p style={{ color: '#666' }}>{t('profile.loading_profile')}</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -207,7 +209,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
               fontWeight: 700,
             }}
           >
-            {headerTitle || 'โปรไฟล์'}
+            {headerTitle || t('common.profile')}
           </h1>
           <div
             style={{
@@ -215,7 +217,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
               color: 'rgba(255,255,255,0.85)',
             }}
           >
-            {headerSubtitle || 'ตรวจสอบและจัดการข้อมูลบัญชีของคุณ'}
+            {headerSubtitle || t('user.user_info')}
           </div>
         </div>
 
@@ -286,7 +288,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                   fontWeight: 700,
                 }}
               >
-                {displayName || 'ไม่ระบุชื่อ'}
+                {displayName || t('common.name')}
               </h2>
               <div
                 style={{
@@ -324,7 +326,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                       color: '#9ca3af',
                     }}
                   >
-                    สร้างบัญชีเมื่อ {formatDate(createdAt)}
+                    {t('product.date_added')}: {formatDate(createdAt)}
                   </span>
                 )}
               </div>
@@ -349,8 +351,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     color: '#6b7280',
                   }}
                 >
-                  ตรวจสอบข้อมูลส่วนตัวก่อนทำการแก้ไข หากข้อมูลไม่ถูกต้องสามารถกดปุ่ม
-                  "แก้ไขข้อมูล" ที่มุมขวาได้ทันที
+                  {t('profile.check_info_hint')}
                 </div>
                 <button
                   onClick={handleEditClick}
@@ -368,7 +369,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     letterSpacing: '0.03em',
                   }}
                 >
-                  แก้ไขข้อมูล
+                  {t('profile.edit_info')}
                 </button>
               </div>
 
@@ -396,7 +397,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                       marginBottom: 10,
                     }}
                   >
-                    ข้อมูลบัญชี
+                    {t('profile.account_info')}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {/* อีเมล */}
@@ -427,7 +428,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                         📧
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>อีเมล</div>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>{t('common.email')}</div>
                         <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{email || '-'}</div>
                       </div>
                     </div>
@@ -460,7 +461,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                         🛡️
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>สิทธิ์การใช้งาน</div>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>{t('profile.permission')}</div>
                         <span
                           style={{
                             display: 'inline-block',
@@ -505,7 +506,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                         📅
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>วันที่สร้างบัญชี</div>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>{t('profile.account_created')}</div>
                         <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{formatDate(createdAt)}</div>
                       </div>
                     </div>
@@ -529,7 +530,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                       marginBottom: 10,
                     }}
                   >
-                    ข้อมูลติดต่อ
+                    {t('profile.contact_info')}
                   </div>
                   <div
                     style={{
@@ -566,7 +567,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                         📱
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>เบอร์โทรศัพท์</div>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>{t('common.phone')}</div>
                         <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600 }}>{phone || '-'}</div>
                       </div>
                     </div>
@@ -599,7 +600,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                         📍
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>ที่อยู่</div>
+                        <div style={{ fontSize: 12, color: '#3b82f6', marginBottom: 2, fontWeight: 500 }}>{t('common.address')}</div>
                         <div style={{ fontSize: 14, color: '#1e40af', fontWeight: 600, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{address || '-'}</div>
                       </div>
                     </div>
@@ -685,7 +686,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                       color: '#111827',
                     }}
                   >
-                    รูปโปรไฟล์
+                    {t('profile.profile_image')}
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <label
@@ -713,7 +714,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {uploadingPhoto ? 'กำลังเลือกรูป...' : 'เลือกไฟล์รูปภาพ'}
+                      {uploadingPhoto ? t('profile.selecting_image') : t('profile.select_image_file')}
                     </label>
                     <input
                       id="profileImage"
@@ -734,7 +735,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                           setPhotoURL(url);
                         } catch (err) {
                           console.error('Error uploading profile image:', err);
-                          setUploadError('อัพโหลดรูปโปรไฟล์ล้มเหลว');
+                          setUploadError(t('profile.upload_failed'));
                         } finally {
                           setUploadingPhoto(false);
                         }
@@ -746,7 +747,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                   </div>
                   {uploadingPhoto && (
                     <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                      กำลังอัพโหลดรูปโปรไฟล์...
+                      {t('profile.uploading_image')}
                     </div>
                   )}
                   {uploadError && (
@@ -770,14 +771,14 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     fontWeight: '600',
                     color: '#333'
                   }}>
-                    ชื่อ-นามสกุล *
+                    {t('auth.full_name')} *
                   </label>
                   <input
                     type="text"
                     id="editDisplayName"
                     value={editForm.displayName}
                     onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
-                    placeholder="กรอกชื่อ-นามสกุล"
+                    placeholder={t('auth.name_placeholder')}
                     required
                     style={{
                       width: '100%',
@@ -799,14 +800,14 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     fontWeight: '600',
                     color: '#333'
                   }}>
-                    เบอร์โทรศัพท์
+                    {t('common.phone')}
                   </label>
                   <input
                     type="tel"
                     id="editPhone"
                     value={editForm.phone}
                     onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    placeholder="เช่น 081-234-5678"
+                    placeholder={t('profile.phone_placeholder')}
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -827,13 +828,13 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     fontWeight: '600',
                     color: '#333'
                   }}>
-                    ที่อยู่
+                    {t('common.address')}
                   </label>
                   <textarea
                     id="editAddress"
                     value={editForm.address}
                     onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                    placeholder="กรอกที่อยู่ของคุณ"
+                    placeholder={t('profile.address_placeholder')}
                     rows={4}
                     style={{
                       width: '100%',
@@ -876,7 +877,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     letterSpacing: '0.02em',
                   }}
                 >
-                  ยกเลิก
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -896,7 +897,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
                     letterSpacing: '0.03em',
                   }}
                 >
-                  {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
+                  {saving ? t('message.saving') : t('common.save_changes')}
                 </button>
               </div>
             </form>

@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getProductById, updateProduct, DEFAULT_UNITS, DEFAULT_CATEGORIES, DEFAULT_SIZES, DEFAULT_COLORS } from '../../services';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
 
 export default function EditProductPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -202,7 +204,7 @@ export default function EditProductPage() {
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 50, height: 50, border: '4px solid #f3f3f3', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
-          <p style={{ color: '#666' }}>กำลังโหลดข้อมูลสินค้า...</p>
+          <p style={{ color: '#666' }}>{t('common.loading')}</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -213,8 +215,8 @@ export default function EditProductPage() {
     <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
         <div style={{ background: '#fff', borderRadius: 18, padding: '32px 40px', boxShadow: '0 10px 40px rgba(15,23,42,0.12)' }}>
-          <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: 28, fontWeight: 700 }}>แก้ไขสินค้า</h1>
-          <p style={{ margin: '0 0 28px', color: '#3b82f6', fontSize: 14 }}>อัพเดตข้อมูลสินค้าของคุณ</p>
+          <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: 28, fontWeight: 700 }}>{t('product.edit_product')}</h1>
+          <p style={{ margin: '0 0 28px', color: '#3b82f6', fontSize: 14 }}>{t('product.update_product_info')}</p>
 
           {error && (
             <div style={{ padding: '12px 16px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: 10, marginBottom: 20, fontSize: 14, border: '1px solid #fecaca' }}>
@@ -226,7 +228,7 @@ export default function EditProductPage() {
             {/* ชื่อสินค้า */}
             <div>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                ชื่อสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                {t('product.product_name')} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="text"
@@ -240,7 +242,7 @@ export default function EditProductPage() {
 
             {/* คำอธิบาย */}
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>คำอธิบายสินค้า</label>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.description')}</label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -255,7 +257,7 @@ export default function EditProductPage() {
               {/* หน่วย */}
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  หน่วยสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                  {t('common.unit')} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 {!showCustomUnit ? (
                   <select
@@ -272,9 +274,9 @@ export default function EditProductPage() {
                     required
                     style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
                   >
-                    <option value="">-- เลือกหน่วย --</option>
-                    {DEFAULT_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                    <option value="__custom__">+ เพิ่มหน่วยใหม่...</option>
+                    <option value="">-- {t('product.select_unit')} --</option>
+                    {DEFAULT_UNITS.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
+                    <option value="__custom__">+ {t('product.add_new_unit')}</option>
                   </select>
                 ) : (
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -284,12 +286,12 @@ export default function EditProductPage() {
                       value={formData.unit}
                       onChange={handleChange}
                       required
-                      placeholder="พิมพ์หน่วยใหม่"
+                      placeholder={t('product.type_new_unit')}
                       style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}
                     />
                     <button type="button" onClick={() => { setShowCustomUnit(false); setFormData(prev => ({ ...prev, unit: '' })); }}
                       style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
-                      ยกเลิก
+                      {t('common.cancel')}
                     </button>
                   </div>
                 )}
@@ -298,7 +300,7 @@ export default function EditProductPage() {
               {/* ประเภท */}
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  ประเภทสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                  {t('product.category')} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 {!showCustomCategory ? (
                   <select
@@ -315,9 +317,9 @@ export default function EditProductPage() {
                     required
                     style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
                   >
-                    <option value="">-- เลือกประเภท --</option>
-                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    <option value="__custom__">+ เพิ่มประเภทใหม่...</option>
+                    <option value="">-- {t('product.select_category')} --</option>
+                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
+                    <option value="__custom__">+ {t('product.add_new_category')}</option>
                   </select>
                 ) : (
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -327,12 +329,12 @@ export default function EditProductPage() {
                       value={formData.category}
                       onChange={handleChange}
                       required
-                      placeholder="พิมพ์ประเภทใหม่"
+                      placeholder={t('product.type_new_category')}
                       style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}
                     />
                     <button type="button" onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
                       style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
-                      ยกเลิก
+                      {t('common.cancel')}
                     </button>
                   </div>
                 )}
@@ -349,8 +351,8 @@ export default function EditProductPage() {
                   style={{ width: 20, height: 20, cursor: 'pointer' }}
                 />
                 <div>
-                  <div style={{ fontWeight: 600, color: '#0369a1' }}>สินค้ามีหลาย Variants (ไซส์/สี)</div>
-                  <div style={{ fontSize: 13, color: '#0284c7' }}>เปิดใช้งานเมื่อสินค้ามีหลายขนาดหรือสี</div>
+                  <div style={{ fontWeight: 600, color: '#0369a1' }}>{t('product.has_variants')}</div>
+                  <div style={{ fontSize: 13, color: '#0284c7' }}>{t('product.variants_description')}</div>
                 </div>
               </label>
             </div>
@@ -360,7 +362,7 @@ export default function EditProductPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    ราคาต้นทุน (บาท) <span style={{ color: '#ef4444' }}>*</span>
+                    {t('product.cost_price')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -375,7 +377,7 @@ export default function EditProductPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    ราคาขาย (บาท) <span style={{ color: '#ef4444' }}>*</span>
+                    {t('product.sell_price')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -390,7 +392,7 @@ export default function EditProductPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    จำนวนสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                    {t('common.quantity')} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -409,18 +411,18 @@ export default function EditProductPage() {
             {hasVariants && (
               <div style={{ background: '#fefce8', padding: '20px', borderRadius: 12, border: '1px solid #fde047' }}>
                 <h3 style={{ margin: '0 0 16px', color: '#854d0e', fontSize: 16 }}>
-                  📦 Variants ({variants.length} รายการ, รวม {totalVariantQuantity} {formData.unit || 'ชิ้น'})
+                  📦 Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
                 </h3>
 
                 {/* Existing Variants - Editable */}
                 {variants.length > 0 && (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 100px 100px 40px', gap: 8, padding: '8px 12px', background: '#fef9c3', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#713f12' }}>
-                      <div>ไซส์</div>
-                      <div>สี</div>
-                      <div>จำนวน</div>
-                      <div>ต้นทุน</div>
-                      <div>ราคาขาย</div>
+                      <div>{t('product.size')}</div>
+                      <div>{t('product.color')}</div>
+                      <div>{t('common.quantity')}</div>
+                      <div>{t('product.cost_price')}</div>
+                      <div>{t('product.sell_price')}</div>
                       <div></div>
                     </div>
                     {variants.map(v => (
@@ -468,11 +470,11 @@ export default function EditProductPage() {
 
                 {/* Add New Variant */}
                 <div style={{ background: '#fff', padding: '16px', borderRadius: 10, border: '1px dashed #d1d5db' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>+ เพิ่ม Variant ใหม่</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>+ {t('product.add_variant')}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                     {/* Size */}
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>ไซส์</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.size')}</label>
                       {!showCustomSize ? (
                         <select
                           name="size"
@@ -487,9 +489,9 @@ export default function EditProductPage() {
                           }}
                           style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                         >
-                          <option value="">-- เลือกไซส์ --</option>
+                          <option value="">-- {t('product.select_size')} --</option>
                           {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                          <option value="__custom__">+ เพิ่มไซส์ใหม่...</option>
+                          <option value="__custom__">+ {t('product.add_new_size')}</option>
                         </select>
                       ) : (
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -498,7 +500,7 @@ export default function EditProductPage() {
                             name="size"
                             value={newVariant.size}
                             onChange={handleNewVariantChange}
-                            placeholder="พิมพ์ไซส์"
+                            placeholder={t('product.type_size')}
                             style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                           />
                           <button type="button" onClick={() => { setShowCustomSize(false); setNewVariant(prev => ({ ...prev, size: '' })); }}
@@ -509,7 +511,7 @@ export default function EditProductPage() {
 
                     {/* Color */}
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>สี</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.color')}</label>
                       {!showCustomColor ? (
                         <select
                           name="color"
@@ -524,9 +526,9 @@ export default function EditProductPage() {
                           }}
                           style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                         >
-                          <option value="">-- เลือกสี --</option>
-                          {DEFAULT_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
-                          <option value="__custom__">+ เพิ่มสีใหม่...</option>
+                          <option value="">-- {t('product.select_color')} --</option>
+                          {DEFAULT_COLORS.map(c => <option key={c} value={c}>{t(`colors.${c}`, c)}</option>)}
+                          <option value="__custom__">+ {t('product.add_new_color')}</option>
                         </select>
                       ) : (
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -535,7 +537,7 @@ export default function EditProductPage() {
                             name="color"
                             value={newVariant.color}
                             onChange={handleNewVariantChange}
-                            placeholder="พิมพ์สี"
+                            placeholder={t('product.type_color')}
                             style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
                           />
                           <button type="button" onClick={() => { setShowCustomColor(false); setNewVariant(prev => ({ ...prev, color: '' })); }}
@@ -547,7 +549,7 @@ export default function EditProductPage() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>จำนวน</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('common.quantity')}</label>
                       <input
                         type="number"
                         name="quantity"
@@ -559,7 +561,7 @@ export default function EditProductPage() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>ราคาต้นทุน</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.cost_price')}</label>
                       <input
                         type="number"
                         name="costPrice"
@@ -572,7 +574,7 @@ export default function EditProductPage() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>ราคาขาย</label>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.sell_price')}</label>
                       <input
                         type="number"
                         name="sellPrice"
@@ -591,7 +593,7 @@ export default function EditProductPage() {
                     onClick={addVariant}
                     style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
                   >
-                    + เพิ่ม Variant
+                    + {t('product.add_variant')}
                   </button>
                 </div>
               </div>
@@ -600,10 +602,10 @@ export default function EditProductPage() {
             {/* รูปภาพ + วันที่ */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>รูปภาพสินค้า</label>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.product_image')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label htmlFor="image" style={{ padding: '10px 20px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#374151' }}>
-                    เปลี่ยนรูป
+                    {t('product.change_image')}
                   </label>
                 </div>
                 <input
@@ -631,7 +633,7 @@ export default function EditProductPage() {
                   }}
                   style={{ display: 'none' }}
                 />
-                {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>กำลังอัพโหลดรูปภาพ...</div>}
+                {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>{t('product.uploading_image')}</div>}
                 {uploadError && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 13 }}>{uploadError}</div>}
                 {imagePreview && (
                   <div style={{ marginTop: 12, width: 120, height: 120, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
@@ -642,7 +644,7 @@ export default function EditProductPage() {
 
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  วันที่เพิ่มสินค้า <span style={{ color: '#ef4444' }}>*</span>
+                  {t('product.date_added')} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="date"
@@ -657,13 +659,13 @@ export default function EditProductPage() {
 
             {/* ที่ตั้งซื้อ */}
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>ที่ตั้งซื้อ / แหล่งที่ซื้อ</label>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.purchase_location')}</label>
               <input
                 type="text"
                 name="purchaseLocation"
                 value={formData.purchaseLocation}
                 onChange={handleChange}
-                placeholder="เช่น ร้าน A สาขา B"
+                placeholder={t('product.purchase_location_placeholder')}
                 style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
               />
             </div>
@@ -685,14 +687,14 @@ export default function EditProductPage() {
                   boxShadow: saving || uploading ? 'none' : '0 4px 14px rgba(37,99,235,0.4)',
                 }}
               >
-                {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
+                {saving ? t('message.saving') : t('common.save')}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/admin/products')}
                 style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 10, cursor: 'pointer' }}
               >
-                ยกเลิก
+                {t('common.cancel')}
               </button>
             </div>
           </form>

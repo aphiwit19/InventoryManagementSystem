@@ -1,12 +1,14 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { updateWithdrawalShipping } from '../../services';
+import { useTranslation } from 'react-i18next';
 
-const carriers = ['EMS', 'ไปรษณีย์ไทย', 'Kerry', 'J&T', 'Flash'];
-const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
-const pickupStatuses = ['รอดำเนินการ', 'รับของแล้ว'];
+const carriers = ['EMS', 'Thailand Post', 'Kerry', 'J&T', 'Flash'];
+const statuses = ['pending', 'processing', 'delivered'];
+const pickupStatuses = ['pending', 'picked_up'];
 
 export default function AdminOrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,7 +18,7 @@ export default function AdminOrderDetailPage() {
   const [form, setForm] = useState({
     shippingCarrier: initialOrder?.shippingCarrier || '',
     trackingNumber: initialOrder?.trackingNumber || '',
-    shippingStatus: initialOrder?.shippingStatus || 'รอดำเนินการ',
+    shippingStatus: initialOrder?.shippingStatus || 'pending',
   });
   const [paymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
   const [saving, setSaving] = useState(false);
@@ -75,9 +77,9 @@ export default function AdminOrderDetailPage() {
     return (
       <div style={{ padding: 24 }}>
         <div style={{ background: '#fff', borderRadius: 8, padding: 24 }}>
-          <p>ไม่พบข้อมูลคำสั่งซื้อ</p>
+          <p>{t('order.no_orders_found')}</p>
           <button type="button" onClick={handleBack} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>
-            กลับไปหน้าคำสั่งซื้อ
+            {t('order.back_to_orders')}
           </button>
         </div>
       </div>
@@ -113,11 +115,11 @@ export default function AdminOrderDetailPage() {
         >
           <div>
             <div style={{ fontSize: 12, color: '#3b82f6', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 6 }}>ORDER DETAIL</div>
-            <h1 style={{ margin: '0 0 6px', fontSize: 24, color: '#1e40af', fontWeight: 700 }}>คำสั่งซื้อ #{id}</h1>
-            <div style={{ fontSize: 14, color: '#64748b' }}>วันที่สั่งซื้อ: {dateText}</div>
+            <h1 style={{ margin: '0 0 6px', fontSize: 24, color: '#1e40af', fontWeight: 700 }}>{t('order.order_id')} #{id}</h1>
+            <div style={{ fontSize: 14, color: '#64748b' }}>{t('order.order_date')}: {dateText}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>ยอดรวม</div>
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>{t('common.total')}</div>
             <div style={{ fontSize: 32, fontWeight: 700, color: '#1e40af' }}>฿{totalText}</div>
           </div>
         </div>
@@ -149,7 +151,7 @@ export default function AdminOrderDetailPage() {
               >
                 👤
               </div>
-              <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>ข้อมูลผู้สั่งซื้อ</h2>
+              <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>{t('order.customer_info')}</h2>
             </div>
             <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{order.requestedBy || '-'}</div>
             {order.requestedAddress && (
@@ -184,10 +186,10 @@ export default function AdminOrderDetailPage() {
               >
                 📦
               </div>
-              <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>สินค้าในคำสั่งซื้อ</h2>
+              <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>{t('order.order_items')}</h2>
             </div>
             {items.length === 0 ? (
-              <div style={{ fontSize: 14, color: '#9ca3af' }}>ไม่มีสินค้า</div>
+              <div style={{ fontSize: 14, color: '#9ca3af' }}>{t('order.no_items')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {items.map((it, idx) => (
@@ -201,11 +203,11 @@ export default function AdminOrderDetailPage() {
                   >
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 500, color: '#111827' }}>{it.productName || '-'}</div>
-                      <div style={{ fontSize: 13, color: '#9ca3af' }}>จำนวน {it.quantity || 0} ชิ้น</div>
+                      <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('common.quantity')} {it.quantity || 0} {t('common.piece')}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: '#0ea5e9' }}>฿{(it.subtotal || 0).toLocaleString()}</div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>฿{(it.price || 0).toLocaleString()} / ชิ้น</div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>฿{(it.price || 0).toLocaleString()} / {t('common.piece')}</div>
                     </div>
                   </div>
                 ))}
@@ -240,23 +242,23 @@ export default function AdminOrderDetailPage() {
             >
               🚚
             </div>
-            <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>ข้อมูลการจัดส่ง</h2>
+            <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>{t('order.shipping_info')}</h2>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <span style={{ fontSize: 14, color: '#6b7280' }}>วิธีรับ:</span>
-              <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{(order.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง'}</span>
+              <span style={{ fontSize: 14, color: '#6b7280' }}>{t('order.delivery_method')}:</span>
+              <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{(order.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping')}</span>
             </div>
             {order.receivedBy && (
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: 14, color: '#6b7280' }}>ผู้รับ:</span>
+                <span style={{ fontSize: 14, color: '#6b7280' }}>{t('order.receiver')}:</span>
                 <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{order.receivedBy}</span>
               </div>
             )}
             {order.note && (
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-                <span style={{ fontSize: 14, color: '#6b7280' }}>หมายเหตุ:</span>
+                <span style={{ fontSize: 14, color: '#6b7280' }}>{t('order.order_note')}:</span>
                 <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{order.note}</span>
               </div>
             )}
@@ -273,7 +275,7 @@ export default function AdminOrderDetailPage() {
             marginBottom: 10,
           }}
         >
-          <h3 style={{ margin: '0 0 10px', fontSize: 15, color: '#374151', fontWeight: 600 }}>การชำระเงิน</h3>
+          <h3 style={{ margin: '0 0 10px', fontSize: 15, color: '#374151', fontWeight: 600 }}>{t('payment.payment')}</h3>
 
           {/* Payment info + slip */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 16, marginBottom: 14 }}>
@@ -287,7 +289,7 @@ export default function AdminOrderDetailPage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a8a' }}>บัญชีที่ลูกค้าโอนเข้า</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a8a' }}>{t('payment.customer_transfer_account')}</div>
                 {order.paymentAccount?.bankName && (
                   <span
                     style={{
@@ -306,7 +308,7 @@ export default function AdminOrderDetailPage() {
               {order.paymentAccount ? (
                 <>
                   <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 600 }}>{order.paymentAccount.accountName || '-'}</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', marginTop: 4 }}>เลขที่บัญชี: {order.paymentAccount.accountNumber || '-'}</div>
+                  <div style={{ fontSize: 13, color: '#0f172a', marginTop: 4 }}>{t('payment.account_number')}: {order.paymentAccount.accountNumber || '-'}</div>
                   {order.paymentAccount.note && (
                     <div
                       style={{
@@ -323,7 +325,7 @@ export default function AdminOrderDetailPage() {
                   )}
                 </>
               ) : (
-                <div style={{ fontSize: 13, color: '#9ca3af' }}>ไม่มีข้อมูลบัญชีที่ใช้โอนเงิน</div>
+                <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('payment.no_account_info')}</div>
               )}
             </div>
 
@@ -336,7 +338,7 @@ export default function AdminOrderDetailPage() {
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 8 }}>สลิปการโอน</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 8 }}>{t('order.payment_slip')}</div>
               {order.paymentSlipUrl ? (
                 <a
                   href={order.paymentSlipUrl}
@@ -351,7 +353,7 @@ export default function AdminOrderDetailPage() {
                   />
                 </a>
               ) : (
-                <div style={{ fontSize: 13, color: '#9ca3af' }}>ยังไม่มีสลิปการโอนจากลูกค้า</div>
+                <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('payment.no_slip')}</div>
               )}
             </div>
           </div>
@@ -368,7 +370,7 @@ export default function AdminOrderDetailPage() {
             boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
           }}
         >
-          <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#374151', fontWeight: 600 }}>สถานะการจัดส่ง</h3>
+          <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#374151', fontWeight: 600 }}>{t('order.shipping_status')}</h3>
           
           <div
             style={{
@@ -382,15 +384,15 @@ export default function AdminOrderDetailPage() {
             }}
           >
             {isPickup
-              ? 'สำหรับคำสั่งแบบรับเอง ให้เลือกสถานะเป็น "รับของแล้ว" เมื่อผู้รับมารับของจริง'
-              : 'สำหรับคำสั่งจัดส่งแบบจัดส่ง ให้เลือกสถานะเป็น "ส่งของแล้ว" เมื่อผู้รับมารับของหรือ'}
+              ? t('order.pickup_instruction')
+              : t('order.shipping_instruction')}
           </div>
 
           {/* แสดงช่องขนส่งและ Tracking เฉพาะเมื่อเป็นแบบจัดส่ง */}
           {!isPickup && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
               <div>
-                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>ขนส่ง</label>
+                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>{t('order.carrier')}</label>
                 <select
                   value={form.shippingCarrier}
                   onChange={(e) => setForm((f) => ({ ...f, shippingCarrier: e.target.value }))}
@@ -404,7 +406,7 @@ export default function AdminOrderDetailPage() {
                     boxSizing: 'border-box',
                   }}
                 >
-                  <option value="">เลือกผู้ให้บริการ</option>
+                  <option value="">{t('order.select_carrier')}</option>
                   {carriers.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -413,11 +415,11 @@ export default function AdminOrderDetailPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>เลข Tracking</label>
+                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>{t('order.tracking_number')}</label>
                 <input
                   value={form.trackingNumber}
                   onChange={(e) => setForm((f) => ({ ...f, trackingNumber: e.target.value }))}
-                  placeholder="เช่น EX123456789TH"
+                  placeholder={t('order.tracking_placeholder')}
                   style={{
                     width: '100%',
                     padding: '12px 14px',
@@ -475,7 +477,7 @@ export default function AdminOrderDetailPage() {
               transition: 'transform 0.2s, box-shadow 0.2s',
             }}
           >
-            {saving ? 'กำลังบันทึก...' : 'บันทึกการจัดส่ง'}
+            {saving ? t('message.saving') : t('order.save_shipping')}
           </button>
         </div>
       </div>

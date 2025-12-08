@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getAllProducts, getInventoryHistory } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 export default function InventoryHistoryIndex() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [history, setHistory] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -160,8 +162,8 @@ export default function InventoryHistoryIndex() {
           border: '1px solid rgba(255,255,255,0.9)',
         }}
       >
-        <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>ประวัติสินค้าเข้า–ออกคลัง</h1>
-        <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>ดูประวัติการเคลื่อนไหวสินค้าทั้งหมด</div>
+        <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>{t('inventory.inventory_in_out_history')}</h1>
+        <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('inventory.view_all_movements')}</div>
       </div>
 
       {/* Filters */}
@@ -180,7 +182,7 @@ export default function InventoryHistoryIndex() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหาชื่อสินค้า"
+              placeholder={t('inventory.search_product_name')}
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -206,7 +208,7 @@ export default function InventoryHistoryIndex() {
               boxShadow: '0 2px 8px rgba(100,116,139,0.3)',
             }}
           >
-            ล้าง
+            {t('common.clear')}
           </button>
           <input
             type="date"
@@ -252,13 +254,13 @@ export default function InventoryHistoryIndex() {
               minWidth: 140,
             }}
           >
-            <option value="all">ทุกประเภท</option>
-            <option value="in">เข้า (IN)</option>
-            <option value="out">ออก (OUT)</option>
+            <option value="all">{t('common.all_types')}</option>
+            <option value="in">{t('inventory.stock_in')} (IN)</option>
+            <option value="out">{t('inventory.stock_out')} (OUT)</option>
           </select>
         </div>
         {loadingProducts && (
-          <div style={{ marginTop: 12, color: '#64748b', fontSize: 14 }}>กำลังโหลดสินค้า...</div>
+          <div style={{ marginTop: 12, color: '#64748b', fontSize: 14 }}>{t('inventory.loading_products')}</div>
         )}
       </div>
 
@@ -305,12 +307,12 @@ export default function InventoryHistoryIndex() {
         }}
       >
         {loadingHistory ? (
-          <div style={{ padding: 20, color:'#666' }}>กำลังโหลดประวัติ...</div>
+          <div style={{ padding: 20, color:'#666' }}>{t('inventory.loading_history')}</div>
         ) : pageItems.length === 0 ? (
-          <div style={{ padding: 20, color:'#777' }}>ไม่พบข้อมูลตามตัวกรอง</div>
+          <div style={{ padding: 20, color:'#777' }}>{t('inventory.no_data_found')}</div>
         ) : (
           <>
-            <div style={{ padding: '8px 8px 0 8px', color:'#666', textAlign:'right' }}>Page {currentPage} of {totalPages} | Showing {pageItems.length} of {filteredHistory.length}</div>
+            <div style={{ padding: '8px 8px 0 8px', color:'#666', textAlign:'right' }}>{t('common.page')} {currentPage} {t('common.of')} {totalPages} | {t('inventory.showing')} {pageItems.length} {t('common.of')} {filteredHistory.length}</div>
             <div style={{ display:'flex', flexDirection:'column', gap:8, padding:8 }}>
               {pageItems.map(h => {
                 const isOut = (h.type || 'in') === 'out';
@@ -325,9 +327,9 @@ export default function InventoryHistoryIndex() {
                       <div style={{ fontWeight:700, marginBottom:6, fontSize:16, color:'#333' }}>{h.productName || '-'}</div>
                       <div style={{ lineHeight:1.5 }}>
                         <span style={{ background: isOut ? '#fdecea' : '#e8f5e9', color, padding:'4px 8px', borderRadius:12, fontSize:12, fontWeight:700 }}>{(h.type || 'in').toUpperCase()}</span>
-                        <span style={{ marginLeft:8, color:'#444', fontSize:14 }}>จำนวน {sign}{parseInt(h.quantity || 0).toLocaleString()} | ต้นทุน/หน่วย {unitCost === null ? '-' : `฿${unitCost.toLocaleString()}`}</span>
+                        <span style={{ marginLeft:8, color:'#444', fontSize:14 }}>{t('common.quantity')} {sign}{parseInt(h.quantity || 0).toLocaleString()} | {t('inventory.cost_per_unit')} {unitCost === null ? '-' : `฿${unitCost.toLocaleString()}`}</span>
                       </div>
-                      {h.source && <div style={{ marginTop:6, color:'#666', fontSize:13 }}>ที่มา: {h.source}</div>}
+                      {h.source && <div style={{ marginTop:6, color:'#666', fontSize:13 }}>{t('inventory.history_source')}: {h.source}</div>}
                     </div>
                     <div style={{ textAlign:'right', color:'#666', fontSize:13 }}>{formatDate(h.date)}</div>
                   </div>
@@ -369,7 +371,7 @@ export default function InventoryHistoryIndex() {
               fontWeight: 600,
             }}
           >
-            Previous
+            {t('common.previous')}
           </button>
           {buildPageRange().map((p) => (
             <button
@@ -407,7 +409,7 @@ export default function InventoryHistoryIndex() {
               fontWeight: 600,
             }}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}

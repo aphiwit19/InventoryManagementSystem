@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function CustomerOrderSuccessPage() {
+  const { t } = useTranslation();
   return (
     <div style={{ padding: '40px 20px', background: '#f0f4ff', minHeight: '100vh' }}>
       <div
@@ -28,9 +30,9 @@ export default function CustomerOrderSuccessPage() {
         >
           <span style={{ fontSize: 40 }}>✅</span>
         </div>
-        <h2 style={{ margin: '0 0 12px', fontSize: 24, color: '#111827' }}>สั่งซื้อสำเร็จ</h2>
+        <h2 style={{ margin: '0 0 12px', fontSize: 24, color: '#111827' }}>{t('message.order_success_title')}</h2>
         <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 15 }}>
-          เราได้รับคำสั่งซื้อของคุณแล้ว สามารถติดตามสถานะคำสั่งซื้อหรือลองเลือกสินค้าชิ้นอื่นต่อได้เลย
+          {t('message.order_success_message')}
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -46,7 +48,7 @@ export default function CustomerOrderSuccessPage() {
               fontSize: 14
             }}
           >
-            ติดตามสถานะสั่งซื้อ
+            {t('message.view_orders')}
           </Link>
 
           <Link
@@ -62,7 +64,7 @@ export default function CustomerOrderSuccessPage() {
               boxShadow: '0 4px 12px rgba(37,99,235,0.35)'
             }}
           >
-            ซื้อสินค้าเพิ่ม
+            {t('cart.continue_shopping')}
           </Link>
         </div>
       </div>

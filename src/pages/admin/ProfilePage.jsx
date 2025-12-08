@@ -1,10 +1,12 @@
 import SharedProfilePage from '../../components/shared/ProfilePage';
+import { useTranslation } from 'react-i18next';
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   return (
     <SharedProfilePage
-      headerTitle="โปรไฟล์ผู้ดูแลระบบ"
-      headerSubtitle="ตรวจสอบและจัดการข้อมูลบัญชีผู้ดูแลระบบในระบบ"
+      headerTitle={t('common.profile')}
+      headerSubtitle={t('user.user_info')}
     />
   );
 }
