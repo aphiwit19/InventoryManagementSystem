@@ -194,203 +194,14 @@ export default function StaffDashboard() {
 
   return (
     <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
-      {/* Top Navigation Bar - Same as CustomerLayout */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 28%, #22c1f1 60%, #4F46E5 100%)', 
-        padding: '22px 36px', 
-        borderRadius: 24, 
-        marginBottom: 20, 
-        boxShadow: '0 18px 40px rgba(15,23,42,0.45), 0 0 0 1px rgba(255,255,255,0.12)', 
-        position: 'relative',
-        overflow: 'visible'
-      }}>
-        {/* Gradient Overlay */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(circle at 0% 0%, rgba(255,255,255,0.22) 0, transparent 55%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.12) 0, transparent 50%)',
-          pointerEvents: 'none',
-          borderRadius: 24
-        }} />
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-          {/* Left: Logo and Store Name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <img 
-              src="/Inventory Hub .png" 
-              alt="Inventory Hub" 
-              style={{
-                width: 48,
-                height: 48,
-                objectFit: 'contain',
-                borderRadius: 10,
-                background: '#fff',
-                padding: 4,
-              }}
-            />
-            <div>
-              <button
-                type="button"
-                onClick={() => navigate('/staff')}
-                style={{
-                  color: '#fff',
-                  fontSize: 26,
-                  fontWeight: 800,
-                  marginBottom: 4,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  background: 'transparent',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                Inventory Hub
-              </button>
-              <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 400 }}>
-                {t('admin.system_management')}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Cart, Profile */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Cart Icon with Badge */}
-            <button
-              onClick={() => navigate('/staff/withdraw')}
-              style={{
-                position: 'relative',
-                width: 44,
-                height: 44,
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                borderRadius: 999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: 22,
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              🛒
-              {cartCount > 0 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    backgroundColor: '#f97316',
-                    color: '#fff',
-                    borderRadius: 999,
-                    minWidth: 20,
-                    height: 20,
-                    padding: '0 4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 'bold',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  {cartCount > 99 ? '99+' : cartCount}
-                </div>
-              )}
-            </button>
-
-            {/* Profile Icon with Dropdown */}
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                onClick={() => setShowProfileMenu(prev => !prev)}
-                style={{
-                  width: 44,
-                  height: 44,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  borderRadius: 999,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 22,
-                  cursor: 'pointer',
-                  border: 'none',
-                }}
-              >
-                👤
-              </button>
-              {showProfileMenu && (
-                <div style={{
-                  position: 'absolute',
-                  top: 52,
-                  right: 0,
-                  background: '#fff',
-                  borderRadius: 12,
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                  minWidth: 180,
-                  overflow: 'hidden',
-                  zIndex: 100,
-                }}>
-                  <button
-                    onClick={() => { setShowProfileMenu(false); navigate('/staff/profile'); }}
-                    style={{
-                      width: '100%',
-                      padding: '14px 18px',
-                      border: 'none',
-                      background: 'transparent',
-                      textAlign: 'left',
-                      fontSize: 14,
-                      color: '#374151',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    👤 {t('common.profile')}
-                  </button>
-                  <button
-                    onClick={() => { setShowProfileMenu(false); navigate('/staff/orders'); }}
-                    style={{
-                      width: '100%',
-                      padding: '14px 18px',
-                      border: 'none',
-                      background: 'transparent',
-                      textAlign: 'left',
-                      fontSize: 14,
-                      color: '#374151',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    📦 {t('order.track_status')}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Search & Filter Bar */}
-      <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '16px 24px', borderRadius: 14, marginBottom: 20, boxShadow: '0 4px 16px rgba(15,23,42,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ background: 'transparent', border: '1px solid rgba(148,163,184,0.25)', padding: '22px 28px', borderRadius: 18, marginBottom: 24, boxShadow: '0 8px 24px rgba(15,23,42,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h2 style={{ margin: 0, color: '#1e40af', fontSize: 20, fontWeight: 700 }}>{t('product.all_products')}</h2>
-          <div style={{ fontSize: 13, color: '#3b82f6', marginTop: 4 }}>{t('product.select_to_add')}</div>
+          <h2 style={{ margin: 0, color: '#1e40af', fontSize: 22, fontWeight: 700 }}>{t('product.all_products')}</h2>
+          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('product.select_to_add')}</div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
-            <input type="text" placeholder={t('product.search_products')} value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 200, background: '#fff', outline: 'none' }} />
-            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', fontSize: 16 }}>🔍</span>
-          </div>
           <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 14px', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
             <option value="">{t('common.all_categories')}</option>
             {uniqueCategories.map(cat => <option key={cat} value={cat}>{t(`categories.${cat}`, cat)}</option>)}
@@ -431,7 +242,7 @@ export default function StaffDashboard() {
                     <span style={{ background: '#f8fafc', color: '#64748b', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.unit || t('common.piece')}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>{getDisplayPrice(product)}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>{getDisplayPrice(product)}</span>
                     {(() => {
                       const qty = parseInt(product.quantity || 0);
                       const reserved = parseInt(product.reserved || 0);
@@ -444,7 +255,7 @@ export default function StaffDashboard() {
                       );
                     })()}
                   </div>
-                  <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
+                  <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)' }}>
                     {t('cart.add_to_cart')}
                   </button>
                 </div>
@@ -510,7 +321,7 @@ export default function StaffDashboard() {
                         >
                           <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? '#1e40af' : '#111827' }}>{variant.size}</div>
                           <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{variant.color}</div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', marginTop: 6 }}>฿{(variant.sellPrice || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginTop: 6 }}>฿{(variant.sellPrice || 0).toLocaleString()}</div>
                           <div style={{ fontSize: 10, color: isOutOfStock ? '#ef4444' : '#6b7280', marginTop: 4 }}>
                             {isOutOfStock ? t('product.out_of_stock') : `${t('product.remaining')} ${available}`}
                           </div>
@@ -523,7 +334,7 @@ export default function StaffDashboard() {
                 <div style={{ marginBottom: 20, padding: '16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, color: '#374151' }}>{t('common.price')}:</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>฿{(selectedProduct.sellPrice || selectedProduct.price || 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>฿{(selectedProduct.sellPrice || selectedProduct.price || 0).toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                     <span style={{ fontSize: 13, color: '#6b7280' }}>{t('product.remaining')}:</span>
@@ -538,7 +349,7 @@ export default function StaffDashboard() {
                   <div style={{ fontSize: 13, color: '#1e40af', fontWeight: 600, marginBottom: 8 }}>{t('common.selected')}:</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, color: '#374151' }}>{selectedVariant.size} / {selectedVariant.color}</span>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>฿{(selectedVariant.sellPrice || 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>฿{(selectedVariant.sellPrice || 0).toLocaleString()}</span>
                   </div>
                 </div>
               )}
@@ -563,7 +374,7 @@ export default function StaffDashboard() {
                   padding: '16px',
                   borderRadius: 12,
                   border: 'none',
-                  background: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  background: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? '#9ca3af' : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
                   color: '#fff',
                   fontSize: 16,
                   fontWeight: 700,

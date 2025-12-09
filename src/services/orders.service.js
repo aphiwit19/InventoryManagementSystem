@@ -4,7 +4,32 @@ import { db, collection, doc, Timestamp, runTransaction, collectionGroup, getDoc
 export async function createWithdrawal(payload) {
   try {
     const method = (payload.deliveryMethod || 'shipping');
+    
+    // Generate running order number
+    const counterRef = doc(db, 'counters', 'orderNumber');
+    let orderNumber = '';
+    
+    await runTransaction(db, async (tx) => {
+      const counterDoc = await tx.get(counterRef);
+      let currentNumber = 1;
+      
+      if (counterDoc.exists()) {
+        currentNumber = (counterDoc.data().current || 0) + 1;
+        tx.update(counterRef, { current: currentNumber });
+      } else {
+        tx.set(counterRef, { current: currentNumber });
+      }
+      
+      // Format: ORD-YYYYMMDD-0001
+      const today = new Date();
+      const dateStr = today.getFullYear().toString() + 
+                     (today.getMonth() + 1).toString().padStart(2, '0') + 
+                     today.getDate().toString().padStart(2, '0');
+      orderNumber = `ORD-${dateStr}-${currentNumber.toString().padStart(4, '0')}`;
+    });
+    
     const withdrawDoc = {
+      orderNumber: orderNumber, // เพิ่ม order number
       items: (payload.items || []).map(it => ({
         productId: it.productId,
         productName: it.productName || null,

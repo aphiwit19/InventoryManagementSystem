@@ -25,160 +25,191 @@ const AdminLayout = () => {
     return location.pathname === '/admin/orders' && currentOrdersSource === source;
   };
 
-  // Style สำหรับ Link ที่ active
+  const menuItems = [
+    { path: '/admin/dashboard', icon: '🏠', labelKey: 'common.dashboard' },
+    { path: '/admin/products', icon: '/cubes.png', labelKey: 'admin.products', isImage: true },
+    { path: '/admin/orders?source=customer', icon: '/shopping-basket.png', labelKey: 'order.customer_orders', isOrderSource: 'customer', isImage: true },
+    { path: '/admin/orders?source=staff', icon: '/cash-machine.png', labelKey: 'order.staff_orders', isOrderSource: 'staff', isImage: true },
+    { path: '/admin/inventory_history', icon: '📊', labelKey: 'admin.inventory_history' },
+    { path: '/admin/payment-account', icon: '💳', labelKey: 'admin.payment_settings' },
+    { path: '/admin/alerts', icon: '🔔', labelKey: 'admin.low_stock_alert' },
+    { path: '/admin/users', icon: '👥', labelKey: 'user.user_management' },
+    { path: '/admin/profile', icon: '/people.png', labelKey: 'common.profile', isImage: true },
+  ];
+
   const getLinkStyle = (isActive) => ({
-    marginTop: 4,
-    padding: '10px 14px',
-    borderRadius: 999,
-    background: isActive
-      ? 'linear-gradient(135deg, #2563eb, #4f46e5)'
-      : 'transparent',
-    color: isActive ? '#f9fafb' : '#111827',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    padding: '1rem 1.2rem',
     textDecoration: 'none',
-    display: 'block',
+    color: isActive ? '#FFFFFF' : '#374151',
+    borderRadius: '12px',
+    transition: 'all 0.25s ease',
+    fontSize: '1rem',
     fontWeight: 500,
-    fontSize: 14,
-    transition: 'background 0.18s ease, color 0.18s ease, transform 0.18s ease',
+    background: isActive
+      ? 'linear-gradient(135deg, #2D9CDB 0%, #56CCF2 100%)'
+      : 'transparent',
     boxShadow: isActive
-      ? '0 8px 18px rgba(37,99,235,0.5)'
+      ? '0 6px 20px rgba(45, 156, 219, 0.4), 0 3px 10px rgba(86, 204, 242, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)'
       : 'none',
+    transform: isActive ? 'translateY(-1px)' : 'none',
+    border: isActive ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
   });
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        background:
-          'radial-gradient(circle at top left, #ffffff 0%, #e5f0ff 40%, #d6e4ff 70%, #c7d2fe 100%)'
-      }}
-    >
-      {/* Sidebar */}
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(180deg, #EEF2FF 0%, #E0F2FE 45%, #F9FAFB 100%)' }}>
       <div
         style={{
-          width: '240px',
-          padding: '22px 18px 24px',
-          boxSizing: 'border-box',
+          width: '280px',
+          background: 'linear-gradient(180deg, #EEF2FF 0%, #E0F2FE 45%, #F9FAFB 100%)',
+          height: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          boxShadow: '4px 0 18px rgba(15, 23, 42, 0.18)',
           position: 'sticky',
           top: 0,
           alignSelf: 'flex-start',
-          height: '100vh',
-          overflowY: 'auto',
           flexShrink: 0,
-          borderRight: '1px solid rgba(148,163,184,0.35)',
-          boxShadow: '6px 0 18px rgba(148,163,184,0.25)',
-          backgroundColor: 'rgba(255,255,255,0.85)',
-          backdropFilter: 'blur(6px)',
         }}
       >
-        {/* Brand Header */}
         <div
           style={{
-            background:
-              'linear-gradient(145deg, #1d4ed8 0%, #2563eb 35%, #38bdf8 80%, #4f46e5 100%)',
-            borderRadius: 20,
-            padding: '18px 16px',
-            marginBottom: 18,
-            boxShadow: '0 14px 28px rgba(15,23,42,0.35)',
-            color: '#f9fafb',
+            padding: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            borderBottom: '1px solid #E5E7EB',
           }}
         >
           <div
             style={{
-              fontSize: 12,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              opacity: 0.9,
-              marginBottom: 4,
-            }}
-          >
-            ADMIN SPACE
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
-            ADMIN
-          </div>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>
-            {profile?.displayName || t('user.role_admin')}
-          </div>
-        </div>
-
-        {/* Language Switcher */}
-        <div style={{ marginBottom: 10 }}>
-          <LanguageSwitcher style={{ width: '100%' }} />
-        </div>
-
-        {/* Menu Links */}
-        <Link to="/admin/dashboard" style={getLinkStyle(isActiveLink('/admin/dashboard'))}>
-          {t('common.dashboard')}
-        </Link>
-        <Link to="/admin/products" style={getLinkStyle(isActiveLink('/admin/products'))}>
-          {t('admin.products')}
-        </Link>
-        <Link to="/admin/orders?source=customer" style={getLinkStyle(isOrdersActive('customer'))}>
-          {t('order.customer_orders')}
-        </Link>
-        <Link to="/admin/orders?source=staff" style={getLinkStyle(isOrdersActive('staff'))}>
-          {t('order.staff_orders')}
-        </Link>
-        <Link to="/admin/inventory_history" style={getLinkStyle(isActiveLink('/admin/inventory_history'))}>
-          {t('admin.inventory_history')}
-        </Link>
-        <Link to="/admin/payment-account" style={getLinkStyle(isActiveLink('/admin/payment-account'))}>
-          {t('admin.payment_settings')}
-        </Link>
-        <Link to="/admin/alerts" style={getLinkStyle(isActiveLink('/admin/alerts'))}>
-          {t('admin.low_stock_alert')}
-        </Link>
-        <Link to="/admin/users" style={getLinkStyle(isActiveLink('/admin/users'))}>
-          {t('user.user_management')}
-        </Link>
-        <Link to="/admin/profile" style={getLinkStyle(isActiveLink('/admin/profile'))}>
-          {t('common.profile')}
-        </Link>
-
-        {/* Logout Button */}
-        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
-          <button
-            onClick={() => signOut(auth)}
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              borderRadius: 999,
-              border: 'none',
-              background:
-                'linear-gradient(135deg, #f97373 0%, #ef4444 40%, #b91c1c 100%)',
-              color: '#fef2f2',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
+              width: '50px',
+              height: '50px',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
-              boxShadow: '0 8px 18px rgba(248,113,113,0.55)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+              overflow: 'hidden',
+              background: 'white',
+              padding: '3px',
             }}
           >
-            <span>🚪</span>
-            <span>{t('common.logout')}</span>
-          </button>
+            <img src="/Inventory Hub .png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Kanit', sans-serif",
+                fontSize: '1.4rem',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #0EA5E9 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                letterSpacing: '1px',
+              }}
+            >
+              INVENTORY
+            </div>
+            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#64748B', letterSpacing: '3px', marginTop: '-2px' }}>
+              HUB
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
+          <div style={{ marginBottom: '0.8rem' }}>
+            <LanguageSwitcher style={{ width: '100%' }} />
+          </div>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {menuItems.map((item) => {
+              const isActive = item.isOrderSource ? isOrdersActive(item.isOrderSource) : isActiveLink(item.path.split('?')[0]);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  style={getLinkStyle(isActive)}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(45, 156, 219, 0.1)';
+                      e.currentTarget.style.color = '#2D9CDB';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#374151';
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: '1.3rem', width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {item.isImage ? <img src={item.icon} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> : item.icon}
+                  </span>
+                  <span>{t(item.labelKey)}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div style={{ padding: '0.8rem' }}>
+          <div style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', borderRadius: '12px', padding: '0.8rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.7rem' }}>
+              <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 3px 10px rgba(59, 130, 246, 0.3)', border: '2px solid white', flexShrink: 0 }}>
+                👤
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '0.9rem', fontWeight: 600, color: '#1F2937' }}>{profile?.displayName || 'Admin'}</div>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{t('user.role_admin')}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => signOut(auth)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                width: '100%',
+                padding: '0.55rem 0.9rem',
+                background: '#FFFFFF',
+                border: '1px solid rgba(148, 163, 184, 0.5)',
+                borderRadius: '999px',
+                color: '#2563EB',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontSize: '0.85rem',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#2563EB';
+                e.currentTarget.style.color = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 99, 235, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#FFFFFF';
+                e.currentTarget.style.color = '#2563EB';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.12)';
+              }}
+            >
+              <img src="/shutdown.png" alt="Logout" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+              <span>{t('common.logout')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div
-        style={{
-          flex: 1,
-          height: '100vh',
-          overflowY: 'auto',
-          padding: '0 20px 20px 20px',
-          boxSizing: 'border-box',
-          borderLeft: '1px solid rgba(229,231,235,0.7)',
-          boxShadow: 'inset 8px 0 18px rgba(148,163,184,0.18)',
-        }}
-      >
+      <div style={{ flex: 1, height: '100vh', overflowY: 'auto', padding: '2rem', boxSizing: 'border-box' }}>
         <Outlet />
       </div>
     </div>

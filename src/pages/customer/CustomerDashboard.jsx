@@ -160,88 +160,605 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div style={{ padding: '16px 24px 32px', boxSizing: 'border-box' }}>
-      <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', padding: '20px 24px', borderRadius: 18, marginBottom: 20, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>{t('product.all_products')}</h1>
-          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('product.select_to_add')}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
-            <input type="text" placeholder={t('product.search_products')} value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 40px 10px 16px', borderRadius: 999, border: '2px solid #e2e8f0', fontSize: 14, width: 220, background: '#fff', outline: 'none' }} />
-            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', fontSize: 16 }}>🔍</span>
+    <div style={{ padding: '24px', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto' }}>
+        {/* Hero Banner */}
+        <section
+          style={{
+            background:
+              'linear-gradient(135deg, #0B1120 0%, #1E3A8A 10%, #2563EB 45%, #0EA5E9 100%)',
+            borderRadius: 24,
+            padding: '40px',
+            marginBottom: '32px',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: '0 26px 80px rgba(15,23,42,0.75)',
+            minHeight: 280,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          {/* Decorative blobs */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '-50%',
+              right: '-10%',
+              width: 400,
+              height: 400,
+              background:
+                'radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%)',
+              borderRadius: '50%',
+              filter: 'blur(50px)',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-40%',
+              left: '-10%',
+              width: 360,
+              height: 360,
+              background:
+                'radial-gradient(circle, rgba(118, 75, 162, 0.25) 0%, transparent 70%)',
+              borderRadius: '50%',
+              filter: 'blur(50px)',
+            }}
+          />
+
+          {/* Hero Content */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              maxWidth: '50%',
+              padding: '18px 22px',
+              borderRadius: 20,
+              background:
+                'linear-gradient(135deg, rgba(15,23,42,0.8), rgba(30,64,175,0.75))',
+              boxShadow:
+                '0 18px 55px rgba(15,23,42,0.9), 0 0 0 1px rgba(148,163,184,0.25)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-block',
+                background:
+                  'linear-gradient(135deg, rgba(59,130,246,0.35), rgba(96,165,250,0.6))',
+                backdropFilter: 'blur(10px)',
+                padding: '8px 18px',
+                borderRadius: 999,
+                color: '#E5F0FF',
+                fontSize: 13,
+                fontWeight: 500,
+                marginBottom: 16,
+              }}
+            >
+              The best offers for you
+            </div>
+            <h1
+              style={{
+                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                fontSize: 40,
+                fontWeight: 800,
+                color: '#ffffff',
+                margin: '0 0 12px',
+                lineHeight: 1.1,
+              }}
+            >
+              Laptops up to
+              <br />– 20% off
+            </h1>
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.95)',
+                fontSize: 15,
+                margin: '0 0 20px',
+                lineHeight: 1.6,
+              }}
+            >
+              The latest and greatest devices at incredible prices
+            </p>
+            <button
+              type="button"
+              style={{
+                background: '#ffffff',
+                color: '#3B82F6',
+                padding: '12px 30px',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: 15,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+                letterSpacing: 0.5,
+              }}
+            >
+              SHOP NOW ➜
+            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 999,
+                  background: '#ffffff',
+                }}
+              />
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.4)',
+                }}
+              />
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.4)',
+                }}
+              />
+            </div>
           </div>
-          <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 14px', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
+
+          {/* Illustration block */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '8%',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              maxWidth: '38%',
+              zIndex: 1,
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                paddingTop: '70%',
+                borderRadius: 18,
+                background:
+                  'linear-gradient(135deg, rgba(148, 163, 253, 0.35), rgba(251, 113, 133, 0.5))',
+                position: 'relative',
+                boxShadow: '0 18px 40px rgba(15,23,42,0.45)',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 16,
+                  borderRadius: 14,
+                  background:
+                    'linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,64,175,0.95))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#e5e7eb',
+                  fontSize: 18,
+                  fontWeight: 600,
+                }}
+              >
+                Inventory
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Page Header */}
+        <section
+          style={{
+            background: '#ffffff',
+            borderRadius: 16,
+            padding: '24px',
+            marginBottom: '20px',
+            boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
+            border: '1px solid #E2E8F0',
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+              fontSize: 24,
+              fontWeight: 700,
+              color: '#2563EB',
+            }}
+          >
+            {t('product.all_products')}
+          </h1>
+          <p
+            style={{
+              margin: '6px 0 0',
+              fontSize: 14,
+              color: '#64748b',
+            }}
+          >
+            {t('product.select_to_add')}
+          </p>
+        </section>
+
+        {/* Filter Section */}
+        <section
+          style={{
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 10,
+              border: '2px solid #E2E8F0',
+              fontSize: 14,
+              background: '#ffffff',
+              cursor: 'pointer',
+              minWidth: 180,
+            }}
+          >
             <option value="">{t('common.all_categories')}</option>
-            {uniqueCategories.map(cat => <option key={cat} value={cat}>{t(`categories.${cat}`, cat)}</option>)}
+            {uniqueCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {t(`categories.${cat}`, cat)}
+              </option>
+            ))}
           </select>
-        </div>
-        </div>
+        </section>
 
         {/* Products Grid */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: 50,
+              background: '#ffffff',
+              borderRadius: 18,
+              boxShadow: '0 2px 12px rgba(15,23,42,0.08)',
+              border: '1px solid #E2E8F0',
+            }}
+          >
             <p style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</p>
           </div>
         ) : currentProducts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-            <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? t('product.no_products_found') : t('product.no_products')}</p>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: 50,
+              background: '#ffffff',
+              borderRadius: 18,
+              boxShadow: '0 2px 12px rgba(15,23,42,0.08)',
+              border: '1px solid #E2E8F0',
+            }}
+          >
+            <p style={{ color: '#64748b', fontSize: 15 }}>
+              {searchTerm ? t('product.no_products_found') : t('product.no_products')}
+            </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, marginBottom: 24 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: 20,
+              marginBottom: 24,
+            }}
+          >
             {currentProducts.map((product) => {
-            const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
-            return (
-              <div key={product.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 6px 24px rgba(15,23,42,0.1)', transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(15,23,42,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(15,23,42,0.1)'; }}>
-                {/* Image */}
-                <div style={{ height: 160, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {product.image ? <img src={product.image} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9ca3af', fontSize: 40 }}>📦</span>}
-                </div>
-                {/* Info */}
-                <div style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{product.productName}</h3>
-                    {hasVariants && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 500 }}>{product.variants.length} {t('product.variants')}</span>}
+              const hasVariants =
+                product.hasVariants &&
+                Array.isArray(product.variants) &&
+                product.variants.length > 0;
+              return (
+                <div
+                  key={product.id}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 6px 18px rgba(15,23,42,0.08)',
+                    transition: 'all 0.3s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.boxShadow =
+                      '0 12px 32px rgba(15,23,42,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow =
+                      '0 6px 18px rgba(15,23,42,0.08)';
+                  }}
+                >
+                  {/* Image */}
+                  <div
+                    style={{
+                      position: 'relative',
+                      paddingTop: '72%',
+                      background: '#F8FAFC',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.productName}
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          maxWidth: '90%',
+                          maxHeight: '90%',
+                          objectFit: 'contain',
+                          transition: 'transform 0.3s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform =
+                            'translate(-50%, -50%) scale(1.06)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform =
+                            'translate(-50%, -50%)';
+                        }}
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          color: '#9ca3af',
+                          fontSize: 40,
+                        }}
+                      >
+                        📦
+                      </span>
+                    )}
+
+                    {product.category && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: 12,
+                          right: 12,
+                          background: '#3B82F6',
+                          color: '#ffffff',
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {product.category}
+                      </span>
+                    )}
                   </div>
-                  {product.description && (
-                    <p style={{ margin: '0 0 8px', fontSize: 12, color: '#6b7280', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
-                  )}
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                    {product.category && <span style={{ background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.category}</span>}
-                    <span style={{ background: '#f8fafc', color: '#64748b', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.unit || 'ชิ้น'}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>{getDisplayPrice(product)}</span>
-                    {(() => {
-                      const qty = parseInt(product.quantity || 0);
-                      const reserved = parseInt(product.reserved || 0);
-                      const staffReserved = parseInt(product.staffReserved || 0);
-                      const availableForCustomer = Math.max(0, qty - reserved - staffReserved);
-                      return (
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>
-                          {t('product.remaining')}: {availableForCustomer} {product.unit || t('common.piece')}
+
+                  {/* Info */}
+                  <div style={{ padding: '16px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: 6,
+                      }}
+                    >
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontSize: 16,
+                          fontWeight: 600,
+                          color: '#0F172A',
+                          lineHeight: 1.3,
+                          maxWidth: '75%',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {product.productName}
+                      </h3>
+                      {hasVariants && (
+                        <span
+                          style={{
+                            background: '#EEF2FF',
+                            color: '#4338CA',
+                            padding: '3px 7px',
+                            borderRadius: 6,
+                            fontSize: 10,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {product.variants.length} {t('product.variants')}
                         </span>
-                      );
-                    })()}
+                      )}
+                    </div>
+
+                    {product.description && (
+                      <p
+                        style={{
+                          margin: '0 0 10px',
+                          fontSize: 12,
+                          color: '#64748B',
+                          lineHeight: 1.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {product.description}
+                      </p>
+                    )}
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 6,
+                        marginBottom: 10,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      {product.category && (
+                        <span
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            background: 'rgba(59,130,246,0.08)',
+                            color: '#2563EB',
+                          }}
+                        >
+                          {product.category}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          background: '#F8FAFC',
+                          color: '#64748B',
+                        }}
+                      >
+                        {product.unit || 'ชิ้น'}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 12,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 800,
+                          color: '#111827',
+                          fontFamily:
+                            'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                        }}
+                      >
+                        {getDisplayPrice(product)}
+                      </span>
+                      {(() => {
+                        const qty = parseInt(product.quantity || 0);
+                        const reserved = parseInt(product.reserved || 0);
+                        const staffReserved = parseInt(product.staffReserved || 0);
+                        const availableForCustomer = Math.max(
+                          0,
+                          qty - reserved - staffReserved,
+                        );
+                        return (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: '#94A3B8',
+                            }}
+                          >
+                            {t('product.remaining')}: {availableForCustomer}{' '}
+                            {product.unit || t('common.piece')}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <button
+                      onClick={() => openProductModal(product)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: 10,
+                        border: 'none',
+                        background:
+                          'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                        color: '#ffffff',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 18px rgba(30,64,175,0.45)',
+                      }}
+                    >
+                      {t('cart.add_to_cart')}
+                    </button>
                   </div>
-                  <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
-                    {t('cart.add_to_cart')}
-                  </button>
                 </div>
-              </div>
-            );
+              );
             })}
           </div>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-            <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>{t('common.previous')}</button>
-            <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>{t('common.page')} {currentPage} / {totalPages}</span>
-            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>{t('common.next')}</button>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 8,
+              marginTop: 20,
+            }}
+          >
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: '10px 18px',
+                border: '2px solid #E2E8F0',
+                borderRadius: 10,
+                background: currentPage === 1 ? '#F1F5F9' : '#FFFFFF',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                color: currentPage === 1 ? '#94A3B8' : '#1E40AF',
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {t('common.previous')}
+            </button>
+            <span
+              style={{
+                padding: '10px 16px',
+                fontSize: 14,
+                color: '#374151',
+              }}
+            >
+              {t('common.page')} {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '10px 18px',
+                border: '2px solid #E2E8F0',
+                borderRadius: 10,
+                background:
+                  currentPage === totalPages ? '#F1F5F9' : '#FFFFFF',
+                cursor:
+                  currentPage === totalPages ? 'not-allowed' : 'pointer',
+                color: currentPage === totalPages ? '#94A3B8' : '#1E40AF',
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {t('common.next')}
+            </button>
           </div>
         )}
       </div>
@@ -293,7 +810,7 @@ export default function CustomerDashboard() {
                         >
                           <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? '#1e40af' : '#111827' }}>{variant.size}</div>
                           <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{variant.color}</div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', marginTop: 6 }}>฿{(variant.sellPrice || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginTop: 6 }}>฿{(variant.sellPrice || 0).toLocaleString()}</div>
                           <div style={{ fontSize: 10, color: isOutOfStock ? '#ef4444' : '#6b7280', marginTop: 4 }}>
                             {isOutOfStock ? t('product.out_of_stock') : `${t('product.remaining')} ${available}`}
                           </div>
@@ -306,7 +823,7 @@ export default function CustomerDashboard() {
                 <div style={{ marginBottom: 20, padding: '16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, color: '#374151' }}>{t('common.price')}:</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>฿{(selectedProduct.sellPrice || selectedProduct.price || 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>฿{(selectedProduct.sellPrice || selectedProduct.price || 0).toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                     <span style={{ fontSize: 13, color: '#6b7280' }}>{t('product.remaining')}:</span>
@@ -321,7 +838,7 @@ export default function CustomerDashboard() {
                   <div style={{ fontSize: 13, color: '#1e40af', fontWeight: 600, marginBottom: 8 }}>{t('common.selected')}:</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, color: '#374151' }}>{selectedVariant.size} / {selectedVariant.color}</span>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}>฿{(selectedVariant.sellPrice || 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>฿{(selectedVariant.sellPrice || 0).toLocaleString()}</span>
                   </div>
                 </div>
               )}
@@ -346,12 +863,27 @@ export default function CustomerDashboard() {
                   padding: '16px',
                   borderRadius: 12,
                   border: 'none',
-                  background: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  background:
+                    addingToCart ||
+                    (selectedProduct.hasVariants && !selectedVariant) ||
+                    getAvailableQuantity() <= 0
+                      ? '#9ca3af'
+                      : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
                   color: '#fff',
                   fontSize: 16,
                   fontWeight: 700,
-                  cursor: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? 'not-allowed' : 'pointer',
-                  boxShadow: (addingToCart || (selectedProduct.hasVariants && !selectedVariant) || getAvailableQuantity() <= 0) ? 'none' : '0 6px 20px rgba(16,185,129,0.4)',
+                  cursor:
+                    addingToCart ||
+                    (selectedProduct.hasVariants && !selectedVariant) ||
+                    getAvailableQuantity() <= 0
+                      ? 'not-allowed'
+                      : 'pointer',
+                  boxShadow:
+                    addingToCart ||
+                    (selectedProduct.hasVariants && !selectedVariant) ||
+                    getAvailableQuantity() <= 0
+                      ? 'none'
+                      : '0 6px 22px rgba(30,64,175,0.5)',
                 }}
               >
                 {addingToCart ? t('cart.adding_to_cart') : getAvailableQuantity() <= 0 ? t('product.out_of_stock') : `${t('cart.add_to_cart')} (฿${((selectedVariant?.sellPrice || selectedProduct.sellPrice || selectedProduct.price || 0) * quantity).toLocaleString()})`}

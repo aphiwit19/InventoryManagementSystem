@@ -13,7 +13,7 @@ export default function StaffOrderDetailPage() {
       <div style={{ 
         padding: 32, 
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%)',
+        background: 'radial-gradient(circle at top left, #4567b7 0%, #6495ed 40%, #87ceeb 80%)',
       }}>
         <div style={{ 
           maxWidth: 600, 
@@ -31,7 +31,7 @@ export default function StaffOrderDetailPage() {
               padding: '12px 24px',
               borderRadius: 12,
               border: 'none',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
               color: '#fff',
               fontWeight: 600,
               cursor: 'pointer',
@@ -63,7 +63,7 @@ export default function StaffOrderDetailPage() {
     <div style={{ 
       padding: '32px 24px', 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%)',
+      background: 'radial-gradient(circle at top left, #4567b7 0%, #6495ed 40%, #87ceeb 80%)',
     }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         {/* Main Card */}
@@ -111,7 +111,7 @@ export default function StaffOrderDetailPage() {
                 <div style={{ 
                   fontSize: 32, 
                   fontWeight: 700, 
-                  color: '#0ea5e9',
+                  color: '#111827',
                 }}>
                   ฿{totalText}
                 </div>
@@ -432,12 +432,12 @@ export default function StaffOrderDetailPage() {
                 padding: '14px 32px',
                 borderRadius: 12,
                 border: 'none',
-                background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
                 color: '#fff',
                 fontWeight: 600,
                 cursor: 'pointer',
                 fontSize: 15,
-                boxShadow: '0 4px 14px rgba(107,114,128,0.3)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
               }}
             >
               ← {t('withdraw.back_to_orders')}

@@ -152,16 +152,39 @@ export default function WithdrawPage() {
   return (
     <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ 
-          background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #22d3ee 100%)', 
-          padding: '24px 32px', 
-          borderRadius: 16, 
-          marginBottom: 20, 
-          boxShadow: '0 10px 40px rgba(30,64,175,0.3)'
-        }}>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 26, fontWeight: 700 }}>{t('withdraw.withdraw_request')}</h1>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>{t('withdraw.withdraw_cart')}</div>
+        {/* Header - match All Products bar style */}
+        <div
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(148,163,184,0.25)',
+            padding: '22px 28px',
+            borderRadius: 18,
+            marginBottom: 24,
+            boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              color: '#1e40af',
+              fontSize: 22,
+              fontWeight: 700,
+            }}
+          >
+            {t('withdraw.withdraw_request')}
+          </h1>
+          <div
+            style={{
+              fontSize: 14,
+              color: '#3b82f6',
+              marginTop: 6,
+            }}
+          >
+            {t('withdraw.withdraw_cart')}
+          </div>
         </div>
 
         {/* Action Bar */}
@@ -178,7 +201,7 @@ export default function WithdrawPage() {
           <div style={{ background: '#fff', borderRadius: 18, padding: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
             <div style={{ fontSize: 60, marginBottom: 16 }}>🛒</div>
             <p style={{ color: '#64748b', fontSize: 16 }}>{t('cart.cart_empty')}</p>
-            <button onClick={() => navigate('/staff')} style={{ marginTop: 16, padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t('cart.go_shopping')}</button>
+            <button onClick={() => navigate('/staff')} style={{ marginTop: 16, padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)' }}>{t('cart.go_shopping')}</button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 20 }}>
@@ -212,7 +235,7 @@ export default function WithdrawPage() {
                     {/* Price & Remove */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                       <button onClick={() => handleRemoveItem(item)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
-                      <div style={{ fontWeight: 700, color: '#16a34a', fontSize: 16 }}>฿{(item.sellPrice * item.quantity).toLocaleString()}</div>
+                      <div style={{ fontWeight: 700, color: '#111827', fontSize: 16 }}>฿{(item.sellPrice * item.quantity).toLocaleString()}</div>
                     </div>
                   </div>
                 ))}
@@ -374,11 +397,11 @@ export default function WithdrawPage() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#374151' }}>{t('common.total')}:</span>
-                    <span style={{ fontWeight: 700, fontSize: 20, color: '#16a34a' }}>฿{totalAmount.toLocaleString()}</span>
+                    <span style={{ fontWeight: 700, fontSize: 20, color: '#111827' }}>฿{totalAmount.toLocaleString()}</span>
                   </div>
                 </div>
 
-                <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: 10, border: 'none', background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: submitting ? 'none' : '0 6px 20px rgba(37,99,235,0.4)' }}>
+                <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: 10, border: 'none', background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: submitting ? 'none' : '0 6px 20px rgba(37, 99, 235, 0.4)' }}>
                   {submitting ? t('message.processing') : t('withdraw.confirm_withdraw')}
                 </button>
               </form>

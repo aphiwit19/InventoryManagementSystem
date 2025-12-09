@@ -191,21 +191,22 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
       }}
     >
       <div style={{ width: '100%', maxWidth: 1180, margin: '0 auto' }}>
-        {/* Header */}
+        {/* Header - match Staff header bar style */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #0ea5e9 100%)',
-            padding: '24px 28px',
+            background: 'transparent',
+            border: '1px solid rgba(148,163,184,0.25)',
+            padding: '22px 28px',
             borderRadius: 18,
-            marginBottom: 20,
-            boxShadow: '0 10px 40px rgba(30,64,175,0.3)',
+            marginBottom: 24,
+            boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
           }}
         >
           <h1
             style={{
               margin: '0 0 6px',
-              color: '#fff',
-              fontSize: 26,
+              color: '#1e40af',
+              fontSize: 22,
               fontWeight: 700,
             }}
           >
@@ -214,7 +215,7 @@ export default function ProfilePage({ headerTitle, headerSubtitle }) {
           <div
             style={{
               fontSize: 14,
-              color: 'rgba(255,255,255,0.85)',
+              color: '#3b82f6',
             }}
           >
             {headerSubtitle || t('user.user_info')}

@@ -327,7 +327,10 @@
     "select_carrier": "Select carrier",
     "tracking_number": "Tracking Number",
     "tracking_placeholder": "e.g. EX123456789TH",
-    "save_shipping": "Save Shipping"
+    "save_shipping": "Save Shipping",
+    "processing": "Processing",
+    "success": "Completed",
+    "view_detail": "View Details"
   },
   "withdraw": {
     "withdraw": "Withdraw",

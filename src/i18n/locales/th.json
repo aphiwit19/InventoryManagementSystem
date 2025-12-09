@@ -327,7 +327,10 @@
     "select_carrier": "เลือกผู้ให้บริการ",
     "tracking_number": "เลข Tracking",
     "tracking_placeholder": "เช่น EX123456789TH",
-    "save_shipping": "บันทึกการจัดส่ง"
+    "save_shipping": "บันทึกการจัดส่ง",
+    "processing": "กำลังดำเนินการ",
+    "success": "สำเร็จแล้ว",
+    "view_detail": "ดูรายละเอียด"
   },
   "withdraw": {
     "withdraw": "เบิกสินค้า",

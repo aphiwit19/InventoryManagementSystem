@@ -99,7 +99,7 @@ export default function CustomerOrderDetailPage() {
                   fontWeight: 700, 
                   color: '#1e40af',
                 }}>
-                  คำสั่งซื้อ #{order.id?.slice(0, 20) || id}
+                  คำสั่งซื้อ #{order.orderNumber || (order.id || id)?.slice(0, 12).toUpperCase() || 'N/A'}
                 </h1>
                 <div style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
                   วันที่สั่งซื้อ: {dateText}
@@ -110,7 +110,7 @@ export default function CustomerOrderDetailPage() {
                 <div style={{ 
                   fontSize: 32, 
                   fontWeight: 700, 
-                  color: '#0ea5e9',
+                  color: '#0F172A',
                 }}>
                   ฿{totalText}
                 </div>
@@ -233,7 +233,7 @@ export default function CustomerOrderDetailPage() {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#0ea5e9' }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>
                           ฿{(it.subtotal || 0).toLocaleString()}
                         </div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>

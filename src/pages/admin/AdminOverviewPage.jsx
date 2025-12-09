@@ -289,8 +289,8 @@ function SummaryCard({ title, value, subtext, onClick }) {
         e.currentTarget.style.boxShadow = '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)';
       }}
     >
-      <div style={{ fontSize: 13, color: '#3b82f6', fontWeight: 500 }}>{title}</div>
-      <div style={{ fontSize: 32, fontWeight: 700, marginTop: 8, color: '#1e40af' }}>{value}</div>
+      <div style={{ fontSize: 13, color: '#0F172A', fontWeight: 500 }}>{title}</div>
+      <div style={{ fontSize: 32, fontWeight: 700, marginTop: 8, color: '#0F172A' }}>{value}</div>
       <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{subtext}</div>
     </div>
   );
@@ -308,12 +308,12 @@ function RevenueCard({ title, value, subtext }) {
         backdropFilter: 'blur(8px)',
       }}
     >
-      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 13, color: '#0F172A', marginBottom: 8 }}>{title}</div>
       <div
         style={{
           fontSize: 36,
           fontWeight: 700,
-          color: '#1e40af',
+          color: '#0F172A',
           letterSpacing: '-0.02em',
         }}
       >

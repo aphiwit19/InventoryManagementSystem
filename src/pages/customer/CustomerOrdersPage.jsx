@@ -86,171 +86,193 @@ export default function CustomerOrdersPage() {
     return pages;
   };
 
+  const totalOrders = orders.length;
+  const completedCount = orders.filter(
+    (o) => (o.shippingStatus || 'รอดำเนินการ') === 'ส่งสำเร็จ',
+  ).length;
+  const inProgressCount = totalOrders - completedCount;
+
   return (
-    <div style={{ padding: '30px', background: '#f0f4ff', minHeight: '100vh' }}>
-      {/* Header */}
-      <div
-        style={{
-          maxWidth: 960,
-          margin: '0 auto 24px',
-          background:
-            'linear-gradient(135deg, #1D4ED8 0%, #2563EB 40%, #1D9BF0 75%, #4F46E5 100%)',
-          borderRadius: 28,
-          padding: '18px 24px 18px',
-          boxShadow: '0 12px 28px rgba(15,23,42,0.28)',
-          color: '#fff',
-        }}
-      >
-        <div
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#F1F5F9',
+        padding: '24px 24px 32px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+        {/* Page Header with Stats */}
+        <section
           style={{
+            background: '#FFFFFF',
+            borderRadius: 16,
+            padding: '24px 28px',
+            marginBottom: 24,
+            boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+            border: '1px solid #E2E8F0',
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 16,
+            alignItems: 'center',
+            gap: 24,
             flexWrap: 'wrap',
           }}
         >
-          <div style={{ minWidth: 220 }}>
-            <div
+          <div>
+            <h1
               style={{
-                fontSize: 12,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                opacity: 0.85,
-              }}
-            >
-              MY ORDERS
-            </div>
-            <div
-              style={{
-                fontSize: 22,
+                margin: 0,
+                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                fontSize: 24,
                 fontWeight: 700,
-                letterSpacing: '0.03em',
-                marginTop: 4,
+                color: '#2563EB',
               }}
             >
               {t('order.my_orders')}
-            </div>
-            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 6 }}>
-              {t('order.order_history')}
-            </div>
+            </h1>
+            <p
+              style={{
+                margin: '6px 0 0',
+                fontSize: 14,
+                color: '#64748B',
+              }}
+            >
+              {t('order.order_history') ||
+                'จัดการและติดตามสถานะคำสั่งซื้อทั้งหมดของคุณ'}
+            </p>
           </div>
 
           <div
             style={{
               display: 'flex',
-              flex: '1 1 260px',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 18,
+              gap: 24,
               flexWrap: 'wrap',
             }}
           >
-            <div
-              style={{
-                position: 'relative',
-                flex: '2 1 260px',
-                minWidth: 220,
-                maxWidth: 360,
-              }}
-            >
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('common.search')}
+            <div style={{ textAlign: 'center' }}>
+              <div
                 style={{
-                  width: '100%',
-                  padding: '8px 34px 8px 14px',
-                  borderRadius: 999,
-                  border: '1px solid rgba(15,23,42,0.12)',
-                  fontSize: 13,
-                  outline: 'none',
-                  background: '#F9FAFB',
+                  fontFamily:
+                    'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                  fontSize: 22,
+                  fontWeight: 800,
                   color: '#0F172A',
-                  boxShadow: '0 2px 6px rgba(15,23,42,0.18)',
-                }}
-              />
-              <span
-                style={{
-                  position: 'absolute',
-                  right: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#4B5563',
-                  fontSize: 15,
                 }}
               >
-                🔍
-              </span>
+                {totalOrders}
+              </div>
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                {t('order.all_orders')}
+              </div>
             </div>
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily:
+                    'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: '#0F172A',
+                }}
+              >
+                {inProgressCount}
+              </div>
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                {t('order.processing')}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily:
+                    'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: '#0F172A',
+                }}
+              >
+                {completedCount}
+              </div>
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                {t('order.success')}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Filter Section */}
+        <section
+          style={{
+            background: '#FFFFFF',
+            borderRadius: 12,
+            padding: '16px 20px',
+            marginBottom: 24,
+            boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
+            border: '1px solid #E2E8F0',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1.4fr) 220px',
+              gap: 12,
+              alignItems: 'center',
+            }}
+          >
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('order.search_orders_placeholder') ||
+                t('common.search')}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '2px solid #E2E8F0',
+                fontSize: 14,
+                background: '#F9FAFB',
+                outline: 'none',
+              }}
+            />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
-                padding: '10px 18px',
-                borderRadius: 12,
-                border: '2px solid #e2e8f0',
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: '2px solid #E2E8F0',
                 fontSize: 14,
-                fontWeight: 500,
-                minWidth: 160,
-                background: '#ffffff',
-                color: '#1e40af',
-                flexShrink: 0,
-                marginLeft: 'auto',
+                background: '#FFFFFF',
                 cursor: 'pointer',
-                outline: 'none',
+                minWidth: 0,
               }}
             >
-              <option value="all" style={{ color: '#374151', background: '#fff' }}>{t('common.all_status')}</option>
-              <option value="รอดำเนินการ" style={{ color: '#374151', background: '#fff' }}>{t('order.status_pending')}</option>
-              <option value="กำลังดำเนินการส่ง" style={{ color: '#374151', background: '#fff' }}>{t('order.status_shipping')}</option>
-              <option value="ส่งสำเร็จ" style={{ color: '#374151', background: '#fff' }}>{t('order.status_delivered')}</option>
+              <option value="all">{t('common.all_status')}</option>
+              <option value="รอดำเนินการ">{t('order.status_pending')}</option>
+              <option value="กำลังดำเนินการส่ง">
+                {t('order.status_shipping')}
+              </option>
+              <option value="ส่งสำเร็จ">{t('order.status_delivered')}</option>
             </select>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Orders list */}
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <div
+        {/* Orders Table */}
+        <section
           style={{
-            borderRadius: 26,
-            padding: 16,
-            background: 'rgba(15,23,42,0.04)',
-            boxShadow: '0 10px 30px rgba(15,23,42,0.06)'
+            background: '#FFFFFF',
+            borderRadius: 16,
+            overflow: 'hidden',
+            boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+            border: '1px solid #E2E8F0',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              marginBottom: 8,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                padding: '6px 12px',
-                borderRadius: 999,
-                background: '#fff',
-                border: '1px solid #E5E7EB',
-                color: '#111827',
-                boxShadow: '0 2px 6px rgba(15,23,42,0.08)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {t('common.total')} {filtered.length} {t('common.items')}
-            </div>
-          </div>
           {loading ? (
             <div
               style={{
-                background: '#fff',
-                borderRadius: 20,
                 padding: 40,
                 textAlign: 'center',
                 color: '#6B7280',
-                boxShadow: '0 4px 12px rgba(15,23,42,0.08)'
               }}
             >
               {t('common.loading')}
@@ -258,135 +280,252 @@ export default function CustomerOrdersPage() {
           ) : filtered.length === 0 ? (
             <div
               style={{
-                background: '#fff',
-                borderRadius: 20,
                 padding: 40,
                 textAlign: 'center',
                 color: '#6B7280',
-                boxShadow: '0 4px 12px rgba(15,23,42,0.08)'
               }}
             >
               {t('order.no_orders_found')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {currentOrders.map((o) => {
-              const dateStr = new Date(
-                o.withdrawDate?.seconds ? o.withdrawDate.seconds * 1000 : o.withdrawDate
-              ).toLocaleDateString('th-TH');
-              const status = o.shippingStatus || 'รอดำเนินการ';
-              const statusColor =
-                status === 'ส่งสำเร็จ'
-                  ? '#16A34A'
-                  : status === 'กำลังดำเนินการส่ง'
-                  ? '#2563EB'
-                  : '#F97316';
-              const items = o.items || [];
-              const itemsText = items.length
-                ? items
-                    .map((it) => `${it.productName || ''} x${it.quantity || 0}`)
-                    .join('\n')
-                : '-';
-
-              return (
-                <div
-                  key={o.id}
-                  onClick={() => navigate(`/customer/orders/${o.id}`, { state: { order: o } })}
+            <div style={{ overflowX: 'auto' }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  minWidth: 800,
+                }}
+              >
+                <thead
                   style={{
-                    background: '#fff',
-                    borderRadius: 18,
-                    padding: '14px 18px',
-                    boxShadow: '0 4px 10px rgba(15,23,42,0.06)',
-                    border: '1px solid #E5E7EB',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                    alignItems: 'stretch',
-                    flexWrap: 'wrap',
-                    cursor: 'pointer',
+                    background: '#F1F5F9',
                   }}
                 >
-                  <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.order_id')}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-                      {o.trackingNumber || '-'}
-                    </div>
-                    <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.order_date')}</div>
-                    <div style={{ fontSize: 14, marginBottom: 6 }}>{dateStr}</div>
-                    <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>{t('order.order_items')}</div>
-                    <div
+                  <tr>
+                    <th
                       style={{
-                        fontSize: 13,
-                        color: '#374151',
-                        marginTop: 2,
-                        whiteSpace: 'pre-wrap'
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#64748B',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      {itemsText}
-                    </div>
-                  </div>
-
-                  <div style={{ flex: '1.4 1 260px', minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.shipping_address')}</div>
-                    <div
+                      {t('order.order_id')}
+                    </th>
+                    <th
                       style={{
-                        fontSize: 14,
-                        color: '#374151',
-                        marginTop: 2,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word'
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#64748B',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      {o.requestedAddress || '-'}
-                    </div>
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.shipping')}</div>
-                      <div style={{ fontSize: 14, color: '#374151' }}>
-                        {o.shippingCarrier || '-'}
-                      </div>
-                    </div>
-                  </div>
+                      {t('order.order_date')}
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#64748B',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t('order.order_items')}
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#64748B',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t('common.total')}
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#64748B',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t('order.order_status')}
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#64748B',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t('order.tracking_number')}
+                    </th>
+                    <th
+                      style={{
+                        padding: '14px 16px',
+                        textAlign: 'left',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#64748B',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t('order.manage')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentOrders.map((o) => {
+                    const date = new Date(
+                      o.withdrawDate?.seconds
+                        ? o.withdrawDate.seconds * 1000
+                        : o.withdrawDate,
+                    );
+                    const dateStr = date.toLocaleDateString('th-TH');
+                    const timeStr = date.toLocaleTimeString('th-TH', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+                    const status = o.shippingStatus || 'รอดำเนินการ';
+                    const items = o.items || [];
 
-                  <div
-                    style={{
-                      flex: '0 0 190px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-end',
-                      justifyContent: 'space-between',
-                      gap: 6
-                    }}
-                  >
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, color: '#6B7280' }}>{t('order.order_status')}</div>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          marginTop: 4,
-                          padding: '4px 10px',
-                          borderRadius: 999,
-                          background: `${statusColor}14`,
-                          color: statusColor,
-                          fontSize: 12,
-                          fontWeight: 600
-                        }}
-                      >
-                        {status}
-                      </span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, color: '#6B7280' }}>{t('common.total')}</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>
-                        ฿{(o.total || 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                    let statusClassColor = '#EA580C';
+                    let statusBg = 'rgba(249,115,22,0.1)';
+                    if (status === 'ส่งสำเร็จ') {
+                      statusClassColor = '#059669';
+                      statusBg = 'rgba(16,185,129,0.1)';
+                    } else if (status === 'กำลังดำเนินการส่ง') {
+                      statusClassColor = '#2563EB';
+                      statusBg = 'rgba(59,130,246,0.1)';
+                    }
+
+                    const itemsTitle = items
+                      .map((it) => `${it.productName || ''}`)
+                      .filter(Boolean)
+                      .join(', ');
+                    const itemsDetail = `${items.length || 0} ${
+                      t('common.items')
+                    }`;
+
+                    return (
+                      <tr key={o.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <div
+                            style={{
+                              fontFamily:
+                                'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                              fontWeight: 700,
+                              color: '#2563EB',
+                              fontSize: 14,
+                            }}
+                          >
+                            {o.orderNumber || (o.id ? `#${o.id.slice(0, 8).toUpperCase()}` : '-')}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <div style={{ fontSize: 13, color: '#475569' }}>{dateStr}</div>
+                          <div style={{ fontSize: 12, color: '#94A3B8' }}>{timeStr}</div>
+                        </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: '#0F172A',
+                            }}
+                          >
+                            {itemsTitle || '-'}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 2,
+                              fontSize: 12,
+                              color: '#94A3B8',
+                            }}
+                          >
+                            {itemsDetail}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <div
+                            style={{
+                              fontFamily:
+                                'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              color: '#0F172A',
+                            }}
+                          >
+                            ฿{(o.total || 0).toLocaleString()}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '4px 12px',
+                              borderRadius: 999,
+                              background: statusBg,
+                              color: statusClassColor,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <div style={{ fontSize: 13, color: '#475569', fontFamily: 'monospace' }}>
+                            {o.trackingNumber || '-'}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/customer/orders/${o.id}`, {
+                                state: { order: o },
+                              })
+                            }
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: 10,
+                              border: '2px solid #2563EB',
+                              background: '#2563EB',
+                              color: '#FFFFFF',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {t('order.view_detail')}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+        </section>
 
         {/* Pagination */}
         {filtered.length > 0 && totalPages > 1 && (
@@ -396,12 +535,12 @@ export default function CustomerOrdersPage() {
               justifyContent: 'center',
               alignItems: 'center',
               gap: 8,
-              padding: '18px 22px',
-              marginTop: 16,
-              background: '#ffffff',
-              borderRadius: 18,
-              boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
-              border: '1px solid #e5e7eb',
+              padding: '16px 18px',
+              marginTop: 20,
+              background: '#FFFFFF',
+              borderRadius: 12,
+              boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+              border: '1px solid #E2E8F0',
             }}
           >
             <button
@@ -409,12 +548,16 @@ export default function CustomerOrdersPage() {
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               style={{
-                padding: '8px 16px',
-                borderRadius: 10,
-                border: '2px solid #e2e8f0',
-                background: currentPage === 1 ? '#f1f5f9' : '#ffffff',
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                color: currentPage === 1 ? '#94a3b8' : '#1e40af',
+                minWidth: 40,
+                height: 40,
+                padding: '0 12px',
+                borderRadius: 8,
+                border: '2px solid #E2E8F0',
+                background:
+                  currentPage === 1 ? '#F1F5F9' : '#FFFFFF',
+                cursor:
+                  currentPage === 1 ? 'not-allowed' : 'pointer',
+                color: currentPage === 1 ? '#94A3B8' : '#1D4ED8',
                 fontSize: 13,
                 fontWeight: 600,
               }}
@@ -427,22 +570,22 @@ export default function CustomerOrdersPage() {
                 type="button"
                 onClick={() => handlePageChange(page)}
                 style={{
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  border: currentPage === page ? 'none' : '2px solid #e2e8f0',
+                  minWidth: 40,
+                  height: 40,
+                  padding: '0 10px',
+                  borderRadius: 8,
+                  border:
+                    currentPage === page
+                      ? 'none'
+                      : '2px solid #E2E8F0',
                   background:
                     currentPage === page
-                      ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                      : '#ffffff',
-                  color: currentPage === page ? '#ffffff' : '#374151',
+                      ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
+                      : '#FFFFFF',
+                  color: currentPage === page ? '#FFFFFF' : '#111827',
                   cursor: 'pointer',
                   fontSize: 13,
                   fontWeight: 600,
-                  boxShadow:
-                    currentPage === page
-                      ? '0 2px 8px rgba(37,99,235,0.4)'
-                      : 'none',
-                  minWidth: 40,
                 }}
               >
                 {page}
@@ -453,12 +596,17 @@ export default function CustomerOrdersPage() {
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               style={{
-                padding: '8px 16px',
-                borderRadius: 10,
-                border: '2px solid #e2e8f0',
-                background: currentPage === totalPages ? '#f1f5f9' : '#ffffff',
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                color: currentPage === totalPages ? '#94a3b8' : '#1e40af',
+                minWidth: 40,
+                height: 40,
+                padding: '0 12px',
+                borderRadius: 8,
+                border: '2px solid #E2E8F0',
+                background:
+                  currentPage === totalPages ? '#F1F5F9' : '#FFFFFF',
+                cursor:
+                  currentPage === totalPages ? 'not-allowed' : 'pointer',
+                color:
+                  currentPage === totalPages ? '#94A3B8' : '#1D4ED8',
                 fontSize: 13,
                 fontWeight: 600,
               }}
