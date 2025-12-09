@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { getAllProducts, addToCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { getEffectivePrice, hasActivePromotion, getDiscountPercentage } from '../../utils/promotionHelper';
 
 export default function CustomerDashboard() {
   const { t } = useTranslation();
@@ -19,10 +20,36 @@ export default function CustomerDashboard() {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
 
+  // Promotion slider
+  const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+
+  // Auto slide promotion banner every 5 seconds
+  useEffect(() => {
+    const promoProducts = products.filter(p => hasActivePromotion(p));
+    if (promoProducts.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentPromoIndex((prev) => (prev + 1) % promoProducts.length);
+    }, 5000); // 5 วินาที
+
+    return () => clearInterval(interval);
+  }, [products]);
+
   useEffect(() => {
     const loadProducts = async () => {
       try {
         const productsData = await getAllProducts();
+        console.log('Loaded products:', productsData);
+        
+        // Check promotion data
+        productsData.forEach(p => {
+          if (p.productName?.includes('หูฟัง')) {
+            console.log('หูฟัง product:', p);
+            console.log('Has promotion?', p.promotion);
+            console.log('Is active?', hasActivePromotion(p));
+          }
+        });
+        
         // Filter only products that still have available stock for customers
         const available = productsData.filter(p => {
           const qty = parseInt(p.quantity || 0);
@@ -115,7 +142,8 @@ export default function CustomerDashboard() {
         const vStaffReserved = parseInt(selectedVariant.staffReserved || 0);
         cartItem.maxQuantity = Math.max(0, vQty - vReserved - vStaffReserved);
       } else {
-        cartItem.sellPrice = product.sellPrice || product.price || 0;
+        // Use promotion price if active
+        cartItem.sellPrice = getEffectivePrice(product);
         const pQty = parseInt(product.quantity || 0);
         const pReserved = parseInt(product.reserved || 0);
         const pStaffReserved = parseInt(product.staffReserved || 0);
@@ -162,7 +190,304 @@ export default function CustomerDashboard() {
   return (
     <div style={{ padding: '24px', boxSizing: 'border-box' }}>
       <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto' }}>
-        {/* Hero Banner */}
+        {/* Promotion Banner */}
+        {(() => {
+          const promoProducts = products.filter(p => hasActivePromotion(p));
+          if (promoProducts.length === 0) return null;
+          
+          const featuredPromo = promoProducts[currentPromoIndex % promoProducts.length];
+          const discount = getDiscountPercentage(featuredPromo);
+          const effectivePrice = getEffectivePrice(featuredPromo);
+          const originalPrice = featuredPromo.sellPrice || featuredPromo.price || 0;
+
+          const handlePrev = (e) => {
+            e.stopPropagation();
+            setCurrentPromoIndex((prev) => (prev - 1 + promoProducts.length) % promoProducts.length);
+          };
+
+          const handleNext = (e) => {
+            e.stopPropagation();
+            setCurrentPromoIndex((prev) => (prev + 1) % promoProducts.length);
+          };
+
+          return (
+            <section
+              onClick={() => openProductModal(featuredPromo)}
+              style={{
+                background: 'linear-gradient(135deg, #0B1120 0%, #1E3A8A 10%, #2563EB 45%, #0EA5E9 100%)',
+                borderRadius: 24,
+                padding: '40px',
+                marginBottom: '32px',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 26px 80px rgba(15,23,42,0.75)',
+                minHeight: 280,
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 32px 96px rgba(15,23,42,0.85)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 26px 80px rgba(15,23,42,0.75)';
+              }}
+            >
+              {/* Navigation Arrows - Hidden by default, show on hover */}
+              {promoProducts.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrev}
+                    className="promo-nav-btn"
+                    style={{
+                      position: 'absolute',
+                      left: 20,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      background: 'rgba(255,255,255,0.95)',
+                      border: 'none',
+                      borderRadius: 12,
+                      width: 44,
+                      height: 44,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: '#1e40af',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                      transition: 'all 0.3s ease',
+                      opacity: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fff';
+                      e.currentTarget.style.transform = 'translateY(-50%) translateX(-4px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
+                      e.currentTarget.style.transform = 'translateY(-50%) translateX(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="promo-nav-btn"
+                    style={{
+                      position: 'absolute',
+                      right: 20,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      background: 'rgba(255,255,255,0.95)',
+                      border: 'none',
+                      borderRadius: 12,
+                      width: 44,
+                      height: 44,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: '#1e40af',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                      transition: 'all 0.3s ease',
+                      opacity: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fff';
+                      e.currentTarget.style.transform = 'translateY(-50%) translateX(4px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
+                      e.currentTarget.style.transform = 'translateY(-50%) translateX(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                    }}
+                  >
+                    ›
+                  </button>
+                  <style>{`
+                    section:hover .promo-nav-btn {
+                      opacity: 1 !important;
+                    }
+                  `}</style>
+
+                  {/* Dots Indicator */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 20,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 10,
+                      display: 'flex',
+                      gap: 8,
+                    }}
+                  >
+                    {promoProducts.map((_, index) => (
+                      <div
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentPromoIndex(index);
+                        }}
+                        style={{
+                          width: index === currentPromoIndex % promoProducts.length ? 24 : 8,
+                          height: 8,
+                          borderRadius: 4,
+                          background: index === currentPromoIndex % promoProducts.length ? '#fff' : 'rgba(255,255,255,0.4)',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Decorative blobs */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-50%',
+                  right: '-10%',
+                  width: 400,
+                  height: 400,
+                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  filter: 'blur(50px)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '-40%',
+                  left: '-10%',
+                  width: 360,
+                  height: 360,
+                  background: 'radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  filter: 'blur(50px)',
+                }}
+              />
+
+              {/* Left: Product Info */}
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  flex: 1,
+                  padding: '18px 22px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'inline-block',
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    padding: '8px 18px',
+                    borderRadius: 999,
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    marginBottom: 16,
+                    boxShadow: '0 4px 12px rgba(239,68,68,0.4)',
+                  }}
+                >
+                  🔥 SALE {discount}% OFF
+                </div>
+                <h1
+                  style={{
+                    fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                    fontSize: 36,
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    margin: '0 0 12px',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {featuredPromo.productName}
+                </h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <span style={{ fontSize: 32, fontWeight: 800, color: '#fbbf24' }}>
+                    ฿{effectivePrice.toLocaleString()}
+                  </span>
+                  <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.6)', textDecoration: 'line-through' }}>
+                    ฿{originalPrice.toLocaleString()}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    color: 'rgba(255,255,255,0.9)',
+                    fontSize: 14,
+                    margin: '0 0 20px',
+                    lineHeight: 1.6,
+                    maxWidth: 400,
+                  }}
+                >
+                  {featuredPromo.description || 'โปรโมชั่นพิเศษ ลดราคาสุดคุ้ม!'}
+                </p>
+                <button
+                  type="button"
+                  style={{
+                    background: '#ffffff',
+                    color: '#2563EB',
+                    padding: '12px 30px',
+                    border: 'none',
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  ซื้อเลย →
+                </button>
+              </div>
+
+              {/* Right: Product Image */}
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  width: 350,
+                  height: 280,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {featuredPromo.image ? (
+                  <img
+                    src={featuredPromo.image}
+                    alt={featuredPromo.productName}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.3))',
+                    }}
+                  />
+                ) : (
+                  <div style={{ fontSize: 80, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}>
+                    📦
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        })()}
+
+        {/* Original Banner (shown when no promotions) */}
         <section
           style={{
             background:
@@ -174,7 +499,7 @@ export default function CustomerDashboard() {
             overflow: 'hidden',
             boxShadow: '0 26px 80px rgba(15,23,42,0.75)',
             minHeight: 280,
-            display: 'flex',
+            display: products.filter(p => hasActivePromotion(p)).length > 0 ? 'none' : 'flex',
             alignItems: 'center',
           }}
         >
@@ -235,7 +560,7 @@ export default function CustomerDashboard() {
                 marginBottom: 16,
               }}
             >
-              The best offers for you
+              🎁 โปรโมชั่นพิเศษสำหรับคุณ
             </div>
             <h1
               style={{
@@ -247,8 +572,19 @@ export default function CustomerDashboard() {
                 lineHeight: 1.1,
               }}
             >
-              Laptops up to
-              <br />– 20% off
+              {(() => {
+                const promoProducts = products.filter(p => hasActivePromotion(p));
+                if (promoProducts.length > 0) {
+                  const maxDiscount = Math.max(...promoProducts.map(p => getDiscountPercentage(p)));
+                  return `ลดสูงสุด ${maxDiscount}%`;
+                }
+                return 'สินค้าคุณภาพ';
+              })()}
+              <br />
+              {(() => {
+                const promoProducts = products.filter(p => hasActivePromotion(p));
+                return promoProducts.length > 0 ? `${promoProducts.length} รายการ` : 'ราคาพิเศษ';
+              })()}
             </h1>
             <p
               style={{
@@ -258,7 +594,13 @@ export default function CustomerDashboard() {
                 lineHeight: 1.6,
               }}
             >
-              The latest and greatest devices at incredible prices
+              {(() => {
+                const promoProducts = products.filter(p => hasActivePromotion(p));
+                if (promoProducts.length > 0) {
+                  return `มีสินค้าโปรโมชั่น ${promoProducts.length} รายการ รอคุณอยู่!`;
+                }
+                return 'สินค้าคุณภาพดี ราคาเป็นกันเอง';
+              })()}
             </p>
             <button
               type="button"
@@ -527,6 +869,25 @@ export default function CustomerDashboard() {
                       </span>
                     )}
 
+                    {hasActivePromotion(product) && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: 12,
+                          left: 12,
+                          background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                          color: '#ffffff',
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          boxShadow: '0 4px 12px rgba(220,38,38,0.4)',
+                        }}
+                      >
+                        🔥 SALE {getDiscountPercentage(product)}%
+                      </span>
+                    )}
+
                     {product.category && (
                       <span
                         style={{
@@ -648,17 +1009,30 @@ export default function CustomerDashboard() {
                         marginBottom: 12,
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 800,
-                          color: '#111827',
-                          fontFamily:
-                            'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                        }}
-                      >
-                        {getDisplayPrice(product)}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 800,
+                            color: hasActivePromotion(product) ? '#dc2626' : '#111827',
+                            fontFamily:
+                              'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
+                          }}
+                        >
+                          {(() => {
+                            if (hasActivePromotion(product)) {
+                              const effectivePrice = getEffectivePrice(product);
+                              return `฿${effectivePrice.toLocaleString()}`;
+                            }
+                            return getDisplayPrice(product);
+                          })()}
+                        </span>
+                        {hasActivePromotion(product) && !product.hasVariants && (
+                          <span style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'line-through' }}>
+                            ฿{(product.sellPrice || product.price || 0).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
                       {(() => {
                         const qty = parseInt(product.quantity || 0);
                         const reserved = parseInt(product.reserved || 0);

@@ -456,7 +456,8 @@
     "payment_settings": "ตั้งค่าบัญชีรับเงิน",
     "upload_qr": "อัปโหลด QR Code",
     "save_settings": "บันทึกการตั้งค่า",
-    "settings_saved": "บันทึกการตั้งค่าสำเร็จ"
+    "settings_saved": "บันทึกการตั้งค่าสำเร็จ",
+    "coupons": "คูปองส่วนลด"
   },
   "staff": {
     "staff_panel": "แผงควบคุม Staff",

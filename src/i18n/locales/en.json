@@ -453,10 +453,11 @@
     "today_revenue": "Today's Revenue",
     "pending_orders": "Pending Orders",
     "system_management": "Inventory Management System",
-    "payment_settings": "Payment Account Settings",
+    "payment_settings": "Payment Settings",
     "upload_qr": "Upload QR Code",
     "save_settings": "Save Settings",
-    "settings_saved": "Settings saved successfully"
+    "settings_saved": "Settings saved successfully",
+    "coupons": "Discount Coupons"
   },
   "staff": {
     "staff_panel": "Staff Panel",

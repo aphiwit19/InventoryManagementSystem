@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { db, storage } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart } from '../../services';
+import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart, validateAndUseCoupon, incrementCouponUsage } from '../../services';
 import { useTranslation } from 'react-i18next';
 
 export default function CustomerPaymentPage() {
@@ -28,6 +28,14 @@ export default function CustomerPaymentPage() {
   const [slipFile, setSlipFile] = useState(null);
   const [, setSlipUploading] = useState(false);
   const [slipPreviewText, setSlipPreviewText] = useState('');
+  
+  // Coupon states
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const total = useMemo(
     () =>
       items.reduce((s, it) => {
@@ -144,6 +152,43 @@ export default function CustomerPaymentPage() {
     }
   }, [shippingFromCart]);
 
+  // Apply coupon
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('กรุณากรอกรหัสคูปอง');
+      return;
+    }
+
+    setApplyingCoupon(true);
+    setCouponError('');
+    setCouponSuccess('');
+
+    try {
+      const result = await validateAndUseCoupon(couponCode, total);
+      setAppliedCoupon(result.coupon);
+      setCouponDiscount(result.discountAmount);
+      setCouponSuccess(`ใช้คูปองสำเร็จ! ลด ฿${result.discountAmount.toLocaleString()}`);
+    } catch (err) {
+      setCouponError(err.message || 'ไม่สามารถใช้คูปองได้');
+      setAppliedCoupon(null);
+      setCouponDiscount(0);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  // Remove coupon
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponCode('');
+    setCouponError('');
+    setCouponSuccess('');
+  };
+
+  // Calculate final total
+  const finalTotal = total - couponDiscount;
+
   const handleConfirm = async () => {
     setFormError('');
     if (!user?.uid) {
@@ -196,7 +241,11 @@ export default function CustomerPaymentPage() {
         requestedAddress: requestedAddress.trim(),
         phone: phone.trim() || null,
         withdrawDate,
-        total,
+        total: finalTotal,
+        subtotal: total,
+        discount: couponDiscount,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
+        couponId: appliedCoupon ? appliedCoupon.id : null,
         paymentMethod: 'bank_transfer_qr',
         paymentAccount: {
           bankName: paymentAccount.bankName,
@@ -210,6 +259,11 @@ export default function CustomerPaymentPage() {
         createdByEmail: user.email || null,
         createdSource: 'customer'
       });
+
+      // Increment coupon usage if applied
+      if (appliedCoupon) {
+        await incrementCouponUsage(appliedCoupon.id);
+      }
 
       await clearCart(user.uid, 'customer');
       setItems([]);
@@ -441,7 +495,7 @@ export default function CustomerPaymentPage() {
                   <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_amount')}</div>
                   <input
                     type="text"
-                    value={`฿${total.toLocaleString()}`}
+                    value={`฿${finalTotal.toLocaleString()}`}
                     readOnly
                     style={{
                       width: 'calc(100% - 50px)',
@@ -638,6 +692,65 @@ export default function CustomerPaymentPage() {
                 <span>{t('order.product_total')}</span>
                 <span>฿{total.toLocaleString()}</span>
               </div>
+
+              {/* Coupon Section */}
+              {!appliedCoupon ? (
+                <div style={{ marginBottom: 12, padding: '12px', background: '#f9fafb', borderRadius: 10, border: '1px dashed #d1d5db' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>🎫 มีรหัสส่วนลด?</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="กรอกรหัสคูปอง"
+                      style={{ flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={applyingCoupon}
+                      style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: applyingCoupon ? 'not-allowed' : 'pointer', opacity: applyingCoupon ? 0.6 : 1 }}
+                    >
+                      {applyingCoupon ? 'กำลังตรวจสอบ...' : 'ใช้'}
+                    </button>
+                  </div>
+                  {couponError && <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>{couponError}</div>}
+                  {couponSuccess && <div style={{ marginTop: 6, fontSize: 12, color: '#059669' }}>{couponSuccess}</div>}
+                </div>
+              ) : (
+                <div style={{ marginBottom: 12, padding: '12px', background: '#d1fae5', borderRadius: 10, border: '1px solid #10b981' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>🎫 {appliedCoupon.code}</div>
+                      <div style={{ fontSize: 12, color: '#047857', marginTop: 2 }}>ลด ฿{couponDiscount.toLocaleString()}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      style={{ padding: '4px 8px', background: '#fff', border: '1px solid #10b981', borderRadius: 6, fontSize: 12, color: '#059669', cursor: 'pointer' }}
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Discount */}
+              {couponDiscount > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: 4,
+                    fontSize: 14,
+                    color: '#059669'
+                  }}
+                >
+                  <span>ส่วนลด</span>
+                  <span>-฿{couponDiscount.toLocaleString()}</span>
+                </div>
+              )}
+
               <div
                 style={{
                   display: 'flex',
@@ -658,8 +771,8 @@ export default function CustomerPaymentPage() {
                 }}
               >
                 <span style={{ fontWeight: 600 }}>{t('order.grand_total')}</span>
-                <span style={{ fontWeight: 700, fontSize: 20 }}>
-                  ฿{total.toLocaleString()}
+                <span style={{ fontWeight: 700, fontSize: 20, color: couponDiscount > 0 ? '#059669' : '#000' }}>
+                  ฿{finalTotal.toLocaleString()}
                 </span>
               </div>
 

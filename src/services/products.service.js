@@ -239,6 +239,7 @@ export async function updateProduct(productId, productData) {
         price: variants[0]?.sellPrice || 0,
         costPrice: variants[0]?.costPrice || 0,
         sellPrice: variants[0]?.sellPrice || 0,
+        promotion: productData.promotion || null,
         updatedAt: Timestamp.now(),
       };
     } else {
@@ -260,6 +261,7 @@ export async function updateProduct(productId, productData) {
         unit: productData.unit ?? current?.unit ?? 'ชิ้น',
         category: productData.category ?? current?.category ?? 'อื่นๆ',
         hasVariants: false,
+        promotion: productData.promotion || null,
         updatedAt: Timestamp.now(),
       };
     }

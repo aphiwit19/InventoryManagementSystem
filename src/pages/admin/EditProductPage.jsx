@@ -47,6 +47,15 @@ export default function EditProductPage() {
   const [showCustomSize, setShowCustomSize] = useState(false);
   const [showCustomColor, setShowCustomColor] = useState(false);
 
+  // Promotion state
+  const [promotion, setPromotion] = useState({
+    active: false,
+    type: 'percentage',
+    value: '',
+    startDate: '',
+    endDate: '',
+  });
+
   // UI states
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,6 +100,17 @@ export default function EditProductPage() {
             costPrice: product.costPrice || '',
             sellPrice: product.sellPrice || product.price || '',
             quantity: product.quantity || '',
+          });
+        }
+
+        // Load promotion data
+        if (product.promotion) {
+          setPromotion({
+            active: product.promotion.active || false,
+            type: product.promotion.type || 'percentage',
+            value: product.promotion.value || '',
+            startDate: product.promotion.startDate || '',
+            endDate: product.promotion.endDate || '',
           });
         }
 
@@ -160,6 +180,39 @@ export default function EditProductPage() {
         throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
       }
 
+      console.log('Current promotion state:', promotion);
+      console.log('promotion.active:', promotion.active);
+      console.log('promotion.value:', promotion.value);
+
+      // Calculate promotion price if active
+      let promotionData = null;
+      
+      // Always save promotion data if checkbox is checked or has value
+      if (promotion.active || promotion.value) {
+        const basePrice = hasVariants ? 0 : parseFloat(simpleProduct.sellPrice || 0);
+        let promotionPrice = basePrice;
+        
+        if (!hasVariants && promotion.value) {
+          if (promotion.type === 'percentage') {
+            promotionPrice = basePrice - (basePrice * parseFloat(promotion.value) / 100);
+          } else {
+            promotionPrice = basePrice - parseFloat(promotion.value);
+          }
+          promotionPrice = Math.max(0, promotionPrice);
+        }
+
+        promotionData = {
+          active: promotion.active,
+          type: promotion.type,
+          value: promotion.value ? parseFloat(promotion.value) : 0,
+          startDate: promotion.startDate || '',
+          endDate: promotion.endDate || '',
+          promotionPrice: !hasVariants && promotion.value ? promotionPrice : null,
+        };
+        
+        console.log('Saving promotion data:', promotionData);
+      }
+
       if (hasVariants) {
         if (variants.length === 0) {
           throw new Error('กรุณาเพิ่มอย่างน้อย 1 Variant');
@@ -176,6 +229,7 @@ export default function EditProductPage() {
             reserved: v.reserved || 0,
             staffReserved: v.staffReserved || 0,
           })),
+          promotion: promotionData,
         });
       } else {
         if (!simpleProduct.quantity || !simpleProduct.costPrice || !simpleProduct.sellPrice) {
@@ -185,6 +239,7 @@ export default function EditProductPage() {
           ...formData,
           hasVariants: false,
           ...simpleProduct,
+          promotion: promotionData,
         });
       }
 
@@ -670,22 +725,204 @@ export default function EditProductPage() {
               />
             </div>
 
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+            {/* Promotion Section */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
+              border: '2px solid #3b82f6', 
+              borderRadius: 16, 
+              padding: '24px', 
+              marginTop: 24,
+              boxShadow: '0 4px 16px rgba(59,130,246,0.15)'
+            }}>
+              <div style={{ 
+                fontSize: 18, 
+                fontWeight: 800, 
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: 20, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10 
+              }}>
+                🎁 ตั้งค่าโปรโมชั่น
+              </div>
+
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                background: '#fff',
+                padding: '14px 18px',
+                borderRadius: 12,
+                border: '2px solid #fed7aa',
+                marginBottom: 20,
+                transition: 'all 0.2s ease'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={promotion.active}
+                  onChange={(e) => setPromotion({ ...promotion, active: e.target.checked })}
+                  style={{ 
+                    marginRight: 12, 
+                    width: 20, 
+                    height: 20, 
+                    cursor: 'pointer',
+                    accentColor: '#3b82f6'
+                  }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 700, color: '#1e40af' }}>
+                  เปิดใช้งานโปรโมชั่น
+                </span>
+              </label>
+
+              {promotion.active && (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {/* Type and Value */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '75%' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        ประเภท
+                      </label>
+                      <select
+                        value={promotion.type}
+                        onChange={(e) => setPromotion({ ...promotion, type: e.target.value })}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 14, 
+                          fontWeight: 600,
+                          background: '#fff',
+                          color: '#1e40af',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="percentage">% เปอร์เซ็นต์</option>
+                        <option value="fixed">฿ จำนวนเงิน</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        {promotion.type === 'percentage' ? 'ส่วนลด (%)' : 'ส่วนลด (฿)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={promotion.value}
+                        onChange={(e) => setPromotion({ ...promotion, value: e.target.value })}
+                        min="0"
+                        step={promotion.type === 'percentage' ? '1' : '0.01'}
+                        placeholder={promotion.type === 'percentage' ? 'เช่น 20' : 'เช่น 100'}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: '#2563eb',
+                          background: '#fff'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Range */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 45, width: '75%' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        วันเริ่มต้น
+                      </label>
+                      <input
+                        type="date"
+                        value={promotion.startDate}
+                        onChange={(e) => setPromotion({ ...promotion, startDate: e.target.value })}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: '#fff',
+                          color: '#1e40af'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        วันสิ้นสุด
+                      </label>
+                      <input
+                        type="date"
+                        value={promotion.endDate}
+                        onChange={(e) => setPromotion({ ...promotion, endDate: e.target.value })}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: '#fff',
+                          color: '#1e40af'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Price Preview */}
+                  {!hasVariants && promotion.value && simpleProduct.sellPrice && (
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #fff 0%, #fef3c7 100%)', 
+                      padding: '18px 20px', 
+                      borderRadius: 12, 
+                      border: '2px solid #fbbf24',
+                      boxShadow: '0 4px 12px rgba(251,191,36,0.2)'
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 8 }}>
+                        💵 ราคาหลังลด:
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 28, fontWeight: 800, color: '#ea580c' }}>
+                          ฿{(() => {
+                            const basePrice = parseFloat(simpleProduct.sellPrice);
+                            let promoPrice = basePrice;
+                            if (promotion.type === 'percentage') {
+                              promoPrice = basePrice - (basePrice * parseFloat(promotion.value) / 100);
+                            } else {
+                              promoPrice = basePrice - parseFloat(promotion.value);
+                            }
+                            return Math.max(0, promoPrice).toLocaleString();
+                          })()}
+                        </span>
+                        <span style={{ fontSize: 16, color: '#a16207', textDecoration: 'line-through', fontWeight: 500 }}>
+                          ฿{parseFloat(simpleProduct.sellPrice).toLocaleString()}
+                        </span>
+                        <span style={{ 
+                          background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                          color: '#fff',
+                          padding: '4px 12px',
+                          borderRadius: 20,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          marginLeft: 'auto'
+                        }}>
+                          🔥 ลด {promotion.type === 'percentage' ? `${promotion.value}%` : `฿${promotion.value}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
               <button
                 type="submit"
                 disabled={saving || uploading}
-                style={{
-                  padding: '14px 32px',
-                  fontSize: 15,
-                  fontWeight: 600,
-                  background: saving || uploading ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 10,
-                  cursor: saving || uploading ? 'not-allowed' : 'pointer',
-                  boxShadow: saving || uploading ? 'none' : '0 4px 14px rgba(37,99,235,0.4)',
-                }}
+                style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: saving || uploading ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', border: 'none', borderRadius: 10, cursor: saving || uploading ? 'not-allowed' : 'pointer', boxShadow: saving || uploading ? 'none' : '0 4px 12px rgba(59,130,246,0.3)' }}
               >
                 {saving ? t('message.saving') : t('common.save')}
               </button>

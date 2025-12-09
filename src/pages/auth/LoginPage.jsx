@@ -37,84 +37,134 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
+      background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
       padding: '20px'
     }}>
       <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        maxWidth: '1200px',
         width: '100%',
-        maxWidth: '480px',
         backgroundColor: '#fff',
-        borderRadius: '24px',
-        boxShadow: '0 25px 80px rgba(15, 23, 42, 0.15), 0 10px 40px rgba(37, 99, 235, 0.1)',
-        padding: '48px 40px',
-        animation: 'fadeIn 0.5s ease-in',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        animation: 'slideUp 0.6s ease-out',
         position: 'relative'
       }}>
-        {/* Language Switcher */}
-        <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
-          <LanguageSwitcher />
-        </div>
-
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <img 
-            src="/Inventory Hub .png" 
-            alt="Inventory Hub" 
-            style={{
-              width: '200px',
-              height: 'auto',
-              margin: '0 auto 20px',
-              display: 'block'
-            }}
-          />
-          <h1 style={{
-            margin: '0 0 12px 0',
-            fontSize: '32px',
-            fontWeight: '700',
-            color: '#1e40af',
-            letterSpacing: '-0.5px'
-          }}>
-            {t('auth.login_title')}
-          </h1>
-          <p style={{
-            margin: 0,
-            color: '#64748b',
-            fontSize: '15px'
-          }}>
-            {t('auth.login_subtitle')}
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleLogin}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Email Input */}
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: '#64748b'
+        {/* Left Panel - Image Background */}
+        <div style={{
+          backgroundImage: 'url(/login.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          padding: '3rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'relative',
+          minHeight: '600px'
+        }}>
+          {/* Overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.85) 0%, rgba(59, 130, 246, 0.75) 50%, rgba(96, 165, 250, 0.65) 100%)',
+            zIndex: 1
+          }} />
+          
+          {/* Logo Section */}
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'white',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
               }}>
-                {t('auth.email')} *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{
-                  position: 'absolute',
-                  left: '16px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#3b82f6',
-                  fontSize: '18px',
-                  display: 'flex',
-                  alignItems: 'center'
+                <img src="/Inventory Hub .png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div style={{
+                fontFamily: 'Kanit, sans-serif',
+                fontSize: '1.2rem',
+                fontWeight: '700',
+                color: 'white'
+              }}>
+                INVENTORY HUB
+              </div>
+            </div>
+          </div>
+
+          {/* Welcome Section */}
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+            <h1 style={{
+              fontFamily: 'Kanit, sans-serif',
+              fontSize: '3rem',
+              fontWeight: '800',
+              color: 'white',
+              lineHeight: 1.2,
+              margin: 0
+            }}>
+              Welcome
+            </h1>
+          </div>
+        </div>
+
+        {/* Right Panel - Form */}
+        <div style={{
+          padding: '4rem',
+          background: '#F8FAFC',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
+          {/* Language Switcher */}
+          <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}>
+            <LanguageSwitcher />
+          </div>
+
+          {/* Form Header */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontFamily: 'Kanit, sans-serif',
+              fontSize: '1.8rem',
+              fontWeight: '700',
+              color: '#0F172A',
+              margin: '0 0 0.5rem 0'
+            }}>
+              {t('auth.login_title')}
+            </h2>
+            <p style={{
+              color: '#64748B',
+              fontSize: '0.95rem',
+              margin: 0
+            }}>
+              {t('auth.login_subtitle')}
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleLogin}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Email Input */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#334155',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
                 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                </span>
+                  {t('auth.email')} *
+                </label>
                 <input
                   type="email"
                   placeholder={t('auth.email_placeholder')}
@@ -122,212 +172,180 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '16px 16px 16px 50px',
+                    padding: '13px 16px',
                     fontSize: '15px',
-                    border: 'none',
-                    borderRadius: '14px',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
                     outline: 'none',
-                    background: 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
-                    color: '#1e293b',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: '500',
                     boxSizing: 'border-box',
-                    transition: 'all 0.3s ease',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)'
+                    transition: 'all 0.2s ease'
                   }}
                   onFocus={(e) => {
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.04)';
+                    e.target.style.borderColor = '#3b82f6';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.04)';
+                    e.target.style.borderColor = '#cbd5e1';
+                    e.target.style.boxShadow = 'none';
                   }}
                 />
               </div>
-            </div>
 
-            {/* Password Input */}
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: '#64748b'
-              }}>
-                {t('auth.password')} *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{
-                  position: 'absolute',
-                  left: '16px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#3b82f6',
-                  fontSize: '18px',
-                  display: 'flex',
-                  alignItems: 'center'
+              {/* Password Input */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#334155',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
                 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                  </svg>
-                </span>
+                  {t('auth.password')} *
+                </label>
                 <input
                   type="password"
                   placeholder={t('auth.password_placeholder')}
-                  
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '16px 16px 16px 50px',
+                    padding: '13px 16px',
                     fontSize: '15px',
-                    border: 'none',
-                    borderRadius: '14px',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
                     outline: 'none',
-                    background: 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
-                    color: '#1e293b',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: '500',
                     boxSizing: 'border-box',
-                    transition: 'all 0.3s ease',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)'
+                    transition: 'all 0.2s ease'
                   }}
                   onFocus={(e) => {
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.04)';
+                    e.target.style.borderColor = '#3b82f6';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.04)';
+                    e.target.style.borderColor = '#cbd5e1';
+                    e.target.style.boxShadow = 'none';
                   }}
                 />
               </div>
-            </div>
 
-            {/* Error Message */}
-            {error && (
-              <div style={{
-                padding: '14px 18px',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: '12px',
-                color: '#dc2626',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <span>⚠️</span>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={!canSubmit || loading}
-              style={{
-                width: '100%',
-                padding: '18px',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#fff',
-                background: canSubmit && !loading
-                  ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1e40af 100%)'
-                  : '#cbd5e1',
-                border: 'none',
-                borderRadius: '14px',
-                cursor: canSubmit && !loading ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s ease',
-                boxShadow: canSubmit && !loading
-                  ? '0 8px 24px rgba(37, 99, 235, 0.35)'
-                  : 'none',
-                marginTop: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px'
-              }}
-              onMouseEnter={(e) => {
-                if (canSubmit && !loading) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 12px 32px rgba(37, 99, 235, 0.45)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (canSubmit && !loading) {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.35)';
-                }
-              }}
-            >
-              {loading ? (
-                <>
-                  <span style={{
-                    width: '18px',
-                    height: '18px',
-                    border: '2px solid #fff',
-                    borderTop: '2px solid transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                    display: 'inline-block'
-                  }}></span>
-                  {t('auth.logging_in')}
-                </>
-              ) : (
-                <>
-                  {t('auth.login')}
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
-                </>
+              {/* Error Message */}
+              {error && (
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #ef4444',
+                  borderRadius: '8px',
+                  color: '#dc2626',
+                  fontSize: '14px'
+                }}>
+                  {error}
+                </div>
               )}
-            </button>
 
-            {/* Register Link */}
-            <Link
-              to="/register"
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '16px',
-                fontSize: '15px',
-                fontWeight: '500',
-                color: '#3b82f6',
-                background: 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
-                border: 'none',
-                borderRadius: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                textAlign: 'center',
-                textDecoration: 'none',
-                marginTop: '8px',
-                whiteSpace: 'nowrap',
-                boxSizing: 'border-box',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.04)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.04)';
-              }}
-            >
-              {t('auth.no_account')}
-            </Link>
-          </div>
-        </form>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={!canSubmit || loading}
+                style={{
+                  width: '100%',
+                  padding: '18px 24px',
+                  fontSize: '17px',
+                  fontWeight: '600',
+                  fontFamily: 'Kanit, sans-serif',
+                  color: '#fff',
+                  background: '#1e40af',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: canSubmit && !loading ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.15s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  marginTop: '16px',
+                  letterSpacing: '0.01em',
+                  opacity: canSubmit && !loading ? 1 : 0.6
+                }}
+                onMouseEnter={(e) => {
+                  if (canSubmit && !loading) {
+                    e.target.style.background = '#1e3a8a';
+                    e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (canSubmit && !loading) {
+                    e.target.style.background = '#1e40af';
+                    e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                  }
+                }}
+              >
+                {loading ? t('auth.logging_in') : t('auth.login')}
+              </button>
+
+              {/* Register Link */}
+              <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                <p style={{ color: '#64748B', fontSize: '0.95rem', marginBottom: '1rem' }}>
+                  {t('auth.no_account')}
+                </p>
+                <Link
+                  to="/register"
+                  style={{
+                    display: 'inline-block',
+                    padding: '13px 24px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    fontFamily: 'Kanit, sans-serif',
+                    color: '#3b82f6',
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    letterSpacing: '0.01em'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#f8fafc';
+                    e.target.style.borderColor = '#94a3b8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#ffffff';
+                    e.target.style.borderColor = '#cbd5e1';
+                  }}
+                >
+                  {t('auth.register')}
+                </Link>
+              </div>
+            </div>
+          </form>
+        </div>
 
         {/* CSS Animation */}
         <style>{`
-          @keyframes fadeIn {
+          @keyframes slideUp {
             from {
               opacity: 0;
-              transform: translateY(20px);
+              transform: translateY(30px);
             }
             to {
               opacity: 1;
               transform: translateY(0);
             }
           }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
+          @media (max-width: 768px) {
+            div[style*="gridTemplateColumns"] {
+              grid-template-columns: 1fr !important;
+              max-width: 450px !important;
+            }
+            div[style*="backgroundImage"] {
+              display: none !important;
+            }
           }
         `}</style>
       </div>
