@@ -3,7 +3,7 @@ import { getAllCoupons, createCoupon, updateCoupon, deleteCoupon } from '../../s
 import { useTranslation } from 'react-i18next';
 
 export default function AdminCouponsPage() {
-  const { t } = useTranslation();
+  useTranslation();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);

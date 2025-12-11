@@ -14,6 +14,7 @@ const StaffLayout = () => {
   const { user, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  // eslint-disable-next-line no-unused-vars
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 

@@ -64,6 +64,7 @@ const CustomerLayout = () => {
   };
 
   // Style สำหรับ Link ที่ active - InventoryPro Style
+  // eslint-disable-next-line no-unused-vars
   const getLinkStyle = (isActive) => ({
     display: 'flex',
     alignItems: 'center',

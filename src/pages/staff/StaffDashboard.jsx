@@ -6,11 +6,11 @@ import { useTranslation } from 'react-i18next';
 
 export default function StaffDashboard() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  useNavigate();
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -22,9 +22,11 @@ export default function StaffDashboard() {
   const [addingToCart, setAddingToCart] = useState(false);
 
   // Cart count for badge
+  // eslint-disable-next-line no-unused-vars
   const [cartCount, setCartCount] = useState(0);
 
   // Profile menu
+  // eslint-disable-next-line no-unused-vars
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {

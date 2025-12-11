@@ -8,7 +8,7 @@ export default function CustomerOrderSuccessPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [latestOrder, setLatestOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const loadLatest = async () => {
@@ -42,20 +42,6 @@ export default function CustomerOrderSuccessPage() {
   }, [user?.uid]);
 
   const orderId = latestOrder?.orderNumber || latestOrder?.id || null;
-  let orderDateStr = null;
-  let orderTimeStr = null;
-  if (latestOrder?.withdrawDate) {
-    const d = new Date(
-      latestOrder.withdrawDate.seconds
-        ? latestOrder.withdrawDate.seconds * 1000
-        : latestOrder.withdrawDate,
-    );
-    orderDateStr = d.toLocaleDateString('th-TH');
-    orderTimeStr = d.toLocaleTimeString('th-TH', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
   const itemsCount = Array.isArray(latestOrder?.items)
     ? latestOrder.items.length
     : null;

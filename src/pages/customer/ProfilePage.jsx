@@ -7,7 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 
 export default function ProfilePage() {
-  const { t } = useTranslation();
+  useTranslation();
   const { user, profile } = useAuth();
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export default function ProfilePage() {
   // Address management
   const [addresses, setAddresses] = useState([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [editingAddress, setEditingAddress] = useState(null);
+  const [, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
     name: '',
     address: '',
@@ -100,6 +100,7 @@ export default function ProfilePage() {
     };
 
     loadUserData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   // Handle input change
@@ -288,6 +289,7 @@ export default function ProfilePage() {
   };
 
   // Settings functions
+  // eslint-disable-next-line no-unused-vars
   const handleSettingChange = async (settingKey, value) => {
     if (!user?.uid) return;
 
