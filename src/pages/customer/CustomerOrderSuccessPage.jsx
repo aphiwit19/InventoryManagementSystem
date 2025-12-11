@@ -175,25 +175,6 @@ export default function CustomerOrderSuccessPage() {
 
           <div
             style={{
-              background: 'rgba(16,185,129,0.04)',
-              borderLeft: '4px solid #10B981',
-              padding: '12px 16px',
-              borderRadius: 8,
-              textAlign: 'left',
-              margin: '16px 0 24px',
-            }}
-          >
-            <div style={{ fontWeight: 700, color: '#10B981', marginBottom: 4 }}>
-              {t('message.order_success_email_title') || 'ได้รับอีเมลยืนยันแล้ว'}
-            </div>
-            <div style={{ fontSize: 14, color: '#64748B' }}>
-              {t('message.order_success_email_hint') ||
-                'เราได้ส่งอีเมลยืนยันคำสั่งซื้อไปยังอีเมลของคุณ หากไม่พบ กรุณาตรวจสอบที่กล่อง Spam'}
-            </div>
-          </div>
-
-          <div
-            style={{
               display: 'grid',
               gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
               gap: 12,
@@ -235,24 +216,6 @@ export default function CustomerOrderSuccessPage() {
               🏠 {t('cart.continue_shopping')}
             </Link>
           </div>
-
-          <Link
-            to="/customer/orders"
-            style={{
-              marginTop: 12,
-              display: 'block',
-              padding: '10px 16px',
-              borderRadius: 12,
-              border: '2px solid #10B981',
-              color: '#10B981',
-              textDecoration: 'none',
-              fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-              fontWeight: 700,
-              fontSize: 14,
-            }}
-          >
-            🔍 {t('common.view_order_detail') || 'ดูรายละเอียดคำสั่งซื้อล่าสุด'}
-          </Link>
         </div>
 
         {/* Removed follow-up steps card as requested */}

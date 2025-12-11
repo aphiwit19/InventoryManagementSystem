@@ -328,6 +328,9 @@ export default function StaffOrdersPage() {
                     <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>
                       รวม
                     </th>
+                    <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>
+                      จัดการ
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -414,6 +417,35 @@ export default function StaffOrdersPage() {
                           <div style={{ fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont', fontWeight: 700, fontSize: 16, color: '#0F172A' }}>
                             ฿{(o.total || 0).toLocaleString()}
                           </div>
+                        </td>
+                        {/* 9. ดูรายละเอียด */}
+                        <td style={{ padding: '14px 16px', verticalAlign: 'top', textAlign: 'center' }}>
+                          <button
+                            onClick={() => navigate(`/staff/orders/${o.id}`)}
+                            style={{
+                              padding: '8px 16px',
+                              background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: 8,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                              transition: 'all 0.2s ease',
+                              fontFamily: 'Kanit, sans-serif'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.transform = 'translateY(-2px)';
+                              e.target.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.35)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.transform = 'translateY(0)';
+                              e.target.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.25)';
+                            }}
+                          >
+                            {t('orderViewDetails') || 'View Details'}
+                          </button>
                         </td>
                       </tr>
                     );

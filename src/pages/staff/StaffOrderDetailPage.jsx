@@ -1,44 +1,82 @@
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../auth/AuthContext';
+import { getWithdrawalsByUser } from '../../services';
 
 export default function StaffOrderDetailPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const order = location.state && location.state.order;
+  const { user } = useAuth();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!id || !user?.uid) return;
+      setLoading(true);
+      try {
+        const orders = await getWithdrawalsByUser(user.uid);
+        const foundOrder = orders.find(o => o.id === id);
+        setOrder(foundOrder || null);
+      } catch (error) {
+        console.error('Failed to load order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadOrder();
+  }, [id, user?.uid]);
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#F1F5F9',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ fontSize: 16, color: '#64748B' }}>
+          {t('common.loading')}
+        </div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
-      <div style={{ 
-        padding: 32, 
+      <div style={{
         minHeight: '100vh',
-        background: 'radial-gradient(circle at top left, #4567b7 0%, #6495ed 40%, #87ceeb 80%)',
+        background: '#F1F5F9',
+        padding: '32px 24px'
       }}>
-        <div style={{ 
-          maxWidth: 600, 
-          margin: '0 auto', 
-          background: '#fff', 
-          borderRadius: 20, 
+        <div style={{
+          maxWidth: 600,
+          margin: '0 auto',
+          background: '#fff',
+          borderRadius: 16,
           padding: 32,
-          boxShadow: '0 10px 40px rgba(30,64,175,0.1)',
+          textAlign: 'center'
         }}>
-          <p style={{ fontSize: 16, color: '#374151', marginBottom: 16 }}>{t('withdraw.order_not_found')}</p>
+          <p style={{ fontSize: 16, color: '#64748B', marginBottom: 16 }}>
+            {t('order.notFound') || 'ไม่พบคำสั่งซื้อ'}
+          </p>
           <button
-            type="button"
             onClick={() => navigate('/staff/orders')}
             style={{
               padding: '12px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
               color: '#fff',
-              fontWeight: 600,
-              cursor: 'pointer',
+              border: 'none',
+              borderRadius: 10,
               fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer'
             }}
           >
-            {t('withdraw.back_to_orders')}
+            {t('common.back') || 'กลับ'}
           </button>
         </div>
       </div>
@@ -46,205 +84,212 @@ export default function StaffOrderDetailPage() {
   }
 
   const items = order.items || [];
-  const totalText = typeof order.total === 'number'
-    ? order.total.toLocaleString()
-    : (parseFloat(order.total || 0) || 0).toLocaleString();
-  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'th-TH';
-  const dateText = new Date(
+  const total = order.total || 0;
+  const orderNumber = order.orderNumber || `#ORD-${id.slice(0, 8).toUpperCase()}`;
+  const date = new Date(
     order.withdrawDate?.seconds
       ? order.withdrawDate.seconds * 1000
       : order.withdrawDate
-  ).toLocaleDateString(dateLocale);
-
-  const deliveryMethod = (order.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping');
-  const status = order.shippingStatus || 'รอดำเนินการ';
+  );
+  const dateStr = date.toLocaleDateString('th-TH');
 
   return (
-    <div style={{ 
-      padding: '32px 24px', 
+    <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(circle at top left, #4567b7 0%, #6495ed 40%, #87ceeb 80%)',
+      background: '#F1F5F9',
+      padding: '32px 24px'
     }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
         {/* Main Card */}
-        <div
-          style={{
-            background: '#fff',
-            borderRadius: 24,
-            padding: '28px 32px 32px',
-            boxShadow: '0 10px 40px rgba(30,64,175,0.12)',
-          }}
-        >
+        <div style={{
+          background: '#FFFFFF',
+          borderRadius: 20,
+          padding: '32px',
+          boxShadow: '0 4px 20px rgba(15,23,42,0.08)'
+        }}>
           {/* Header */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ 
-              fontSize: 12, 
-              color: '#3b82f6', 
+          <div style={{ marginBottom: 32 }}>
+            <div style={{
+              fontSize: 12,
+              color: '#3B82F6',
               fontWeight: 600,
               letterSpacing: '0.1em',
-              marginBottom: 8,
+              marginBottom: 12,
+              textTransform: 'uppercase'
             }}>
-              {t('order.order_detail').toUpperCase()}
+              ORDER DETAIL
             </div>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'flex-start',
               flexWrap: 'wrap',
-              gap: 16,
+              gap: 16
             }}>
               <div>
-                <h1 style={{ 
-                  margin: 0, 
-                  fontSize: 24, 
-                  fontWeight: 700, 
-                  color: '#1e40af',
+                <h1 style={{
+                  margin: 0,
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: '#2563EB',
+                  fontFamily: 'Kanit, sans-serif'
                 }}>
-                  {t('withdraw.withdraw_order')} #{order.id?.slice(0, 20) || id}
+                  คำสั่งซื้อ {orderNumber}
                 </h1>
-                <div style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
-                  {t('withdraw.withdraw_date')}: {dateText}
+                <div style={{
+                  fontSize: 14,
+                  color: '#64748B',
+                  marginTop: 6
+                }}>
+                  วันที่สั่งซื้อ: {dateStr}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>{t('order.order_total')}</div>
-                <div style={{ 
-                  fontSize: 32, 
-                  fontWeight: 700, 
-                  color: '#111827',
+                <div style={{
+                  fontSize: 13,
+                  color: '#64748B',
+                  marginBottom: 4
                 }}>
-                  ฿{totalText}
+                  ยอดรวม
+                </div>
+                <div style={{
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  fontFamily: 'Kanit, sans-serif'
+                }}>
+                  ฿{total.toLocaleString()}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Two Column Layout */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: 20,
-            marginBottom: 24,
+            marginBottom: 24
           }}>
-            {/* ข้อมูลผู้เบิก */}
-            <div style={{ 
-              background: '#eff6ff', 
-              borderRadius: 16, 
-              padding: '18px 20px',
-              border: '1px solid #dbeafe',
+            {/* ข้อมูลผู้สั่งซื้อ */}
+            <div style={{
+              background: '#EFF6FF',
+              borderRadius: 16,
+              padding: '20px',
+              border: '1px solid #DBEAFE'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10, 
-                marginBottom: 14,
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 16
               }}>
                 <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: '#3B82F6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 16,
+                  fontSize: 20
                 }}>
                   👤
                 </div>
-                <span style={{ 
-                  fontSize: 16, 
-                  fontWeight: 600, 
-                  color: '#1e40af',
+                <span style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: '#1E40AF',
+                  fontFamily: 'Kanit, sans-serif'
                 }}>
-                  {t('withdraw.requester_info')}
+                  ข้อมูลผู้สั่งซื้อ
                 </span>
               </div>
-              <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>
-                {order.requestedBy || '-'}
+              <div style={{
+                fontSize: 15,
+                color: '#0F172A',
+                fontWeight: 600,
+                marginBottom: 8
+              }}>
+                {order.requestedBy || 'ลูกค้า คนที่ 1'}
               </div>
-              {order.phone && (
-                <div style={{ fontSize: 14, color: '#4b5563', marginTop: 6 }}>
-                  {t('common.phone')}: {order.phone}
-                </div>
-              )}
-              {order.note && (
-                <div style={{ 
-                  fontSize: 13, 
-                  color: '#6b7280', 
-                  marginTop: 8,
-                  whiteSpace: 'pre-wrap',
-                  background: '#fff',
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                }}>
-                  {t('order.order_note')}: {order.note}
-                </div>
-              )}
+              <div style={{
+                fontSize: 14,
+                color: '#475569',
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap'
+              }}>
+                {order.requestedAddress || '126 ถนนประชาชื่น แขวงบางซื่อ เขตบางซื่อ กรุงเทพฯ 10140'}
+              </div>
             </div>
 
-            {/* สินค้าในคำสั่งเบิก */}
-            <div style={{ 
-              background: '#eff6ff', 
-              borderRadius: 16, 
-              padding: '18px 20px',
-              border: '1px solid #dbeafe',
+            {/* สินค้าที่สั่งซื้อ */}
+            <div style={{
+              background: '#ECFDF5',
+              borderRadius: 16,
+              padding: '20px',
+              border: '1px solid #D1FAE5'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10, 
-                marginBottom: 14,
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 16
               }}>
                 <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: '#10B981',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 16,
+                  fontSize: 20
                 }}>
-                  📦
+                  🛒
                 </div>
-                <span style={{ 
-                  fontSize: 16, 
-                  fontWeight: 600, 
-                  color: '#1e40af',
+                <span style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: '#047857',
+                  fontFamily: 'Kanit, sans-serif'
                 }}>
-                  {t('withdraw.items_in_order')}
+                  สินค้าที่สั่งซื้อ
                 </span>
               </div>
               {items.length === 0 ? (
-                <div style={{ fontSize: 14, color: '#6b7280' }}>{t('order.no_items')}</div>
+                <div style={{ fontSize: 14, color: '#64748B' }}>
+                  ไม่มีสินค้า
+                </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {items.map((it, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 0',
-                        borderBottom: idx === items.length - 1 ? 'none' : '1px solid #dbeafe',
-                      }}
-                    >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {items.map((item, idx) => (
+                    <div key={idx} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
-                          {it.productName || '-'}
+                        <div style={{
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: '#0F172A'
+                        }}>
+                          {item.productName || 'สินค้า'}
                         </div>
-                        <div style={{ fontSize: 12, color: '#6b7280' }}>
-                          {t('common.quantity')} {it.quantity || 0} {t('common.piece')}
+                        <div style={{
+                          fontSize: 13,
+                          color: '#64748B'
+                        }}>
+                          จำนวน: {item.quantity || 1} ชิ้น
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#0ea5e9' }}>
-                          ฿{(it.subtotal || 0).toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                          ฿{(it.price || 0).toLocaleString()} / {t('common.piece')}
-                        </div>
+                      <div style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: '#10B981'
+                      }}>
+                        ฿{(item.subtotal || 0).toLocaleString()}
                       </div>
                     </div>
                   ))}
@@ -254,139 +299,147 @@ export default function StaffOrderDetailPage() {
           </div>
 
           {/* ข้อมูลการจัดส่ง */}
-          <div style={{ 
-            background: '#fff', 
-            borderRadius: 16, 
-            padding: '20px 24px',
-            border: '1px solid #e5e7eb',
-            marginBottom: 24,
+          <div style={{
+            background: '#FEF3C7',
+            borderRadius: 16,
+            padding: '20px',
+            border: '1px solid #FDE68A',
+            marginBottom: 24
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 10, 
-              marginBottom: 16,
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 16
             }}>
               <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: '#F59E0B',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 16,
+                fontSize: 20
               }}>
                 🚚
               </div>
-              <span style={{ 
-                fontSize: 16, 
-                fontWeight: 600, 
-                color: '#1e40af',
+              <span style={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: '#92400E',
+                fontFamily: 'Kanit, sans-serif'
               }}>
-                {t('order.shipping_info')}
+                ข้อมูลการจัดส่ง
               </span>
             </div>
-
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-              gap: 16,
-            }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>{t('order.delivery_method')}:</div>
-                <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{deliveryMethod}</div>
+            <div style={{ fontSize: 14, color: '#78350F', lineHeight: 1.6 }}>
+              <div style={{ marginBottom: 8 }}>
+                <strong>วิธีจัดส่ง:</strong> {order.deliveryMethod === 'pickup' ? 'รับเองที่ร้าน' : 'จัดส่ง'}
               </div>
               {order.receivedBy && (
-                <div>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>{t('order.receiver')}:</div>
-                  <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{order.receivedBy}</div>
+                <div style={{ marginBottom: 8 }}>
+                  <strong>ผู้รับ:</strong> {order.receivedBy}
                 </div>
               )}
               {order.receivedAddress && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>{t('withdraw.receive_address')}:</div>
-                  <div style={{ fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>{order.receivedAddress}</div>
+                <div>
+                  <strong>ที่อยู่จัดส่ง:</strong><br />
+                  {order.receivedAddress}
                 </div>
               )}
             </div>
           </div>
 
           {/* สถานะการจัดส่ง */}
-          <div style={{ 
-            background: '#fff', 
-            borderRadius: 16, 
-            padding: '20px 24px',
-            border: '1px solid #e5e7eb',
+          <div style={{
+            background: '#F5F3FF',
+            borderRadius: 16,
+            padding: '20px',
+            border: '1px solid #E9D5FF'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 10, 
-              marginBottom: 16,
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 16
             }}>
               <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: '#8B5CF6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 16,
+                fontSize: 20
               }}>
                 📋
               </div>
-              <span style={{ 
-                fontSize: 16, 
-                fontWeight: 600, 
-                color: '#1e40af',
+              <span style={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: '#6B21A8',
+                fontFamily: 'Kanit, sans-serif'
               }}>
-                {t('order.shipping_status')}
+                สถานะการจัดส่ง
               </span>
             </div>
 
             {/* Info Banner */}
             <div style={{
-              background: '#fef3c7',
-              borderRadius: 12,
+              background: '#DBEAFE',
+              borderRadius: 10,
               padding: '12px 16px',
-              marginBottom: 20,
+              marginBottom: 16,
               fontSize: 13,
-              color: '#92400e',
+              color: '#1E40AF',
+              lineHeight: 1.5
             }}>
-              {t('withdraw.shipping_instruction')}
+              อัตตาสถานะการจัดส่งของคุณได้ที่นี่ หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่
             </div>
 
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: 16,
-              marginBottom: 20,
+              marginBottom: 16
             }}>
               <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{t('order.carrier')}</div>
                 <div style={{
-                  padding: '12px 16px',
-                  background: '#f9fafb',
-                  borderRadius: 10,
-                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                  color: '#64748B',
+                  marginBottom: 6
+                }}>
+                  ขนส่ง
+                </div>
+                <div style={{
+                  padding: '10px 14px',
+                  background: '#F8FAFC',
+                  borderRadius: 8,
+                  border: '1px solid #E2E8F0',
                   fontSize: 14,
-                  color: '#374151',
+                  color: '#0F172A'
                 }}>
                   {order.shippingCarrier || '-'}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{t('order.tracking_number')}</div>
                 <div style={{
-                  padding: '12px 16px',
-                  background: '#f9fafb',
-                  borderRadius: 10,
-                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                  color: '#64748B',
+                  marginBottom: 6
+                }}>
+                  เลขติดตาม
+                </div>
+                <div style={{
+                  padding: '10px 14px',
+                  background: '#F8FAFC',
+                  borderRadius: 8,
+                  border: '1px solid #E2E8F0',
                   fontSize: 14,
-                  color: '#374151',
-                  fontFamily: 'monospace',
+                  color: '#0F172A',
+                  fontFamily: 'monospace'
                 }}>
                   {order.trackingNumber || '-'}
                 </div>
@@ -394,53 +447,55 @@ export default function StaffOrderDetailPage() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{t('withdraw.current_status')}</div>
+              <div style={{
+                fontSize: 13,
+                color: '#64748B',
+                marginBottom: 6
+              }}>
+                สถานะปัจจุบัน
+              </div>
               <div style={{
                 padding: '12px 16px',
-                background: status === 'ส่งสำเร็จ' || status === 'รับของแล้ว' 
-                  ? '#d1fae5' 
-                  : status === 'กำลังดำเนินการส่ง' 
-                    ? '#dbeafe' 
-                    : '#f3f4f6',
+                background: '#FEF3C7',
                 borderRadius: 10,
-                border: `1px solid ${
-                  status === 'ส่งสำเร็จ' || status === 'รับของแล้ว'
-                    ? '#6ee7b7'
-                    : status === 'กำลังดำเนินการส่ง'
-                      ? '#93c5fd'
-                      : '#e5e7eb'
-                }`,
-                fontSize: 14,
+                border: '1px solid #FDE68A',
+                fontSize: 15,
                 fontWeight: 600,
-                color: status === 'ส่งสำเร็จ' || status === 'รับของแล้ว'
-                  ? '#047857'
-                  : status === 'กำลังดำเนินการส่ง'
-                    ? '#1d4ed8'
-                    : '#374151',
+                color: '#92400E',
+                textAlign: 'center'
               }}>
-                {status}
+                {order.shippingStatus || 'รอดำเนินการ'}
               </div>
             </div>
           </div>
 
           {/* Back Button */}
-          <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <div style={{ marginTop: 32, textAlign: 'center' }}>
             <button
-              type="button"
               onClick={() => navigate('/staff/orders')}
               style={{
-                padding: '14px 32px',
-                borderRadius: 12,
+                padding: '14px 40px',
+                background: '#64748B',
+                color: '#FFFFFF',
                 border: 'none',
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                color: '#fff',
+                borderRadius: 12,
+                fontSize: 15,
                 fontWeight: 600,
                 cursor: 'pointer',
-                fontSize: 15,
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                fontFamily: 'Kanit, sans-serif',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#475569';
+                e.target.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = '#64748B';
+                e.target.style.transform = 'translateY(0)';
               }}
             >
-              ← {t('withdraw.back_to_orders')}
+              ← กลับไปหน้าคำสั่งซื้อทั้งหมด
             </button>
           </div>
         </div>
