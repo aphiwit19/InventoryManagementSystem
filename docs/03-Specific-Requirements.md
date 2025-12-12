@@ -321,7 +321,7 @@
 | **Input** | Order ID, New Status, Tracking Number (optional) |
 | **Output** | สถานะถูกอัพเดท |
 | **Pre-condition** | ผู้ใช้เป็น Admin |
-| **Post-condition** | สถานะถูกอัพเดท, สต็อกถูกตัด (ถ้าสถานะเป็น "กำลังจัดส่ง" หรือ "รับของแล้ว") |
+| **Post-condition** | สถานะถูกอัพเดท, สต็อกถูกตัดตามเงื่อนไขของระบบ (Shipping: จาก "รอดำเนินการ" → "กำลังดำเนินการส่ง" หรือ "ส่งสำเร็จ" (กรณีข้ามสถานะ), Pickup: เปลี่ยนเป็น "รับของแล้ว") |
 | **Priority** | Critical |
 
 **Order Statuses:**

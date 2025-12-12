@@ -9,6 +9,8 @@ export default function LoginPage() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -35,20 +37,20 @@ export default function LoginPage() {
     <div style={{
       minHeight: '100vh',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'stretch',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
-      padding: '20px'
+      background: '#f6f6f8',
+      padding: 0
     }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        maxWidth: '1200px',
         width: '100%',
+        minHeight: '100vh',
         backgroundColor: '#fff',
-        borderRadius: '20px',
+        borderRadius: 0,
         overflow: 'hidden',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        boxShadow: 'none',
         animation: 'slideUp 0.6s ease-out',
         position: 'relative'
       }}>
@@ -62,7 +64,7 @@ export default function LoginPage() {
           flexDirection: 'column',
           justifyContent: 'space-between',
           position: 'relative',
-          minHeight: '600px'
+          minHeight: '100vh'
         }}>
           {/* Overlay */}
           <div style={{
@@ -79,10 +81,10 @@ export default function LoginPage() {
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
+                width: '72px',
+                height: '72px',
                 background: 'white',
-                borderRadius: '12px',
+                borderRadius: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -92,27 +94,63 @@ export default function LoginPage() {
               </div>
               <div style={{
                 fontFamily: 'Kanit, sans-serif',
-                fontSize: '1.2rem',
-                fontWeight: '700',
+                fontSize: '2.6rem',
+                fontWeight: '900',
+                letterSpacing: '-0.02em',
+                lineHeight: 1,
                 color: 'white'
               }}>
-                INVENTORY HUB
+                INVENTORY PRO
               </div>
             </div>
           </div>
 
-          {/* Welcome Section */}
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-            <h1 style={{
-              fontFamily: 'Kanit, sans-serif',
-              fontSize: '3rem',
-              fontWeight: '800',
-              color: 'white',
-              lineHeight: 1.2,
-              margin: 0
-            }}>
-              Welcome
-            </h1>
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: 560 }}>
+            <h2
+              style={{
+                margin: '0 0 12px',
+                fontFamily: 'Inter, Kanit, sans-serif',
+                fontSize: 44,
+                fontWeight: 900,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.08,
+                color: '#ffffff'
+              }}
+            >
+              {t('auth.login_marketing_headline')}
+            </h2>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 16,
+                lineHeight: 1.75,
+                color: 'rgba(219,234,254,0.92)',
+                maxWidth: 520
+              }}
+            >
+              {t('auth.login_marketing_description')}
+            </p>
+
+            <div
+              style={{
+                marginTop: 22,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'rgba(191,219,254,0.92)',
+                flexWrap: 'wrap'
+              }}
+            >
+              <span>{t('auth.login_marketing_security')}</span>
+              <span style={{ width: 4, height: 4, borderRadius: 999, background: 'rgba(96,165,250,0.9)' }} />
+              <span>{t('auth.login_marketing_multilanguage')}</span>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 2, fontSize: 12, color: 'rgba(191,219,254,0.85)' }}>
+            {t('auth.copyright', { year: new Date().getFullYear() })}
           </div>
         </div>
 
@@ -124,28 +162,61 @@ export default function LoginPage() {
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
-          {/* Language Switcher */}
-          <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 40
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <img src="/Inventory Hub .png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div style={{
+                fontFamily: 'Inter, Kanit, sans-serif',
+                fontSize: 38,
+                fontWeight: 900,
+                letterSpacing: '-0.02em',
+                lineHeight: 1,
+                color: '#0d121b'
+              }}>
+                Inventory Pro
+              </div>
+            </div>
+
             <LanguageSwitcher />
           </div>
 
           {/* Form Header */}
           <div style={{ marginBottom: '2rem' }}>
-            <h2 style={{
-              fontFamily: 'Kanit, sans-serif',
-              fontSize: '1.8rem',
-              fontWeight: '700',
+            <h1 style={{
+              margin: '0 0 10px',
+              fontFamily: 'Inter, Kanit, sans-serif',
+              fontSize: 32,
+              fontWeight: 900,
               color: '#0F172A',
-              margin: '0 0 0.5rem 0'
+              letterSpacing: '-0.03em',
+              lineHeight: 1.2
             }}>
-              {t('auth.login_title')}
-            </h2>
+              {t('auth.welcome_back_title')}
+            </h1>
             <p style={{
-              color: '#64748B',
-              fontSize: '0.95rem',
-              margin: 0
+              margin: 0,
+              color: '#4c669a',
+              fontSize: 15,
+              lineHeight: 1.6
             }}>
-              {t('auth.login_subtitle')}
+              {t('auth.welcome_back_subtitle')}
             </p>
           </div>
 
@@ -165,33 +236,38 @@ export default function LoginPage() {
                 }}>
                   {t('auth.email')} *
                 </label>
-                <input
-                  type="email"
-                  placeholder={t('auth.email_placeholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '13px 16px',
-                    fontSize: '15px',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    outline: 'none',
-                    background: '#ffffff',
-                    color: '#0f172a',
-                    fontWeight: '500',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#cbd5e1';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="email"
+                    placeholder={t('auth.email_placeholder')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '13px 44px 13px 16px',
+                      fontSize: '15px',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      outline: 'none',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontWeight: '500',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#cbd5e1';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#4c669a', fontSize: 18 }}>
+                    ✉️
+                  </div>
+                </div>
               </div>
 
               {/* Password Input */}
@@ -207,33 +283,69 @@ export default function LoginPage() {
                 }}>
                   {t('auth.password')} *
                 </label>
-                <input
-                  type="password"
-                  placeholder={t('auth.password_placeholder')}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '13px 16px',
-                    fontSize: '15px',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    outline: 'none',
-                    background: '#ffffff',
-                    color: '#0f172a',
-                    fontWeight: '500',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#cbd5e1';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('auth.password_placeholder')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '13px 44px 13px 16px',
+                      fontSize: '15px',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      outline: 'none',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontWeight: '500',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#cbd5e1';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      color: '#4c669a',
+                      fontSize: 16,
+                      padding: 8,
+                      borderRadius: 10,
+                      lineHeight: 1
+                    }}
+                    aria-label="toggle password visibility"
+                  >
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} htmlFor="remember">
+                  <input
+                    id="remember"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#4c669a' }}>{t('auth.remember_me')}</span>
+                </label>
               </div>
 
               {/* Error Message */}
@@ -341,7 +453,6 @@ export default function LoginPage() {
           @media (max-width: 768px) {
             div[style*="gridTemplateColumns"] {
               grid-template-columns: 1fr !important;
-              max-width: 450px !important;
             }
             div[style*="backgroundImage"] {
               display: none !important;

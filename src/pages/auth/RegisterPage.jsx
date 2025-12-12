@@ -10,13 +10,22 @@ export default function RegisterPage() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const isValidEmail = (val) => /[^\s@]+@[^\s@]+\.[^\s@]+/.test(val);
-  const canSubmit = name.trim().length > 0 && isValidEmail(email.trim()) && password.length >= 6;
+  const canSubmit = name.trim().length > 0
+    && isValidEmail(email.trim())
+    && password.length >= 6
+    && confirmPassword.length > 0
+    && confirmPassword === password
+    && agreeTerms;
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -46,20 +55,20 @@ export default function RegisterPage() {
     <div style={{
       minHeight: '100vh',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'stretch',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
-      padding: '20px'
+      background: '#f6f6f8',
+      padding: 0
     }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        maxWidth: '1200px',
         width: '100%',
+        minHeight: '100vh',
         backgroundColor: '#fff',
-        borderRadius: '20px',
+        borderRadius: 0,
         overflow: 'hidden',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        boxShadow: 'none',
         animation: 'slideUp 0.6s ease-out',
         position: 'relative'
       }}>
@@ -71,9 +80,10 @@ export default function RegisterPage() {
           padding: '3rem',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-start',
+          gap: '28px',
           position: 'relative',
-          minHeight: '600px'
+          minHeight: '100vh'
         }}>
           {/* Overlay */}
           <div style={{
@@ -90,10 +100,10 @@ export default function RegisterPage() {
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
+                width: '72px',
+                height: '72px',
                 background: 'white',
-                borderRadius: '12px',
+                borderRadius: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -103,27 +113,76 @@ export default function RegisterPage() {
               </div>
               <div style={{
                 fontFamily: 'Kanit, sans-serif',
-                fontSize: '1.2rem',
-                fontWeight: '700',
+                fontSize: '2.6rem',
+                fontWeight: '900',
+                letterSpacing: '-0.02em',
+                lineHeight: 1,
                 color: 'white'
               }}>
-                INVENTORY HUB
+                INVENTORY PRO
               </div>
             </div>
           </div>
 
-          {/* Welcome Section */}
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-            <h1 style={{
-              fontFamily: 'Kanit, sans-serif',
-              fontSize: '3rem',
-              fontWeight: '800',
-              color: 'white',
-              lineHeight: 1.2,
-              margin: 0
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: 560, marginTop: 16 }}>
+            <h2
+              style={{
+                margin: '0 0 14px',
+                fontFamily: 'Inter, Kanit, sans-serif',
+                fontSize: 44,
+                fontWeight: 900,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.08,
+                color: '#ffffff'
+              }}
+            >
+              {t('auth.register_marketing_headline')}
+            </h2>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 16,
+                lineHeight: 1.75,
+                color: 'rgba(219,234,254,0.92)',
+                maxWidth: 520
+              }}
+            >
+              {t('auth.register_marketing_description')}
+            </p>
+
+            <div
+              style={{
+                marginTop: 18,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'rgba(191,219,254,0.92)',
+                flexWrap: 'wrap'
+              }}
+            >
+              <span>{t('auth.register_marketing_verified_security')}</span>
+              <span style={{ width: 4, height: 4, borderRadius: 999, background: 'rgba(96,165,250,0.9)' }} />
+              <span>{t('auth.register_marketing_multilanguage')}</span>
+            </div>
+
+            <div style={{
+              marginTop: 18,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              flexWrap: 'wrap'
             }}>
-              Welcome
-            </h1>
+              <div style={{ display: 'flex', gap: 0, color: '#fbbf24', fontSize: 14, lineHeight: 1 }}>
+                <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(219,234,254,0.92)' }}>{t('auth.register_marketing_trusted')}</span>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 2, fontSize: 12, color: 'rgba(191,219,254,0.85)', marginTop: 'auto' }}>
+            {t('auth.copyright', { year: new Date().getFullYear() })}
           </div>
         </div>
 
@@ -140,8 +199,50 @@ export default function RegisterPage() {
             <LanguageSwitcher />
           </div>
 
+          <div className="register-mobileLogo" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            marginBottom: '1.5rem',
+            color: '#0F172A'
+          }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              background: 'white',
+              borderRadius: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              border: '1px solid #e2e8f0'
+            }}>
+              <img src="/Inventory Hub .png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={{
+              fontFamily: 'Kanit, sans-serif',
+              fontSize: '2.4rem',
+              fontWeight: '900',
+              letterSpacing: '-0.02em',
+              lineHeight: 1
+            }}>
+              Inventory Pro
+            </div>
+          </div>
+
           {/* Form Header */}
           <div style={{ marginBottom: '2rem' }}>
+            <h1 style={{
+              margin: '0 0 10px',
+              fontFamily: 'Inter, Kanit, sans-serif',
+              fontSize: 32,
+              fontWeight: 900,
+              color: '#0F172A',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.2
+            }}>
+              {t('auth.create_account_title')}
+            </h1>
             <h2 style={{
               fontFamily: 'Kanit, sans-serif',
               fontSize: '1.8rem',
@@ -260,38 +361,150 @@ export default function RegisterPage() {
                 }}>
                   {t('auth.password')} *
                 </label>
-                <input
-                  type="password"
-                  placeholder={t('auth.password_hint')}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '13px 16px',
-                    fontSize: '15px',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    outline: 'none',
-                    background: '#ffffff',
-                    color: '#0f172a',
-                    fontWeight: '500',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#cbd5e1';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('auth.password_hint')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '13px 44px 13px 16px',
+                      fontSize: '15px',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      outline: 'none',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontWeight: '500',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#cbd5e1';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      color: '#4c669a',
+                      fontSize: 16,
+                      padding: 8,
+                      borderRadius: 10,
+                      lineHeight: 1
+                    }}
+                    aria-label="toggle password visibility"
+                  >
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
                 {password && password.length < 6 && (
                   <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#ef4444' }}>
                     {t('auth.password_too_short', { count: 6 - password.length })}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#334155',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  {t('auth.confirm_password') || 'Confirm Password'} *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder={t('auth.confirm_password_placeholder') || 'Re-enter your password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '13px 44px 13px 16px',
+                      fontSize: '15px',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '8px',
+                      outline: 'none',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontWeight: '500',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#cbd5e1';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      color: '#4c669a',
+                      fontSize: 16,
+                      padding: 8,
+                      borderRadius: 10,
+                      lineHeight: 1
+                    }}
+                    aria-label="toggle confirm password visibility"
+                  >
+                    {showConfirmPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                {confirmPassword && confirmPassword !== password && (
+                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#ef4444' }}>
+                    {t('auth.password_not_match') || 'Passwords do not match'}
+                  </p>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  style={{ width: 16, height: 16, marginTop: 3, accentColor: '#135bec' }}
+                />
+                <span style={{ fontSize: 12, color: '#4c669a', lineHeight: 1.5 }}>
+                  {t('auth.agree_terms_prefix') || 'I agree to the'}{' '}
+                  <a href="#" style={{ color: '#135bec', fontWeight: 600, textDecoration: 'none' }}>
+                    {t('auth.terms') || 'Terms of Service'}
+                  </a>
+                  {' '}{t('auth.and') || 'and'}{' '}
+                  <a href="#" style={{ color: '#135bec', fontWeight: 600, textDecoration: 'none' }}>
+                    {t('auth.privacy') || 'Privacy Policy'}
+                  </a>
+                  .
+                </span>
               </div>
 
               {/* Error Message */}
@@ -396,10 +609,12 @@ export default function RegisterPage() {
               transform: translateY(0);
             }
           }
+          .register-mobileLogo {
+            display: flex;
+          }
           @media (max-width: 768px) {
             div[style*="gridTemplateColumns"] {
               grid-template-columns: 1fr !important;
-              max-width: 450px !important;
             }
             div[style*="backgroundImage"] {
               display: none !important;
