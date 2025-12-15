@@ -51,6 +51,7 @@ export default function ProfilePage() {
   });
 
   // Order count
+  // eslint-disable-next-line no-unused-vars
   const [orderCount, setOrderCount] = useState(0);
 
   // Load user data from Firestore

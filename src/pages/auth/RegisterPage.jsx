@@ -220,13 +220,13 @@ export default function RegisterPage() {
               />
               <label htmlFor="terms" className={styles.termsText}>
                 {t('auth.agree_terms_prefix') || 'I agree to the'}{' '}
-                <a href="#" className={styles.termsLink}>
+                <button type="button" className={styles.termsLink}>
                   {t('auth.terms') || 'Terms of Service'}
-                </a>
+                </button>
                 {' '}{t('auth.and') || 'and'}{' '}
-                <a href="#" className={styles.termsLink}>
+                <button type="button" className={styles.termsLink}>
                   {t('auth.privacy') || 'Privacy Policy'}
-                </a>
+                </button>
                 .
               </label>
             </div>

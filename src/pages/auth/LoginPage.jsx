@@ -158,9 +158,9 @@ export default function LoginPage() {
                   {t('auth.remember_me')}
                 </label>
               </div>
-              <a className={styles.forgotPassword} href="#">
+              <button type="button" className={styles.forgotPassword}>
                 {t('auth.forgot_password') || 'Forgot Password?'}
-              </a>
+              </button>
             </div>
 
             {/* Error Message */}
