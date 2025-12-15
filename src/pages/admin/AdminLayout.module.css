@@ -1,0 +1,361 @@
+/* AdminLayout.module.css */
+
+/* ===== Main Container ===== */
+.layoutContainer {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background-color: #f6f6f8;
+  overflow: hidden;
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  display: flex;
+  width: 256px;
+  flex-direction: column;
+  border-right: 1px solid #e7ebf3;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.sidebarHidden {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    display: flex;
+  }
+}
+
+/* ===== Sidebar Header ===== */
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e7ebf3;
+}
+
+.sidebarLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  padding: 0.25rem;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  overflow: hidden;
+}
+
+.sidebarLogoIcon {
+  font-size: 1.25rem;
+}
+
+.sidebarBrand {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0d121b;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.sidebarSubtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #4c669a;
+  margin: 0;
+}
+
+/* ===== Sidebar Navigation ===== */
+.sidebarNav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebarNav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebarNav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebarNav::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb;
+  border-radius: 20px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d121b;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.navItem:hover {
+  background-color: #f1f5f9;
+  color: #135bec;
+}
+
+.navItemActive {
+  background-color: rgba(19, 91, 236, 0.1);
+  color: #135bec;
+}
+
+.navItemIcon {
+  font-size: 1.5rem;
+  font-variation-settings: 'FILL' 1;
+}
+
+.navDivider {
+  height: 1px;
+  background-color: #f1f5f9;
+  margin: 0.5rem 0;
+}
+
+/* ===== Sidebar Footer ===== */
+.sidebarFooter {
+  padding: 1rem;
+  border-top: 1px solid #e7ebf3;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.userAvatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background-color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0d121b;
+}
+
+.userDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d121b;
+  margin: 0;
+}
+
+.userRole {
+  font-size: 0.75rem;
+  color: #4c669a;
+  margin: 0;
+}
+
+/* ===== Main Content Area ===== */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ===== Top Header ===== */
+.topHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  border-bottom: 1px solid #e7ebf3;
+  background-color: #ffffff;
+  padding: 1rem 1.5rem;
+  z-index: 10;
+}
+
+.mobileMenuButton {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0d121b;
+}
+
+@media (min-width: 768px) {
+  .mobileMenuButton {
+    display: none;
+  }
+}
+
+.mobileTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+/* ===== Search Bar ===== */
+.searchContainer {
+  display: none;
+  align-items: center;
+  flex: 1;
+  max-width: 32rem;
+}
+
+@media (min-width: 768px) {
+  .searchContainer {
+    display: flex;
+  }
+}
+
+.searchWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  padding-left: 0.75rem;
+  pointer-events: none;
+  color: #4c669a;
+  font-size: 1.25rem;
+}
+
+.searchInput {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.75rem 0.625rem 2.5rem;
+  font-size: 0.875rem;
+  color: #0d121b;
+  background-color: #f6f6f8;
+  border-radius: 0.5rem;
+  border: none;
+  outline: none;
+}
+
+.searchInput:focus {
+  box-shadow: 0 0 0 2px #135bec;
+}
+
+.searchInput::placeholder {
+  color: #4c669a;
+}
+
+/* ===== Header Actions ===== */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-left: 1rem;
+}
+
+.notificationButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0d121b;
+  transition: background-color 0.2s ease;
+}
+
+.notificationButton:hover {
+  background-color: #f6f6f8;
+}
+
+.notificationDot {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #ef4444;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+}
+
+.languageButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0d121b;
+  transition: background-color 0.2s ease;
+}
+
+.languageButton:hover {
+  background-color: #f6f6f8;
+}
+
+.languageText {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ===== Scrollable Content ===== */
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f6f6f8;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .scrollableContent {
+    padding: 2rem;
+  }
+}
+
+.contentWrapper {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}

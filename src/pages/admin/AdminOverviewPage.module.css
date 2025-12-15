@@ -1,0 +1,836 @@
+/* AdminOverviewPage.module.css */
+
+/* ===== Page Container ===== */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ===== Page Header ===== */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+@media (min-width: 768px) {
+  .pageHeader {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+.pageHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pageTitle {
+  font-size: 1.875rem;
+  font-weight: 900;
+  color: #0d121b;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .pageTitle {
+    font-size: 2.25rem;
+  }
+}
+
+.pageSubtitle {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #4c669a;
+  margin: 0;
+}
+
+/* ===== Header Actions ===== */
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.exportButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d121b;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  gap: 0.5rem;
+}
+
+.exportButton:hover {
+  background-color: #f9fafb;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  background-color: #135bec;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 10px 15px -3px rgba(19, 91, 236, 0.3);
+  gap: 0.5rem;
+}
+
+.addButton:hover {
+  background-color: #0f4bc4;
+}
+
+/* ===== KPI Cards Grid ===== */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===== KPI Card - Primary (Gradient) ===== */
+.kpiCardPrimary {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  background: linear-gradient(to bottom right, #135bec, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(19, 91, 236, 0.2);
+  overflow: hidden;
+}
+
+.kpiCardPrimaryGlow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-right: -1rem;
+  margin-top: -1rem;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.1);
+  filter: blur(24px);
+}
+
+.kpiCardContent {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.kpiLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #bfdbfe;
+}
+
+.kpiValue {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.kpiTrend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  position: relative;
+  z-index: 10;
+}
+
+.kpiTrendBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.kpiTrendText {
+  font-size: 0.75rem;
+  color: #bfdbfe;
+}
+
+/* ===== KPI Card - Standard ===== */
+.kpiCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.kpiCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.kpiCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.kpiCardLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4c669a;
+}
+
+.kpiCardValue {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0d121b;
+  letter-spacing: -0.025em;
+}
+
+.kpiCardIcon {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpiCardIconBlue {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #135bec;
+}
+
+.kpiCardIconPurple {
+  background-color: rgba(147, 51, 234, 0.1);
+  color: #9333ea;
+}
+
+.kpiCardIconRed {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.kpiCardTrend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.kpiTrendUp {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+}
+
+.kpiTrendDown {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+}
+
+.kpiTrendWarning {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+}
+
+.kpiTrendLabel {
+  font-size: 0.75rem;
+  color: #4c669a;
+}
+
+/* ===== Charts Section ===== */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .chartsGrid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* ===== Chart Card ===== */
+.chartCard {
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.chartHeaderText {
+  display: flex;
+  flex-direction: column;
+}
+
+.chartTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.chartSubtitle {
+  font-size: 0.875rem;
+  color: #4c669a;
+  margin: 0;
+}
+
+.chartTabs {
+  display: flex;
+  background-color: #f6f6f8;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+.chartTabActive {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 0.375rem;
+  color: #0d121b;
+  border: none;
+  cursor: pointer;
+}
+
+.chartTab {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4c669a;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.chartTab:hover {
+  color: #0d121b;
+}
+
+/* ===== Chart Area ===== */
+.chartArea {
+  position: relative;
+  height: 250px;
+  width: 100%;
+}
+
+.chartLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding: 0 0.5rem;
+}
+
+.chartLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4c669a;
+}
+
+/* ===== Donut Chart Card ===== */
+.donutCard {
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.donutChartContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.donutChart {
+  position: relative;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 9999px;
+}
+
+.donutChartCenter {
+  position: absolute;
+  inset: 1rem;
+  background-color: #ffffff;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.donutChartValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0d121b;
+}
+
+.donutChartLabel {
+  font-size: 0.625rem;
+  color: #4c669a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.donutLegend {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.donutLegendItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.donutLegendLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.donutLegendDot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+}
+
+.donutLegendText {
+  color: #0d121b;
+}
+
+.donutLegendValue {
+  font-weight: 500;
+  color: #4c669a;
+}
+
+/* ===== Recent Orders Table ===== */
+.tableCard {
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tableHeader {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tableTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.viewAllButton {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #135bec;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.viewAllButton:hover {
+  text-decoration: underline;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.tableHead {
+  background-color: #f6f6f8;
+}
+
+.tableHeadCell {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4c669a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tableHeadCellRight {
+  text-align: right;
+}
+
+.tableBody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableCell {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+.tableCellBold {
+  font-weight: 500;
+  color: #0d121b;
+}
+
+.tableCellMuted {
+  color: #4c669a;
+}
+
+.tableCellRight {
+  text-align: right;
+}
+
+/* ===== Customer Cell ===== */
+.customerCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.customerAvatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.customerAvatarBlue {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.customerAvatarOrange {
+  background-color: #ffedd5;
+  color: #ea580c;
+}
+
+.customerAvatarPurple {
+  background-color: #f3e8ff;
+  color: #9333ea;
+}
+
+.customerAvatarTeal {
+  background-color: #ccfbf1;
+  color: #0d9488;
+}
+
+/* ===== Status Badges ===== */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.statusPaid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusPending {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+.statusShipped {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.statusCancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ===== Action Button ===== */
+.actionButton {
+  background: none;
+  border: none;
+  color: #4c669a;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.actionButton:hover {
+  color: #135bec;
+}
+
+/* ===== Footer ===== */
+.footer {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #4c669a;
+  padding-bottom: 2rem;
+}
+
+/* ===== Bar Chart ===== */
+.barChartContainer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  height: 180px;
+  padding: 0.5rem 0.25rem 0;
+}
+
+.barChartItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.barChartBar {
+  width: 60%;
+  background: linear-gradient(to top, #1e40af, #3b82f6, #60a5fa);
+  border-radius: 0.375rem;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: height 0.3s ease-out;
+  cursor: pointer;
+}
+
+.barChartLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.625rem;
+}
+
+.barChartLabel {
+  flex: 1;
+  text-align: center;
+}
+
+/* ===== Low Stock Panel ===== */
+.lowStockPanel {
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f1f5f9;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.lowStockHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.875rem;
+}
+
+.lowStockTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.lowStockBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.lowStockList {
+  flex: 1;
+}
+
+.lowStockItem {
+  padding: 0.625rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+}
+
+.lowStockItem:last-child {
+  border-bottom: none;
+}
+
+.lowStockItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.375rem;
+}
+
+.lowStockItemName {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.lowStockItemQty {
+  font-weight: 600;
+}
+
+.lowStockItemQtyZero {
+  color: #dc2626;
+}
+
+.lowStockItemQtyLow {
+  color: #f59e0b;
+}
+
+.lowStockVariants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.lowStockVariant {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.lowStockVariantZero {
+  background-color: #fecaca;
+  color: #dc2626;
+}
+
+.lowStockVariantLow {
+  background-color: #fed7aa;
+  color: #ea580c;
+}
+
+.lowStockVariantWarning {
+  background-color: #fef9c3;
+  color: #a16207;
+}
+
+.lowStockMore {
+  font-size: 0.6875rem;
+  color: #6b7280;
+  padding: 0.125rem 0;
+}
+
+.emptyText {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  padding: 0.625rem 0;
+}
+
+/* ===== Two Column Layout ===== */
+.twoColumnGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .twoColumnGrid {
+    grid-template-columns: 1fr 1.5fr;
+  }
+}

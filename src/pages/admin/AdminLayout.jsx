@@ -1,15 +1,16 @@
-import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
+import styles from './AdminLayout.module.css';
 
 const AdminLayout = () => {
   const { t } = useTranslation();
   const { profile } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const params = new URLSearchParams(location.search);
   const currentOrdersSource = params.get('source') || 'customer';
@@ -26,193 +27,120 @@ const AdminLayout = () => {
   };
 
   const menuItems = [
-    { path: '/admin/dashboard', icon: '🏠', labelKey: 'common.dashboard' },
-    { path: '/admin/products', icon: '/cubes.png', labelKey: 'admin.products', isImage: true },
-    { path: '/admin/orders?source=customer', icon: '/shopping-basket.png', labelKey: 'order.customer_orders', isOrderSource: 'customer', isImage: true },
-    { path: '/admin/orders?source=staff', icon: '/cash-machine.png', labelKey: 'order.staff_orders', isOrderSource: 'staff', isImage: true },
-    { path: '/admin/coupons', icon: '🎫', labelKey: 'admin.coupons' },
-    { path: '/admin/inventory_history', icon: '📊', labelKey: 'admin.inventory_history' },
-    { path: '/admin/payment-account', icon: '💳', labelKey: 'admin.payment_settings' },
-    { path: '/admin/alerts', icon: '🔔', labelKey: 'admin.low_stock_alert' },
-    { path: '/admin/users', icon: '👥', labelKey: 'user.user_management' },
-    { path: '/admin/profile', icon: '/people.png', labelKey: 'common.profile', isImage: true },
+    { path: '/admin/dashboard', icon: 'dashboard', labelKey: 'common.dashboard' },
+    { path: '/admin/products', icon: 'inventory_2', labelKey: 'admin.products' },
+    { path: '/admin/orders?source=customer', icon: 'shopping_cart', labelKey: 'order.customer_orders', isOrderSource: 'customer' },
+    { path: '/admin/orders?source=staff', icon: 'point_of_sale', labelKey: 'order.staff_orders', isOrderSource: 'staff' },
+    { path: '/admin/coupons', icon: 'confirmation_number', labelKey: 'admin.coupons' },
+    { path: '/admin/inventory_history', icon: 'history', labelKey: 'admin.inventory_history' },
+    { path: '/admin/payment-account', icon: 'account_balance', labelKey: 'admin.payment_settings' },
+    { path: '/admin/alerts', icon: 'warning', labelKey: 'admin.low_stock_alert' },
+    { path: '/admin/users', icon: 'group', labelKey: 'user.user_management' },
   ];
 
-  const getLinkStyle = (isActive) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    padding: '1rem 1.2rem',
-    textDecoration: 'none',
-    color: isActive ? '#FFFFFF' : '#374151',
-    borderRadius: '12px',
-    transition: 'all 0.25s ease',
-    fontSize: '1rem',
-    fontWeight: 500,
-    background: isActive
-      ? 'linear-gradient(135deg, #2D9CDB 0%, #56CCF2 100%)'
-      : 'transparent',
-    boxShadow: isActive
-      ? '0 6px 20px rgba(45, 156, 219, 0.4), 0 3px 10px rgba(86, 204, 242, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)'
-      : 'none',
-    transform: isActive ? 'translateY(-1px)' : 'none',
-    border: isActive ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
-  });
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate('/login');
+  };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(180deg, #EEF2FF 0%, #E0F2FE 45%, #F9FAFB 100%)' }}>
-      <div
-        style={{
-          width: '280px',
-          background: 'linear-gradient(180deg, #EEF2FF 0%, #E0F2FE 45%, #F9FAFB 100%)',
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '4px 0 18px rgba(15, 23, 42, 0.18)',
-          position: 'sticky',
-          top: 0,
-          alignSelf: 'flex-start',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            padding: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            borderBottom: '1px solid #E5E7EB',
-          }}
-        >
-          <div
-            style={{
-              width: '50px',
-              height: '50px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
-              overflow: 'hidden',
-              background: 'white',
-              padding: '3px',
-            }}
-          >
+    <div className={styles.layoutContainer}>
+      {/* Sidebar Navigation */}
+      <aside className={styles.sidebar}>
+        {/* Sidebar Header */}
+        <div className={styles.sidebarHeader}>
+          <div className={styles.sidebarLogo}>
             <img src="/Inventory Hub .png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-          <div>
-            <div
-              style={{
-                fontFamily: "'Kanit', sans-serif",
-                fontSize: '1.4rem',
-                fontWeight: 800,
-                background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #0EA5E9 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                letterSpacing: '1px',
-              }}
-            >
-              INVENTORY
-            </div>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#64748B', letterSpacing: '3px', marginTop: '-2px' }}>
-              HUB
-            </div>
+          <div className={styles.sidebarBrand}>
+            <h1 className={styles.sidebarTitle}>INVENTORY</h1>
+            <p className={styles.sidebarSubtitle}>PRO</p>
           </div>
         </div>
 
-        <div style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
-          <div style={{ marginBottom: '0.8rem' }}>
-            <LanguageSwitcher style={{ width: '100%' }} />
-          </div>
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {menuItems.map((item) => {
-              const isActive = item.isOrderSource ? isOrdersActive(item.isOrderSource) : isActiveLink(item.path.split('?')[0]);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  style={getLinkStyle(isActive)}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(45, 156, 219, 0.1)';
-                      e.currentTarget.style.color = '#2D9CDB';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.12)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#374151';
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }
-                  }}
-                >
-                  <span style={{ fontSize: '1.3rem', width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {item.isImage ? <img src={item.icon} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> : item.icon}
-                  </span>
-                  <span>{t(item.labelKey)}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        {/* Sidebar Navigation */}
+        <nav className={styles.sidebarNav}>
+          {menuItems.map((item, index) => {
+            const isActive = item.isOrderSource 
+              ? isOrdersActive(item.isOrderSource) 
+              : isActiveLink(item.path.split('?')[0]);
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+              >
+                <span className={`material-symbols-outlined ${styles.navItemIcon}`}>
+                  {item.icon}
+                </span>
+                <span>{t(item.labelKey)}</span>
+              </Link>
+            );
+          })}
+          
+          <div className={styles.navDivider}></div>
+          
+          <Link to="/admin/profile" className={`${styles.navItem} ${isActiveLink('/admin/profile') ? styles.navItemActive : ''}`}>
+            <span className={`material-symbols-outlined ${styles.navItemIcon}`}>settings</span>
+            <span>{t('common.settings')}</span>
+          </Link>
+        </nav>
 
-        <div style={{ padding: '0.8rem' }}>
-          <div style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', borderRadius: '12px', padding: '0.8rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.7rem' }}>
-              <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 3px 10px rgba(59, 130, 246, 0.3)', border: '2px solid white', flexShrink: 0 }}>
-                👤
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '0.9rem', fontWeight: 600, color: '#1F2937' }}>{profile?.displayName || 'Admin'}</div>
-                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{t('user.role_admin')}</div>
-              </div>
+        {/* Sidebar Footer */}
+        <div className={styles.sidebarFooter}>
+          <div className={styles.userInfo}>
+            <div className={styles.userAvatar}>
+              {(profile?.displayName || 'A').charAt(0).toUpperCase()}
             </div>
-            <button
-              onClick={() => signOut(auth)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.45rem',
-                width: '100%',
-                padding: '0.55rem 0.9rem',
-                background: '#FFFFFF',
-                border: '1px solid rgba(148, 163, 184, 0.5)',
-                borderRadius: '999px',
-                color: '#2563EB',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                fontSize: '0.85rem',
-                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#2563EB';
-                e.currentTarget.style.color = '#FFFFFF';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 99, 235, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#FFFFFF';
-                e.currentTarget.style.color = '#2563EB';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.12)';
-              }}
-            >
-              <img src="/shutdown.png" alt="Logout" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-              <span>{t('common.logout')}</span>
+            <div className={styles.userDetails}>
+              <p className={styles.userName}>{profile?.displayName || 'Admin User'}</p>
+              <p className={styles.userRole}>{profile?.email || 'admin@store.com'}</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className={styles.mainContent}>
+        {/* Top Header */}
+        <header className={styles.topHeader}>
+          {/* Mobile Menu Button */}
+          <div className={styles.mobileMenuButton}>
+            <span className="material-symbols-outlined">menu</span>
+            <h2 className={styles.mobileTitle}>Dashboard</h2>
+          </div>
+
+          {/* Desktop Search */}
+          <div className={styles.searchContainer}>
+            <div className={styles.searchWrapper}>
+              <div className={styles.searchIcon}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>search</span>
+              </div>
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder={t('common.search') || 'Search orders, products, or customers...'}
+              />
+            </div>
+          </div>
+
+          {/* Header Actions */}
+          <div className={styles.headerActions}>
+            <LanguageSwitcher />
+            <button className={styles.notificationButton} onClick={handleLogout} title={t('common.logout')}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.5rem' }}>logout</span>
             </button>
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div style={{ flex: 1, height: '100vh', overflowY: 'auto', padding: '2rem', boxSizing: 'border-box' }}>
-        <Outlet />
-      </div>
+        {/* Scrollable Content */}
+        <div className={styles.scrollableContent}>
+          <div className={styles.contentWrapper}>
+            <Outlet />
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

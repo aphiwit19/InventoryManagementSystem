@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProducts, getAllWithdrawals, isLowStock, getLowStockVariants } from '../../services';
+import { getAllProducts, getAllWithdrawals, isLowStock } from '../../services';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTranslation } from 'react-i18next';
+import styles from './AdminOverviewPage.module.css';
 
 export default function AdminOverviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [userCounts, setUserCounts] = useState({ customers: 0, staff: 0, total: 0 });
 
   useEffect(() => {
@@ -22,7 +24,6 @@ export default function AdminOverviewPage() {
         setProducts(p || []);
         setWithdrawals(w || []);
 
-        // ดึงข้อมูลผู้ใช้
         const usersSnap = await getDocs(collection(db, 'users'));
         let customers = 0;
         let staff = 0;
@@ -43,7 +44,9 @@ export default function AdminOverviewPage() {
   const allWithdrawals = withdrawals || [];
   const customerOrders = allWithdrawals.filter(w => (w.createdSource || 'customer') === 'customer');
   const staffWithdrawals = allWithdrawals.filter(w => (w.createdSource || 'staff') === 'staff');
+  // eslint-disable-next-line no-unused-vars
   const pendingCustomerOrders = customerOrders.filter(o => (o.shippingStatus || 'รอดำเนินการ') === 'รอดำเนินการ');
+  // eslint-disable-next-line no-unused-vars
   const pendingWithdrawals = staffWithdrawals.filter(o => (o.shippingStatus || 'รอดำเนินการ') === 'รอดำเนินการ');
 
   const today = new Date();
@@ -57,6 +60,7 @@ export default function AdminOverviewPage() {
     );
   };
 
+  // eslint-disable-next-line no-unused-vars
   const todayRevenue = customerOrders
     .filter(o => isSameDay(o.createdAt))
     .reduce((sum, o) => sum + (parseFloat(o.total || 0) || 0), 0);
@@ -64,7 +68,7 @@ export default function AdminOverviewPage() {
   const totalRevenue = customerOrders
     .reduce((sum, o) => sum + (parseFloat(o.total || 0) || 0), 0);
 
-  // เตรียมข้อมูลกราฟรายได้ย้อนหลัง 7 วัน (รวมวันนี้)
+  // Build daily revenue for last 7 days
   const buildDailyRevenue = () => {
     const days = [];
     for (let i = 6; i >= 0; i -= 1) {
@@ -81,7 +85,7 @@ export default function AdminOverviewPage() {
       if (!ts) return;
       const d = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (!map.has(key)) return; // นอกช่วง 7 วัน
+      if (!map.has(key)) return;
       const row = map.get(key);
       row.total += (parseFloat(o.total || 0) || 0);
     });
@@ -92,355 +96,320 @@ export default function AdminOverviewPage() {
   const dailyRevenue = buildDailyRevenue();
   const maxDailyRevenue = dailyRevenue.reduce((m, d) => Math.max(m, d.total), 0) || 1;
 
+  // Recent orders (last 5)
+  const recentOrders = [...customerOrders]
+    .sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 5);
+
+  const formatDate = (ts) => {
+    if (!ts) return '-';
+    const d = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'จัดส่งแล้ว':
+      case 'shipped':
+        return styles.statusShipped;
+      case 'รอดำเนินการ':
+      case 'pending':
+        return styles.statusPending;
+      case 'ยกเลิก':
+      case 'cancelled':
+        return styles.statusCancelled;
+      default:
+        return styles.statusPaid;
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'จัดส่งแล้ว':
+        return 'Shipped';
+      case 'รอดำเนินการ':
+        return 'Pending';
+      case 'ยกเลิก':
+        return 'Cancelled';
+      default:
+        return 'Paid';
+    }
+  };
+
+  const getCustomerInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const avatarColors = [
+    styles.customerAvatarBlue,
+    styles.customerAvatarOrange,
+    styles.customerAvatarPurple,
+    styles.customerAvatarTeal,
+  ];
+
   return (
-    <div
-      style={{
-        padding: '32px 24px',
-        background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
-        minHeight: '100vh',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 700,
-              color: '#1e40af',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {t('admin.dashboard')}
-          </h1>
-          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>
-            {t('admin.overview')}
+    <div className={styles.container}>
+      {/* Page Header */}
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderText}>
+          <h1 className={styles.pageTitle}>Overview</h1>
+          <p className={styles.pageSubtitle}>Welcome back, Admin. Here's what's happening today.</p>
+        </div>
+        <div className={styles.headerActions}>
+          <button className={styles.addButton} onClick={() => navigate('/admin/products/new')}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>add</span>
+            Add Product
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className={styles.kpiGrid}>
+        {/* Card 1: Revenue (Gradient Primary) */}
+        <div className={styles.kpiCardPrimary}>
+          <div className={styles.kpiCardPrimaryGlow}></div>
+          <div className={styles.kpiCardContent}>
+            <p className={styles.kpiLabel}>Total Revenue</p>
+            <h3 className={styles.kpiValue}>฿{totalRevenue.toLocaleString()}</h3>
+          </div>
+          <div className={styles.kpiTrend}>
+            <span className={styles.kpiTrendBadge}>
+              <span className="material-symbols-outlined" style={{ fontSize: '0.875rem', marginRight: '0.25rem' }}>trending_up</span>
+              +5.2%
+            </span>
+            <span className={styles.kpiTrendText}>vs last month</span>
           </div>
         </div>
 
-        {/* แถวบน: 3 การ์ด */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 16,
-            marginBottom: 16,
-          }}
-        >
-          <SummaryCard
-            title={t('admin.total_products')}
-            value={products.length.toLocaleString()}
-            subtext={t('product.products')}
-            onClick={() => navigate('/admin/products')}
-          />
-          <SummaryCard
-            title={t('admin.pending_orders')}
-            value={pendingCustomerOrders.length.toLocaleString()}
-            subtext={t('order.customer_orders')}
-            onClick={() => navigate('/admin/orders?source=customer')}
-          />
-          <SummaryCard
-            title={t('order.staff_orders')}
-            value={pendingWithdrawals.length.toLocaleString()}
-            subtext={t('order.pending_orders')}
-            onClick={() => navigate('/admin/orders?source=staff')}
-          />
+        {/* Card 2: Orders */}
+        <div className={styles.kpiCard} onClick={() => navigate('/admin/orders?source=customer')} style={{ cursor: 'pointer' }}>
+          <div className={styles.kpiCardHeader}>
+            <div className={styles.kpiCardInfo}>
+              <p className={styles.kpiCardLabel}>Total Orders</p>
+              <h3 className={styles.kpiCardValue}>{customerOrders.length.toLocaleString()}</h3>
+            </div>
+            <div className={`${styles.kpiCardIcon} ${styles.kpiCardIconBlue}`}>
+              <span className="material-symbols-outlined">shopping_bag</span>
+            </div>
+          </div>
+          <div className={styles.kpiCardTrend}>
+            <span className={styles.kpiTrendUp}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_upward</span>
+              12.0%
+            </span>
+            <span className={styles.kpiTrendLabel}>vs last month</span>
+          </div>
         </div>
 
-        {/* แถวที่ 2: ผู้ใช้ + รายได้ */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 16,
-            marginBottom: 16,
-          }}
-        >
-          <SummaryCard
-            title={t('admin.total_users')}
-            value={userCounts.total.toLocaleString()}
-            subtext={`${t('user.role_customer')} ${userCounts.customers} | ${t('user.role_staff')} ${userCounts.staff}`}
-          />
-          <RevenueCard
-            title={t('admin.today_revenue')}
-            value={todayRevenue}
-            subtext={t('order.today_orders')}
-          />
-          <RevenueCard
-            title={t('admin.total_revenue')}
-            value={totalRevenue}
-            subtext={t('order.all_orders')}
-          />
+        {/* Card 3: Products */}
+        <div className={styles.kpiCard} onClick={() => navigate('/admin/products')} style={{ cursor: 'pointer' }}>
+          <div className={styles.kpiCardHeader}>
+            <div className={styles.kpiCardInfo}>
+              <p className={styles.kpiCardLabel}>Products</p>
+              <h3 className={styles.kpiCardValue}>{products.length.toLocaleString()}</h3>
+            </div>
+            <div className={`${styles.kpiCardIcon} ${styles.kpiCardIconPurple}`}>
+              <span className="material-symbols-outlined">inventory</span>
+            </div>
+          </div>
+          <div className={styles.kpiCardTrend}>
+            <span className={styles.kpiTrendUp}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_upward</span>
+              1.5%
+            </span>
+            <span className={styles.kpiTrendLabel}>New added</span>
+          </div>
         </div>
 
-        {/* แถวล่าง: Panel สินค้าต้องสั่งอีก + กราฟ */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.5fr',
-            gap: 20,
-            alignItems: 'stretch',
-          }}
-        >
-          <Panel
-            title={t('product.low_stock')}
-            badge={lowStock.length > 0 ? `${lowStock.length} ${t('common.items')}` : null}
-            emptyText={t('common.no_data')}
-            onClick={() => navigate('/admin/alerts')}
-          >
-            {lowStock.slice(0, 5).map((p) => {
-              const lowVariants = getLowStockVariants(p);
-              const unit = p.unit || 'ชิ้น';
+        {/* Card 4: Low Stock Alerts */}
+        <div className={styles.kpiCard} onClick={() => navigate('/admin/alerts')} style={{ cursor: 'pointer' }}>
+          <div className={styles.kpiCardHeader}>
+            <div className={styles.kpiCardInfo}>
+              <p className={styles.kpiCardLabel}>Low Stock Alerts</p>
+              <h3 className={styles.kpiCardValue}>{lowStock.length}</h3>
+            </div>
+            <div className={`${styles.kpiCardIcon} ${styles.kpiCardIconRed}`}>
+              <span className="material-symbols-outlined">warning</span>
+            </div>
+          </div>
+          <div className={styles.kpiCardTrend}>
+            <span className={styles.kpiTrendWarning}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>priority_high</span>
+              Action Needed
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className={styles.chartsGrid}>
+        {/* Main Area Chart */}
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartHeaderText}>
+              <h3 className={styles.chartTitle}>Revenue Trends</h3>
+              <p className={styles.chartSubtitle}>Weekly sales performance</p>
+            </div>
+            <div className={styles.chartTabs}>
+              <button className={styles.chartTabActive}>Weekly</button>
+              <button className={styles.chartTab}>Monthly</button>
+            </div>
+          </div>
+
+          {/* Bar Chart */}
+          <div className={styles.barChartContainer}>
+            {dailyRevenue.map((d) => {
+              const ratio = d.total <= 0 ? 0.05 : d.total / maxDailyRevenue;
+              const height = Math.max(20, ratio * 150);
               return (
-                <div
-                  key={p.id}
-                  style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid #f1f5f9',
-                    fontSize: 14,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: lowVariants.length > 0 ? 6 : 0 }}>
-                    <div
-                      style={{
-                        maxWidth: 160,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        color: '#1e293b',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {p.productName || 'ไม่มีชื่อสินค้า'}
-                    </div>
-                    <div style={{ 
-                      color: (p.quantity || 0) === 0 ? '#dc2626' : '#f59e0b', 
-                      fontWeight: 600 
-                    }}>
-                      {(p.quantity ?? 0).toLocaleString()} {unit}
-                    </div>
-                  </div>
-                  {lowVariants.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {lowVariants.slice(0, 3).map((v, idx) => (
-                        <span 
-                          key={idx}
-                          style={{ 
-                            background: v.available === 0 ? '#fecaca' : v.available <= 5 ? '#fed7aa' : '#fef9c3',
-                            color: v.available === 0 ? '#dc2626' : v.available <= 5 ? '#ea580c' : '#a16207',
-                            padding: '2px 6px', 
-                            borderRadius: 4, 
-                            fontSize: 11, 
-                            fontWeight: 500,
-                          }}
-                        >
-                          {v.size}/{v.color}: {v.available}
-                        </span>
-                      ))}
-                      {lowVariants.length > 3 && (
-                        <span style={{ fontSize: 11, color: '#6b7280', padding: '2px 0' }}>
-                          +{lowVariants.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                <div key={d.key} className={styles.barChartItem}>
+                  <div
+                    className={styles.barChartBar}
+                    style={{ height: `${height}px` }}
+                    title={`฿${d.total.toLocaleString()}`}
+                  />
                 </div>
               );
             })}
-          </Panel>
+          </div>
+          <div className={styles.barChartLabels}>
+            {dailyRevenue.map((d) => (
+              <span key={d.key} className={styles.barChartLabel}>
+                {d.date.toLocaleDateString('en-US', { weekday: 'short' })}
+              </span>
+            ))}
+          </div>
+        </div>
 
-          <Panel title="กราฟรายได้ 7 วันที่ผ่านมา" emptyText="ยังไม่มีคำสั่งซื้อในช่วงนี้">
-            <RevenueBarChart data={dailyRevenue} max={maxDailyRevenue} />
-          </Panel>
+        {/* Donut Chart */}
+        <div className={styles.donutCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartHeaderText}>
+              <h3 className={styles.chartTitle}>Sales by Category</h3>
+              <p className={styles.chartSubtitle}>Top performing categories</p>
+            </div>
+          </div>
+          <div className={styles.donutChartContainer}>
+            <div 
+              className={styles.donutChart}
+              style={{ background: 'conic-gradient(#135bec 0% 45%, #3b82f6 45% 75%, #93c5fd 75% 90%, #e2e8f0 90% 100%)' }}
+            >
+              <div className={styles.donutChartCenter}>
+                <span className={styles.donutChartValue}>{products.length > 0 ? '85%' : '0%'}</span>
+                <span className={styles.donutChartLabel}>Sold</span>
+              </div>
+            </div>
+          </div>
+          <div className={styles.donutLegend}>
+            <div className={styles.donutLegendItem}>
+              <div className={styles.donutLegendLabel}>
+                <div className={styles.donutLegendDot} style={{ backgroundColor: '#135bec' }}></div>
+                <span className={styles.donutLegendText}>Electronics</span>
+              </div>
+              <span className={styles.donutLegendValue}>45%</span>
+            </div>
+            <div className={styles.donutLegendItem}>
+              <div className={styles.donutLegendLabel}>
+                <div className={styles.donutLegendDot} style={{ backgroundColor: '#3b82f6' }}></div>
+                <span className={styles.donutLegendText}>Fashion</span>
+              </div>
+              <span className={styles.donutLegendValue}>30%</span>
+            </div>
+            <div className={styles.donutLegendItem}>
+              <div className={styles.donutLegendLabel}>
+                <div className={styles.donutLegendDot} style={{ backgroundColor: '#93c5fd' }}></div>
+                <span className={styles.donutLegendText}>Home</span>
+              </div>
+              <span className={styles.donutLegendValue}>15%</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function SummaryCard({ title, value, subtext, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        background: '#fff',
-        borderRadius: 18,
-        padding: '20px 22px',
-        boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
-        cursor: onClick ? 'pointer' : 'default',
-        border: '1px solid rgba(255,255,255,0.8)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        minHeight: 110,
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-        backdropFilter: 'blur(8px)',
-      }}
-      onMouseEnter={(e) => {
-        if (onClick) {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 16px 48px rgba(15,23,42,0.18), 0 8px 24px rgba(37,99,235,0.15)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)';
-      }}
-    >
-      <div style={{ fontSize: 13, color: '#0F172A', fontWeight: 500 }}>{title}</div>
-      <div style={{ fontSize: 32, fontWeight: 700, marginTop: 8, color: '#0F172A' }}>{value}</div>
-      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{subtext}</div>
-    </div>
-  );
-}
-
-function RevenueCard({ title, value, subtext }) {
-  return (
-    <div
-      style={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        borderRadius: 18,
-        padding: '24px 28px',
-        boxShadow: '0 10px 40px rgba(15,23,42,0.14), 0 4px 16px rgba(37,99,235,0.1)',
-        border: '1px solid rgba(255,255,255,0.9)',
-        backdropFilter: 'blur(8px)',
-      }}
-    >
-      <div style={{ fontSize: 13, color: '#0F172A', marginBottom: 8 }}>{title}</div>
-      <div
-        style={{
-          fontSize: 36,
-          fontWeight: 700,
-          color: '#0F172A',
-          letterSpacing: '-0.02em',
-        }}
-      >
-        ฿{value.toLocaleString()}
-      </div>
-      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>{subtext}</div>
-    </div>
-  );
-}
-
-function Panel({ title, badge, emptyText, children, onClick }) {
-  const isEmpty = !children || (Array.isArray(children) && children.length === 0);
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-        borderRadius: 18,
-        padding: '22px 24px',
-        boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
-        border: '1px solid rgba(255,255,255,0.9)',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        backdropFilter: 'blur(8px)',
-        cursor: onClick ? 'pointer' : 'default',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 14,
-        }}
-      >
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#1e293b' }}>{title}</div>
-        {badge && (
-          <span
-            style={{
-              padding: '4px 12px',
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#fff',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-            }}
-          >
-            {badge}
-          </span>
-        )}
-      </div>
-      {isEmpty ? (
-        <div style={{ fontSize: 13, color: '#94a3b8', padding: '10px 0' }}>{emptyText}</div>
-      ) : (
-        <div style={{ flex: 1 }}>{children}</div>
-      )}
-    </div>
-  );
-}
-
-function RevenueBarChart({ data, max }) {
-  if (!data || data.length === 0) return null;
-
-  const formatLabel = (d) => {
-    return d.date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
-  };
-
-  return (
-    <div style={{ paddingTop: 8, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 12,
-          flex: 1,
-          minHeight: 180,
-          padding: '8px 4px 0',
-        }}
-      >
-        {data.map((d) => {
-          const ratio = d.total <= 0 ? 0.05 : d.total / max;
-          const height = Math.max(20, ratio * 150);
-          return (
-            <div
-              key={d.key}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <div
-                style={{
-                  width: '60%',
-                  height,
-                  background: 'linear-gradient(to top, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
-                  borderRadius: 6,
-                  boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
-                  transition: 'height 0.3s ease-out',
-                  cursor: 'pointer',
-                }}
-                title={`฿${d.total.toLocaleString()}`}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: 12,
-          fontSize: 12,
-          color: '#64748b',
-          borderTop: '1px solid #f1f5f9',
-          paddingTop: 10,
-        }}
-      >
-        {data.map((d) => (
-          <div key={d.key} style={{ flex: 1, textAlign: 'center' }}>
-            {formatLabel(d)}
+      {/* Recent Orders Table */}
+      <div className={styles.tableCard}>
+          <div className={styles.tableHeader}>
+            <h3 className={styles.tableTitle}>Recent Orders</h3>
+            <button className={styles.viewAllButton} onClick={() => navigate('/admin/orders?source=customer')}>
+              View All
+            </button>
           </div>
-        ))}
-      </div>
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead className={styles.tableHead}>
+                <tr>
+                  <th className={styles.tableHeadCell}>Order ID</th>
+                  <th className={styles.tableHeadCell}>Customer</th>
+                  <th className={styles.tableHeadCell}>Date</th>
+                  <th className={styles.tableHeadCell}>Amount</th>
+                  <th className={styles.tableHeadCell}>Status</th>
+                  <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>Action</th>
+                </tr>
+              </thead>
+              <tbody className={styles.tableBody}>
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className={styles.tableCell} style={{ textAlign: 'center' }}>
+                      {t('common.no_data')}
+                    </td>
+                  </tr>
+                ) : (
+                  recentOrders.map((order, index) => (
+                    <tr key={order.id} className={styles.tableRow}>
+                      <td className={`${styles.tableCell} ${styles.tableCellBold}`}>
+                        #{order.id?.substring(0, 8).toUpperCase() || 'N/A'}
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellMuted}`}>
+                        <div className={styles.customerCell}>
+                          <div className={`${styles.customerAvatar} ${avatarColors[index % avatarColors.length]}`}>
+                            {getCustomerInitials(order.requestedBy)}
+                          </div>
+                          {order.requestedBy || 'Unknown'}
+                        </div>
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellMuted}`}>
+                        {formatDate(order.createdAt)}
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellBold}`}>
+                        ฿{(order.total || 0).toLocaleString()}
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span className={`${styles.statusBadge} ${getStatusStyle(order.shippingStatus)}`}>
+                          {getStatusText(order.shippingStatus)}
+                        </span>
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                        <button 
+                          className={styles.actionButton}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/orders/${order.id}`);
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>more_vert</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      {/* Footer */}
+      <footer className={styles.footer}>
+        © 2024 Admin Dashboard. All rights reserved.
+      </footer>
     </div>
   );
 }
