@@ -1,45 +1,153 @@
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { useAuth } from '../../auth/AuthContext';
+import styles from './CustomerOrderDetailPage.module.css';
 
 export default function CustomerOrderDetailPage() {
-  // eslint-disable-next-line no-unused-vars
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const order = location.state && location.state.order;
+  const { user } = useAuth();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check if order was passed via location.state
+  const orderFromState = location.state?.order;
+
+  useEffect(() => {
+    const loadOrder = async () => {
+      // If order was passed via state, use it directly
+      if (orderFromState) {
+        setOrder(orderFromState);
+        setLoading(false);
+        return;
+      }
+
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const docRef = doc(db, 'withdrawals', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setOrder({ id: docSnap.id, ...docSnap.data() });
+        }
+      } catch (err) {
+        console.error('Error loading order:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadOrder();
+  }, [id, orderFromState]);
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+    let date;
+    if (dateValue.seconds) {
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDateShort = (dateValue) => {
+    if (!dateValue) return '-';
+    let date;
+    if (dateValue.seconds) {
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'shipped':
+      case 'กำลังดำเนินการส่ง':
+        return styles.statusShipped;
+      case 'delivered':
+      case 'ส่งสำเร็จ':
+        return styles.statusDelivered;
+      case 'cancelled':
+      case 'ยกเลิก':
+        return styles.statusCancelled;
+      case 'processing':
+        return styles.statusProcessing;
+      default:
+        return styles.statusPending;
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'shipped':
+      case 'กำลังดำเนินการส่ง':
+        return t('shipped') || 'Shipped';
+      case 'delivered':
+      case 'ส่งสำเร็จ':
+        return t('delivered') || 'Delivered';
+      case 'cancelled':
+      case 'ยกเลิก':
+        return t('cancelled') || 'Cancelled';
+      case 'processing':
+        return t('processing') || 'Processing';
+      default:
+        return t('pending') || 'Pending';
+    }
+  };
+
+  const getStepProgress = (status) => {
+    switch (status) {
+      case 'delivered':
+      case 'ส่งสำเร็จ':
+        return 100;
+      case 'shipped':
+      case 'กำลังดำเนินการส่ง':
+        return 75;
+      case 'processing':
+        return 50;
+      default:
+        return 25;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loadingState}>
+        <p>{t('loading') || 'Loading...'}</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
-      <div style={{ 
-        padding: 32, 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%)',
-      }}>
-        <div style={{ 
-          maxWidth: 600, 
-          margin: '0 auto', 
-          background: '#fff', 
-          borderRadius: 20, 
-          padding: 32,
-          boxShadow: '0 10px 40px rgba(30,64,175,0.1)',
-        }}>
-          <p style={{ fontSize: 16, color: '#374151', marginBottom: 16 }}>ไม่พบข้อมูลคำสั่งซื้อ</p>
+      <div className={styles.container}>
+        <div className={styles.emptyState}>
+          <p className={styles.emptyStateText}>{t('orderNotFound') || 'Order not found'}</p>
           <button
-            type="button"
+            className={styles.emptyStateButton}
             onClick={() => navigate('/customer/orders')}
-            style={{
-              padding: '12px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              color: '#fff',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
           >
-            กลับไปหน้าคำสั่งซื้อของฉัน
+            {t('backToOrders') || 'Back to Orders'}
           </button>
         </div>
       </div>
@@ -47,391 +155,250 @@ export default function CustomerOrderDetailPage() {
   }
 
   const items = order.items || [];
-  const totalText = typeof order.total === 'number'
-    ? order.total.toLocaleString()
-    : (parseFloat(order.total || 0) || 0).toLocaleString();
-  const dateText = new Date(
-    order.withdrawDate?.seconds
-      ? order.withdrawDate.seconds * 1000
-      : order.withdrawDate
-  ).toLocaleDateString('th-TH');
-  const status = order.shippingStatus || 'รอดำเนินการ';
-  const deliveryMethod = (order.deliveryMethod || 'shipping') === 'pickup' ? 'รับเอง' : 'จัดส่ง';
+  const subtotal = order.subtotal || order.total || 0;
+  const shipping = order.shippingFee || 0;
+  const tax = order.tax || Math.round(subtotal * 0.07);
+  const discount = order.discount || 0;
+  const total = order.total || 0;
+  const status = order.shippingStatus || 'pending';
+  const stepProgress = getStepProgress(status);
 
   return (
-    <div style={{ 
-      padding: '32px 24px', 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%)',
-    }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        {/* Main Card */}
-        <div
-          style={{
-            background: '#fff',
-            borderRadius: 24,
-            padding: '28px 32px 32px',
-            boxShadow: '0 10px 40px rgba(30,64,175,0.12)',
-          }}
-        >
-          {/* Header */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ 
-              fontSize: 12, 
-              color: '#3b82f6', 
-              fontWeight: 600,
-              letterSpacing: '0.1em',
-              marginBottom: 8,
-            }}>
-              ORDER DETAIL
+    <div className={styles.container}>
+      {/* Page Header */}
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderInfo}>
+          <div className={styles.pageTitleRow}>
+            <h1 className={styles.pageTitle}>
+              Order #{order.id?.slice(-8).toUpperCase() || 'N/A'}
+            </h1>
+            <span className={`${styles.statusBadge} ${getStatusBadgeClass(status)}`}>
+              {getStatusText(status)}
+            </span>
+          </div>
+          <p className={styles.pageSubtitle}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>calendar_today</span>
+            {t('placedOn') || 'Placed on'} {formatDate(order.withdrawDate || order.createdAt)}
+          </p>
+        </div>
+              </div>
+
+      {/* Order Status Stepper */}
+      <div className={styles.stepperCard}>
+        <div className={styles.stepperContainer}>
+          <div className={styles.stepperLine}></div>
+          <div className={styles.stepperLineProgress} style={{ width: `${stepProgress}%` }}></div>
+          
+          {/* Step 1: Order Placed */}
+          <div className={styles.step}>
+            <div className={`${styles.stepIcon} ${styles.stepIconCompleted}`}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>check</span>
             </div>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-              gap: 16,
-            }}>
-              <div>
-                <h1 style={{ 
-                  margin: 0, 
-                  fontSize: 24, 
-                  fontWeight: 700, 
-                  color: '#1e40af',
-                }}>
-                  คำสั่งซื้อ #{order.orderNumber || (order.id || id)?.slice(0, 12).toUpperCase() || 'N/A'}
-                </h1>
-                <div style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
-                  วันที่สั่งซื้อ: {dateText}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>ยอดรวม</div>
-                <div style={{ 
-                  fontSize: 32, 
-                  fontWeight: 700, 
-                  color: '#0F172A',
-                }}>
-                  ฿{totalText}
-                </div>
-              </div>
+            <div className={styles.stepInfo}>
+              <p className={styles.stepTitle}>{t('orderPlaced') || 'Order Placed'}</p>
+              <p className={styles.stepDate}>{formatDateShort(order.withdrawDate || order.createdAt)}</p>
             </div>
           </div>
 
-          {/* Two Column Layout */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-            gap: 20,
-            marginBottom: 24,
-          }}>
-            {/* ข้อมูลผู้สั่งซื้อ */}
-            <div style={{ 
-              background: '#eff6ff', 
-              borderRadius: 16, 
-              padding: '18px 20px',
-              border: '1px solid #dbeafe',
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10, 
-                marginBottom: 14,
-              }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                }}>
-                  👤
-                </div>
-                <span style={{ 
-                  fontSize: 16, 
-                  fontWeight: 600, 
-                  color: '#1e40af',
-                }}>
-                  ข้อมูลผู้สั่งซื้อ
-                </span>
-              </div>
-              <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>
-                {order.requestedBy || '-'}
-              </div>
-              {order.requestedAddress && (
-                <div style={{ 
-                  fontSize: 13, 
-                  color: '#6b7280', 
-                  marginTop: 8,
-                  whiteSpace: 'pre-wrap',
-                  background: '#fff',
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                }}>
-                  {order.requestedAddress}
-                </div>
-              )}
+          {/* Step 2: Processing */}
+          <div className={`${styles.step} ${stepProgress < 50 ? styles.stepInactive : ''}`}>
+            <div className={`${styles.stepIcon} ${stepProgress >= 50 ? styles.stepIconCurrent : styles.stepIconPending}`}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>inventory_2</span>
             </div>
+            <div className={styles.stepInfo}>
+              <p className={`${styles.stepTitle} ${stepProgress >= 50 ? styles.stepTitleCurrent : ''}`}>
+                {t('processing') || 'Processing'}
+              </p>
+              <p className={styles.stepDate}>{stepProgress >= 50 ? formatDateShort(order.processedAt) : (t('pending') || 'Pending')}</p>
+            </div>
+          </div>
 
-            {/* สินค้าในคำสั่งซื้อ */}
-            <div style={{ 
-              background: '#eff6ff', 
-              borderRadius: 16, 
-              padding: '18px 20px',
-              border: '1px solid #dbeafe',
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10, 
-                marginBottom: 14,
-              }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                }}>
-                  📦
-                </div>
-                <span style={{ 
-                  fontSize: 16, 
-                  fontWeight: 600, 
-                  color: '#1e40af',
-                }}>
-                  สินค้าในคำสั่งซื้อ
-                </span>
-              </div>
-              {items.length === 0 ? (
-                <div style={{ fontSize: 14, color: '#6b7280' }}>ไม่มีสินค้า</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {items.map((it, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 0',
-                        borderBottom: idx === items.length - 1 ? 'none' : '1px solid #dbeafe',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
-                          {it.productName || '-'}
+          {/* Step 3: Shipped */}
+          <div className={`${styles.step} ${stepProgress < 75 ? styles.stepInactive : ''}`}>
+            <div className={`${styles.stepIcon} ${stepProgress >= 75 ? styles.stepIconCompleted : styles.stepIconPending}`}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>local_shipping</span>
+            </div>
+            <div className={styles.stepInfo}>
+              <p className={styles.stepTitle}>{t('shipped') || 'Shipped'}</p>
+              <p className={styles.stepDate}>{stepProgress >= 75 ? formatDateShort(order.shippedAt) : (t('pending') || 'Pending')}</p>
+            </div>
+          </div>
+
+                  </div>
+      </div>
+
+      {/* Content Grid */}
+      <div className={styles.contentGrid}>
+        {/* Left Column */}
+        <div className={styles.leftColumn}>
+          {/* Order Items */}
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>
+                {t('orderItems') || 'Order Items'}
+                <span className={styles.cardTitleCount}>({items.length} {t('items') || 'items'})</span>
+              </h3>
+            </div>
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead className={styles.tableHead}>
+                  <tr>
+                    <th className={styles.tableHeadCell}>{t('product') || 'Product'}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('price') || 'Price'}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellCenter}`}>{t('qty') || 'Qty'}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('total') || 'Total'}</th>
+                  </tr>
+                </thead>
+                <tbody className={styles.tableBody}>
+                  {items.map((item, idx) => (
+                    <tr key={idx} className={styles.tableRow}>
+                      <td className={styles.tableCell}>
+                        <div className={styles.productInfo}>
+                          <span className={styles.productName}>{item.productName || '-'}</span>
+                          <span className={styles.productSku}>
+                            {item.variantSize && `Size: ${item.variantSize}`}
+                            {item.variantSize && item.variantColor && ' | '}
+                            {item.variantColor && `Color: ${item.variantColor}`}
+                          </span>
                         </div>
-                        <div style={{ fontSize: 12, color: '#6b7280' }}>
-                          จำนวน {it.quantity || 0} ชิ้น
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>
-                          ฿{(it.subtotal || 0).toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                          ฿{(it.price || 0).toLocaleString()} / ชิ้น
-                        </div>
-                      </div>
-                    </div>
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                        <span className={styles.priceText}>฿{(item.price || 0).toLocaleString()}</span>
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellCenter}`}>
+                        <span className={styles.priceText}>{item.quantity || 0}</span>
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                        <span className={styles.totalText}>฿{(item.subtotal || 0).toLocaleString()}</span>
+                      </td>
+                    </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Notes Section */}
+          {order.notes && (
+            <div className={`${styles.card} ${styles.notesCard}`}>
+              <h3 className={styles.notesTitle}>{t('orderNotes') || 'Order Notes'}</h3>
+              <div className={styles.noteItem}>
+                <div className={styles.noteIcon}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>edit_note</span>
+                </div>
+                <div className={styles.noteContent}>
+                  <p className={styles.noteLabel}>{t('customerRequest') || 'Customer Request'}</p>
+                  <p className={styles.noteText}>"{order.notes}"</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column */}
+        <div className={styles.rightColumn}>
+          {/* Order Summary */}
+          <div className={styles.summaryCard}>
+            <div className={styles.summaryHeader}>
+              <h3 className={styles.summaryTitle}>{t('orderSummary') || 'Order Summary'}</h3>
+            </div>
+            <div className={styles.summaryBody}>
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>{t('subtotal') || 'Subtotal'}</span>
+                <span className={styles.summaryValue}>฿{subtotal.toLocaleString()}</span>
+              </div>
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>{t('shipping') || 'Shipping'}</span>
+                <span className={styles.summaryValue}>{shipping === 0 ? 'FREE' : `฿${shipping.toLocaleString()}`}</span>
+              </div>
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>{t('tax') || 'Tax (7%)'}</span>
+                <span className={styles.summaryValue}>฿{tax.toLocaleString()}</span>
+              </div>
+              {discount > 0 && (
+                <div className={`${styles.summaryRow} ${styles.summaryRowDiscount}`}>
+                  <span>{t('discount') || 'Discount'}</span>
+                  <span>-฿{discount.toLocaleString()}</span>
+                </div>
+              )}
+              <div className={styles.summaryDivider}></div>
+              <div className={styles.summaryTotal}>
+                <span className={styles.summaryTotalLabel}>{t('total') || 'Total'}</span>
+                <span className={styles.summaryTotalValue}>฿{total.toLocaleString()}</span>
+              </div>
+            </div>
+                      </div>
+
+          {/* Customer Info */}
+          <div className={styles.customerCard}>
+            <div className={styles.customerBody}>
+              <div className={styles.customerHeader}>
+                <div className={styles.customerAvatar}>
+                  <span className="material-symbols-outlined">person</span>
+                </div>
+                <div className={styles.customerInfo}>
+                  <h4 className={styles.customerName}>{order.requestedBy || user?.displayName || '-'}</h4>
+                  <p className={styles.customerSince}>Customer</p>
+                </div>
+              </div>
+              <div className={styles.customerDivider}></div>
+              
+              {/* Shipping Address */}
+              <div className={styles.addressSection}>
+                <h5 className={styles.addressLabel}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>local_shipping</span>
+                  {t('shippingAddress') || 'Shipping Address'}
+                </h5>
+                <p className={styles.addressText}>
+                  {order.requestedAddress || '-'}
+                </p>
+              </div>
+
+              {/* Phone */}
+              {order.phone && (
+                <div className={styles.addressSection}>
+                  <h5 className={styles.addressLabel}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>phone</span>
+                    {t('phone') || 'Phone'}
+                  </h5>
+                  <p className={styles.addressText}>{order.phone}</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ข้อมูลการจัดส่ง */}
-          <div style={{ 
-            background: '#fff', 
-            borderRadius: 16, 
-            padding: '20px 24px',
-            border: '1px solid #e5e7eb',
-            marginBottom: 24,
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 10, 
-              marginBottom: 16,
-            }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-              }}>
-                🚚
+          {/* Payment Info */}
+          <div className={styles.paymentCard}>
+            <h5 className={styles.paymentLabel}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>credit_card</span>
+              {t('paymentInfo') || 'Payment Info'}
+            </h5>
+            <div className={styles.paymentMethod}>
+              <div className={styles.paymentIcon}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>account_balance</span>
               </div>
-              <span style={{ 
-                fontSize: 16, 
-                fontWeight: 600, 
-                color: '#1e40af',
-              }}>
-                ข้อมูลการจัดส่ง
-              </span>
-            </div>
-
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-              gap: 16,
-            }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>วิธีรับ:</div>
-                <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{deliveryMethod}</div>
-              </div>
-              {order.requestedAddress && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>ที่อยู่จัดส่ง:</div>
-                  <div style={{ fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>{order.requestedAddress}</div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* สถานะการจัดส่ง */}
-          <div style={{ 
-            background: '#fff', 
-            borderRadius: 16, 
-            padding: '20px 24px',
-            border: '1px solid #e5e7eb',
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 10, 
-              marginBottom: 16,
-            }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-              }}>
-                📋
-              </div>
-              <span style={{ 
-                fontSize: 16, 
-                fontWeight: 600, 
-                color: '#1e40af',
-              }}>
-                สถานะการจัดส่ง
-              </span>
-            </div>
-
-            {/* Info Banner */}
-            <div style={{
-              background: '#eff6ff',
-              borderRadius: 12,
-              padding: '12px 16px',
-              marginBottom: 20,
-              fontSize: 13,
-              color: '#1e40af',
-            }}>
-              ติดตามสถานะคำสั่งซื้อของคุณได้ที่นี่ หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่
-            </div>
-
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-              gap: 16,
-              marginBottom: 20,
-            }}>
-              <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>ขนส่ง</div>
-                <div style={{
-                  padding: '12px 16px',
-                  background: '#f9fafb',
-                  borderRadius: 10,
-                  border: '1px solid #e5e7eb',
-                  fontSize: 14,
-                  color: '#374151',
-                }}>
-                  {order.shippingCarrier || '-'}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>เลขติดตาม</div>
-                <div style={{
-                  padding: '12px 16px',
-                  background: '#f9fafb',
-                  borderRadius: 10,
-                  border: '1px solid #e5e7eb',
-                  fontSize: 14,
-                  color: '#374151',
-                  fontFamily: 'monospace',
-                }}>
-                  {order.trackingNumber || '-'}
-                </div>
+              <div className={styles.paymentInfo}>
+                <p className={styles.paymentName}>{order.paymentMethod === 'bank_transfer_qr' ? 'Bank Transfer' : (order.paymentMethod || 'Bank Transfer')}</p>
+                <p className={styles.paymentExpiry}>{order.paymentAccount?.bankName || '-'}</p>
               </div>
             </div>
-
-            <div>
-              <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>สถานะปัจจุบัน</div>
-              <div style={{
-                padding: '12px 16px',
-                background: status === 'ส่งสำเร็จ' || status === 'รับของแล้ว' 
-                  ? '#d1fae5' 
-                  : status === 'กำลังดำเนินการส่ง' 
-                    ? '#dbeafe' 
-                    : '#fef3c7',
-                borderRadius: 10,
-                border: `1px solid ${
-                  status === 'ส่งสำเร็จ' || status === 'รับของแล้ว'
-                    ? '#6ee7b7'
-                    : status === 'กำลังดำเนินการส่ง'
-                      ? '#93c5fd'
-                      : '#fcd34d'
-                }`,
-                fontSize: 14,
-                fontWeight: 600,
-                color: status === 'ส่งสำเร็จ' || status === 'รับของแล้ว'
-                  ? '#047857'
-                  : status === 'กำลังดำเนินการส่ง'
-                    ? '#1d4ed8'
-                    : '#b45309',
-              }}>
-                {status}
+            <div className={styles.paymentStatus}>
+              <span className={styles.paymentStatusLabel}>{t('paymentStatus') || 'Payment Status'}</span>
+              <div className={styles.paymentStatusValue}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>check_circle</span>
+                <span>{t('paid') || 'Paid'}</span>
               </div>
             </div>
-          </div>
-
-          {/* Back Button */}
-          <div style={{ marginTop: 24, textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => navigate('/customer/orders')}
-              style={{
-                padding: '14px 32px',
-                borderRadius: 12,
-                border: 'none',
-                background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                color: '#fff',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: 15,
-                boxShadow: '0 4px 14px rgba(107,114,128,0.3)',
-              }}
-            >
-              ← กลับไปหน้าคำสั่งซื้อของฉัน
-            </button>
           </div>
         </div>
+      </div>
+
+      {/* Back Button */}
+      <div className={styles.backButtonWrapper}>
+        <button className={styles.backButton} onClick={() => navigate('/customer/orders')}>
+          <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>arrow_back</span>
+          {t('backToOrders') || 'Back to Orders'}
+        </button>
       </div>
     </div>
   );

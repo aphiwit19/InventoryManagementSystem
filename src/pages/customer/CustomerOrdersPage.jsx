@@ -254,7 +254,7 @@ export default function CustomerOrdersPage() {
                       <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
                         <button 
                           className={styles.viewDetailsButton}
-                          onClick={() => navigate(`/customer/orders/${order.id}`)}
+                          onClick={() => navigate(`/customer/orders/${order.id}`, { state: { order } })}
                         >
                           {t('viewDetails') || 'View Details'}
                         </button>

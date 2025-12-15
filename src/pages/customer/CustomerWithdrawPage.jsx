@@ -253,36 +253,7 @@ export default function CustomerWithdrawPage() {
             <div className={styles.deliverySection}>
               <h2 className={styles.deliverySectionTitle}>Delivery Method</h2>
               <div className={styles.deliveryOptions}>
-                {/* Option 1: Pickup */}
-                <label className={styles.deliveryOption}>
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="pickup"
-                    checked={deliveryMethod === 'pickup'}
-                    onChange={(e) => setDeliveryMethod(e.target.value)}
-                    className={styles.deliveryOptionInput}
-                  />
-                  <div className={styles.deliveryOptionCard}>
-                    <div className={styles.deliveryOptionHeader}>
-                      <div className={styles.deliveryOptionIcon}>
-                        <span className="material-symbols-outlined">storefront</span>
-                      </div>
-                      <div className={styles.deliveryOptionRadio}>
-                        <div className={styles.deliveryOptionRadioDot} />
-                      </div>
-                    </div>
-                    <div className={styles.deliveryOptionContent}>
-                      <p className={styles.deliveryOptionTitle}>Self Pickup</p>
-                      <p className={styles.deliveryOptionDesc}>Collect from Warehouse</p>
-                      <p className={`${styles.deliveryOptionPrice} ${styles.deliveryOptionPriceFree}`}>
-                        FREE
-                      </p>
-                    </div>
-                  </div>
-                </label>
-
-                {/* Option 2: Shipping */}
+                {/* Shipping */}
                 <label className={styles.deliveryOption}>
                   <input
                     type="radio"

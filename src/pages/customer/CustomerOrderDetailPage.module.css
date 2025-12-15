@@ -1,0 +1,813 @@
+/* CustomerOrderDetailPage.module.css */
+
+/* ===== Container ===== */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ===== Page Header ===== */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .pageHeader {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.pageHeaderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 18rem;
+}
+
+.pageTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  color: #0d121b;
+  font-size: 1.875rem;
+  font-weight: 900;
+  letter-spacing: -0.033em;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .pageTitle {
+    font-size: 2.25rem;
+  }
+}
+
+.statusBadge {
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusProcessing {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.statusPending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.statusShipped {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.statusDelivered {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusCancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.pageSubtitle {
+  color: #64748b;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButtonSecondary {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.actionButtonSecondary:hover {
+  background-color: #f8fafc;
+}
+
+.actionButtonPrimary {
+  background-color: #135bec;
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(19, 91, 236, 0.3);
+}
+
+.actionButtonPrimary:hover {
+  background-color: #0e46b9;
+}
+
+/* ===== Order Status Stepper ===== */
+.stepperCard {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.stepperContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .stepperContainer {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+  }
+}
+
+.stepperLine {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .stepperLine {
+    display: block;
+    position: absolute;
+    top: 1.25rem;
+    left: 0;
+    width: 100%;
+    height: 0.25rem;
+    background-color: #f1f5f9;
+    border-radius: 9999px;
+    z-index: 0;
+  }
+
+  .stepperLineProgress {
+    position: absolute;
+    top: 1.25rem;
+    left: 0;
+    height: 0.25rem;
+    background-color: #135bec;
+    border-radius: 9999px;
+    z-index: 0;
+    transition: width 0.5s ease;
+  }
+}
+
+.step {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+@media (min-width: 768px) {
+  .step {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+.stepInactive {
+  opacity: 0.6;
+}
+
+.stepIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stepIconCompleted {
+  background-color: #135bec;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+.stepIconCurrent {
+  background-color: #135bec;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px #ffffff, 0 10px 15px -3px rgba(19, 91, 236, 0.2);
+}
+
+.stepIconPending {
+  background-color: #e2e8f0;
+  color: #64748b;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+.stepInfo {
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .stepInfo {
+    text-align: center;
+  }
+}
+
+.stepTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.stepTitleCurrent {
+  color: #135bec;
+}
+
+.stepDate {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ===== Content Grid ===== */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+}
+
+/* ===== Left Column ===== */
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ===== Card ===== */
+.card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cardHeader {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.cardTitleCount {
+  color: #94a3b8;
+  font-weight: 400;
+  font-size: 0.875rem;
+  margin-left: 0.5rem;
+}
+
+/* ===== Items Table ===== */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.tableHead {
+  background-color: #f8fafc;
+}
+
+.tableHeadCell {
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.tableHeadCellRight {
+  text-align: right;
+}
+
+.tableHeadCellCenter {
+  text-align: center;
+}
+
+.tableBody {
+  background-color: #ffffff;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background-color: #f8fafc;
+}
+
+.tableCell {
+  padding: 1rem 1.5rem;
+}
+
+.tableCellRight {
+  text-align: right;
+}
+
+.tableCellCenter {
+  text-align: center;
+}
+
+.productImage {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  background-size: cover;
+  background-position: center;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.productInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.productName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d121b;
+}
+
+.productSku {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.priceText {
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.totalText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d121b;
+}
+
+/* ===== Notes Section ===== */
+.notesCard {
+  padding: 1.5rem;
+}
+
+.notesTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0 0 1rem;
+}
+
+.noteItem {
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.noteIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  background-color: #dbeafe;
+  color: #135bec;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.noteContent {
+  flex: 1;
+}
+
+.noteLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0;
+}
+
+.noteText {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.25rem 0 0;
+}
+
+.noteDate {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0.5rem 0 0;
+}
+
+/* ===== Right Column ===== */
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ===== Summary Card ===== */
+.summaryCard {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.summaryHeader {
+  padding: 1rem 1.5rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.summaryTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.summaryBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.summaryLabel {
+  color: #64748b;
+}
+
+.summaryValue {
+  color: #0d121b;
+  font-weight: 500;
+}
+
+.summaryRowDiscount {
+  color: #16a34a;
+}
+
+.summaryDivider {
+  height: 1px;
+  background-color: #e2e8f0;
+  margin: 0.5rem 0;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summaryTotalLabel {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0d121b;
+}
+
+.summaryTotalValue {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #135bec;
+  letter-spacing: -0.025em;
+}
+
+.summaryFooter {
+  padding: 1rem 1.5rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.invoiceButton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.invoiceButton:hover {
+  background-color: #f8fafc;
+}
+
+/* ===== Customer Card ===== */
+.customerCard {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.customerBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.customerHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.customerAvatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+.customerInfo {
+  flex: 1;
+}
+
+.customerName {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.customerSince {
+  font-size: 0.75rem;
+  color: #135bec;
+  margin: 0;
+}
+
+.customerDivider {
+  height: 1px;
+  background-color: #f1f5f9;
+}
+
+.addressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.addressLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.addressText {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ===== Payment Card ===== */
+.paymentCard {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.paymentLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+}
+
+.paymentMethod {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.paymentIcon {
+  width: 3rem;
+  height: 2rem;
+  background-color: #f1f5f9;
+  border-radius: 0.25rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paymentInfo {
+  flex: 1;
+}
+
+.paymentName {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.paymentExpiry {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.paymentStatus {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.5rem;
+}
+
+.paymentStatusLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #15803d;
+  margin: 0;
+}
+
+.paymentStatusValue {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #15803d;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* ===== Back Button ===== */
+.backButtonWrapper {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #64748b;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: #475569;
+}
+
+/* ===== Loading & Empty State ===== */
+.loadingState {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyState {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.emptyStateText {
+  font-size: 1rem;
+  color: #475569;
+  margin: 0 0 1rem;
+}
+
+.emptyStateButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: #135bec;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.emptyStateButton:hover {
+  background-color: #0e46b9;
+}
