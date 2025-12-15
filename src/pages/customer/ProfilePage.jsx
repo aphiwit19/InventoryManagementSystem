@@ -5,10 +5,15 @@ import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDef
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
+import styles from './ProfilePage.module.css';
 
 export default function ProfilePage() {
-  useTranslation();
+  // eslint-disable-next-line no-unused-vars
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const [activeTab, setActiveTab] = useState('personal');
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,14 +42,6 @@ export default function ProfilePage() {
   });
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Account settings
-  const [settings, setSettings] = useState({
-    emailNotifications: true,
-    promotions: true,
-    smsNotifications: false,
-  });
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
-  
   // Form data
   const [formData, setFormData] = useState({
     firstName: '',
@@ -52,6 +49,9 @@ export default function ProfilePage() {
     phone: '',
     birthDate: '',
   });
+
+  // Order count
+  const [orderCount, setOrderCount] = useState(0);
 
   // Load user data from Firestore
   useEffect(() => {
@@ -62,9 +62,7 @@ export default function ProfilePage() {
       }
       
       try {
-        console.log('Loading user data for:', user.uid);
         const userData = await ensureUserProfile(user.uid, profile?.email || user.email, profile?.displayName);
-        console.log('User data loaded:', userData);
         
         setFormData({
           firstName: userData.firstName || '',
@@ -73,21 +71,11 @@ export default function ProfilePage() {
           birthDate: userData.birthDate || '',
         });
         
-        // โหลดรูปโปรไฟล์
         setPhotoURL(userData.photoURL || profile?.photoURL || user.photoURL || '');
-        
-        // โหลดที่อยู่
         setAddresses(userData.addresses || []);
-        
-        // โหลดการตั้งค่า
-        setSettings({
-          emailNotifications: userData.settings?.emailNotifications ?? true,
-          promotions: userData.settings?.promotions ?? true,
-          smsNotifications: userData.settings?.smsNotifications ?? false,
-        });
+        setOrderCount(userData.orderCount || 0);
       } catch (error) {
         console.error('Error loading user data:', error);
-        // ถ้าไม่มีข้อมูล ให้ใช้ค่าว่าง
         setFormData({
           firstName: '',
           lastName: '',
@@ -116,32 +104,16 @@ export default function ProfilePage() {
     const file = event.target.files?.[0];
     if (!file || !user?.uid) return;
 
-    // ตรวจสอบประเภทไฟล์
-    if (!file.type.startsWith('image/')) {
-      return;
-    }
-
-    // ตรวจสอบขนาดไฟล์ (ไม่เกิน 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return;
-    }
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) return;
 
     setUploadingPhoto(true);
     try {
-      // อัพโหลดไป Firebase Storage
       const storageReference = ref(storage, `avatars/${user.uid}`);
       await uploadBytes(storageReference, file);
-      
-      // ดึง URL ของรูปที่อัพโหลด
       const downloadURL = await getDownloadURL(storageReference);
-      
-      // อัพเดท Firebase Auth
       await updateProfile(user, { photoURL: downloadURL });
-      
-      // อัพเดท Firestore
       await updateUserProfile(user.uid, { photoURL: downloadURL });
-      
-      // อัพเดท state
       setPhotoURL(downloadURL);
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -162,7 +134,6 @@ export default function ProfilePage() {
         phone: formData.phone,
         birthDate: formData.birthDate,
       });
-      
       setEditingPersonal(false);
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -195,11 +166,7 @@ export default function ProfilePage() {
 
   const handleSaveAddress = async () => {
     if (!user?.uid) return;
-    
-    // Validate
-    if (!addressForm.name || !addressForm.address) {
-      return;
-    }
+    if (!addressForm.name || !addressForm.address) return;
 
     setSaving(true);
     try {
@@ -215,7 +182,7 @@ export default function ProfilePage() {
 
   const handleDeleteAddress = async (addressId) => {
     if (!user?.uid) return;
-    if (!window.confirm('คุณต้องการลบที่อยู่นี้หรือไม่?')) return;
+    if (!window.confirm('Are you sure you want to delete this address?')) return;
 
     try {
       await deleteAddress(user.uid, addressId);
@@ -249,510 +216,535 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (!user) return;
-
-    // Validate
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      return;
-    }
-
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      return;
-    }
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) return;
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) return;
+    if (passwordForm.newPassword.length < 6) return;
 
     setChangingPassword(true);
     try {
-      // ยืนยันตัวตนด้วยรหัสผ่านปัจจุบัน
-      const credential = EmailAuthProvider.credential(
-        user.email,
-        passwordForm.currentPassword
-      );
+      const credential = EmailAuthProvider.credential(user.email, passwordForm.currentPassword);
       await reauthenticateWithCredential(user, credential);
-
-      // เปลี่ยนรหัสผ่าน
       await updatePassword(user, passwordForm.newPassword);
-
-      // ล้างฟอร์ม
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
+      alert('Password changed successfully!');
     } catch (error) {
       console.error('Error changing password:', error);
+      alert('Failed to change password. Please check your current password.');
     } finally {
       setChangingPassword(false);
     }
   };
 
-  // Settings functions
-  // eslint-disable-next-line no-unused-vars
-  const handleSettingChange = async (settingKey, value) => {
-    if (!user?.uid) return;
-
-    const newSettings = {
-      ...settings,
-      [settingKey]: value,
-    };
-
-    setSettings(newSettings);
-
-    try {
-      await updateUserProfile(user.uid, {
-        settings: newSettings,
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      // Revert on error
-      setSettings(settings);
-    }
-  };
-
   if (loading) {
     return (
-      <div style={{ padding: '32px 24px', background: '#f3f4f6', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-          <div style={{ fontSize: '1.2rem', color: '#64748B' }}>กำลังโหลดข้อมูล...</div>
-        </div>
+      <div className={styles.loadingState}>
+        <div className={styles.loadingIcon}>⏳</div>
+        <div className={styles.loadingText}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '32px 24px', background: '#f3f4f6', minHeight: '100vh' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', maxWidth: 1400, margin: '0 auto' }}>
-        
-        {/* Left: Profile Card */}
-        <div>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', textAlign: 'center', position: 'sticky', top: 20 }}>
-            <div style={{ width: 120, height: 120, background: photoURL ? 'transparent' : 'linear-gradient(135deg, #6366F1, #8B5CF6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', margin: '0 auto 1.5rem', boxShadow: '0 8px 24px rgba(99,102,241,0.3)', overflow: 'hidden', position: 'relative' }}>
-              {photoURL ? (
-                <img src={photoURL} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    <div className={styles.container}>
+      {/* Page Header */}
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>My Profile</h1>
+        <p className={styles.pageSubtitle}>Manage your personal information, address book, and security settings.</p>
+      </div>
+
+      {/* Two Column Layout */}
+      <div className={styles.mainGrid}>
+        {/* Left Sidebar */}
+        <aside className={styles.sidebar}>
+          {/* Profile Card */}
+          <div className={styles.profileCard}>
+            <div className={styles.profileCardGradient}></div>
+            <div className={styles.profileAvatarWrapper}>
+              <div className={styles.profileAvatar}>
+                {photoURL ? (
+                  <img src={photoURL} alt="Profile" className={styles.profileAvatarImage} />
+                ) : (
+                  <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: '#94a3b8' }}>person</span>
+                )}
+              </div>
+              <label className={styles.uploadPhotoButton} title="Upload new photo">
+                <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>photo_camera</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleUploadPhoto}
+                  disabled={uploadingPhoto}
+                  className={styles.uploadPhotoInput}
+                />
+              </label>
+            </div>
+            <h3 className={styles.profileName}>{profile?.displayName || 'User'}</h3>
+            <p className={styles.profileEmail}>{profile?.email || user?.email || ''}</p>
+          </div>
+
+          {/* Navigation Menu */}
+          <div className={styles.navMenu}>
+            <nav className={styles.navMenuList}>
+              <button 
+                className={`${styles.navMenuItem} ${activeTab === 'personal' ? styles.navMenuItemActive : ''}`}
+                onClick={() => setActiveTab('personal')}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
+                Personal Information
+              </button>
+              <button 
+                className={`${styles.navMenuItem} ${activeTab === 'address' ? styles.navMenuItemActive : ''}`}
+                onClick={() => setActiveTab('address')}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>location_on</span>
+                Address Book
+              </button>
+              <button 
+                className={styles.navMenuItem}
+                onClick={() => navigate('/customer/orders')}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>shopping_bag</span>
+                My Orders
+              </button>
+              <button 
+                className={`${styles.navMenuItem} ${activeTab === 'security' ? styles.navMenuItemActive : ''}`}
+                onClick={() => setActiveTab('security')}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
+                Security
+              </button>
+              <div className={styles.navMenuDivider}></div>
+              <button className={`${styles.navMenuItem} ${styles.navMenuItemDanger}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>logout</span>
+                Sign Out
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        {/* Right Content */}
+        <div className={styles.content}>
+          {/* Tabs Header */}
+          <div className={styles.tabsHeader}>
+            <div className={styles.tabsList}>
+              <button 
+                className={`${styles.tabButton} ${activeTab === 'personal' ? styles.tabButtonActive : ''}`}
+                onClick={() => setActiveTab('personal')}
+              >
+                Personal Information
+              </button>
+              <button 
+                className={`${styles.tabButton} ${activeTab === 'address' ? styles.tabButtonActive : ''}`}
+                onClick={() => setActiveTab('address')}
+              >
+                Address Book
+              </button>
+              <button 
+                className={`${styles.tabButton} ${activeTab === 'security' ? styles.tabButtonActive : ''}`}
+                onClick={() => setActiveTab('security')}
+              >
+                Security
+              </button>
+            </div>
+          </div>
+
+          {/* Personal Information Tab */}
+          {activeTab === 'personal' && (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>Edit Profile</h2>
+                <span className={styles.lastUpdated}>Last updated: Recently</span>
+              </div>
+
+              <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }}>
+                <div className={styles.formGrid}>
+                  {/* First Name */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>First Name</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
+                      </div>
+                      <input
+                        type="text"
+                        className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        disabled={!editingPersonal}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Last Name */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Last Name</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
+                      </div>
+                      <input
+                        type="text"
+                        className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        disabled={!editingPersonal}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email (Read only) */}
+                  <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                    <label className={styles.formLabel}>Email Address</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>mail</span>
+                      </div>
+                      <input
+                        type="email"
+                        className={`${styles.formInput} ${styles.formInputDisabled}`}
+                        value={profile?.email || user?.email || ''}
+                        disabled
+                      />
+                    </div>
+                    <p className={styles.formHint}>To change your email, please contact support.</p>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Phone Number</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>phone</span>
+                      </div>
+                      <input
+                        type="tel"
+                        className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        disabled={!editingPersonal}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Date of Birth</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>calendar_month</span>
+                      </div>
+                      <input
+                        type="date"
+                        className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
+                        value={formData.birthDate}
+                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                        disabled={!editingPersonal}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.formActions}>
+                  {editingPersonal ? (
+                    <>
+                      <button 
+                        type="button" 
+                        className={styles.cancelButton}
+                        onClick={() => setEditingPersonal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        className={styles.saveButton}
+                        disabled={saving}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>save</span>
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className={styles.saveButton}
+                      onClick={() => setEditingPersonal(true)}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>edit</span>
+                      Edit Profile
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Address Book Tab */}
+          {activeTab === 'address' && (
+            <div className={styles.card}>
+              <div className={styles.addressHeader}>
+                <div>
+                  <h2 className={styles.cardTitle}>Address Book</h2>
+                  <p className={styles.cardSubtitle}>Manage your shipping and billing addresses.</p>
+                </div>
+                <button className={styles.addAddressButton} onClick={openAddAddressModal}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>add</span>
+                  Add New Address
+                </button>
+              </div>
+
+              {addresses.length === 0 ? (
+                <div className={styles.emptyState}>
+                  No addresses yet. Click the button above to add one.
+                </div>
               ) : (
-                '👤'
-              )}
-              {uploadingPhoto && (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1rem' }}>
-                  ⏳
+                <div className={styles.addressGrid}>
+                  {addresses.map((addr) => (
+                    <div 
+                      key={addr.id} 
+                      className={`${styles.addressCard} ${addr.isDefault ? styles.addressCardDefault : ''}`}
+                    >
+                      <div className={styles.addressCardActions}>
+                        <button className={styles.addressActionButton} title="Edit">
+                          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>edit</span>
+                        </button>
+                        <button 
+                          className={`${styles.addressActionButton} ${styles.addressActionButtonDanger}`} 
+                          title="Delete"
+                          onClick={() => handleDeleteAddress(addr.id)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>delete</span>
+                        </button>
+                      </div>
+
+                      <div className={styles.addressCardHeader}>
+                        <span className={`${styles.addressIcon} ${addr.isDefault ? styles.addressIconDefault : ''}`}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+                            {addr.name?.toLowerCase().includes('office') ? 'work' : 'home'}
+                          </span>
+                        </span>
+                        <span className={styles.addressLabel}>{addr.name}</span>
+                        {addr.isDefault && <span className={styles.addressBadge}>Default</span>}
+                      </div>
+
+                      <p className={styles.addressName}>{formData.firstName} {formData.lastName}</p>
+                      <p className={styles.addressText}>
+                        {addr.address}<br />
+                        {addr.district && `${addr.district}, `}
+                        {addr.city && `${addr.city}`}<br />
+                        {addr.province && `${addr.province} `}
+                        {addr.postalCode}
+                      </p>
+                      {addr.phone && (
+                        <p className={styles.addressPhone}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>call</span>
+                          {addr.phone}
+                        </p>
+                      )}
+
+                      {!addr.isDefault && (
+                        <div className={styles.addressCardFooter}>
+                          <button 
+                            className={styles.setDefaultButton}
+                            onClick={() => handleSetDefaultAddress(addr.id)}
+                          >
+                            Set as default shipping
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-            <h2 style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.8rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.5rem' }}>
-              {profile?.displayName || 'Staff'}
-            </h2>
-            <p style={{ color: '#475569', marginBottom: '0.3rem' }}>{profile?.email || 'staff@company.com'}</p>
-            <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginBottom: '2rem' }}>ID: STAFF-001</p>
-            
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleUploadPhoto}
-              disabled={uploadingPhoto}
-              style={{ display: 'none' }} 
-              id="avatar-upload"
-            />
-            <label 
-              htmlFor="avatar-upload"
-              style={{ 
-                width: '100%', 
-                padding: '0.8rem', 
-                background: uploadingPhoto ? '#9ca3af' : '#F1F5F9', 
-                border: '2px dashed #E2E8F0', 
-                borderRadius: 10, 
-                color: uploadingPhoto ? '#fff' : '#475569', 
-                fontWeight: 600, 
-                cursor: uploadingPhoto ? 'not-allowed' : 'pointer', 
-                transition: 'all 0.2s',
-                display: 'block'
-              }}
-            >
-              {uploadingPhoto ? '⏳ กำลังอัพโหลด...' : '📸 เปลี่ยนรูปโปรไฟล์'}
-            </label>
-          </div>
-        </div>
+          )}
 
-        {/* Right: Profile Details */}
-        <div>
-          {/* Personal Information */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>📋 ข้อมูลส่วนตัว</span>
-              <button 
-                onClick={() => setEditingPersonal(!editingPersonal)}
-                style={{ padding: '0.5rem 1rem', background: '#3B82F6', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
-              >
-                {editingPersonal ? '❌ ยกเลิก' : '✏️ แก้ไข'}
-              </button>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>ชื่อ</label>
-                <input 
-                  type="text" 
-                  disabled={!editingPersonal} 
-                  value={formData.firstName} 
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>Change Password</h2>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>นามสกุล</label>
-                <input 
-                  type="text" 
-                  disabled={!editingPersonal} 
-                  value={formData.lastName} 
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>เบอร์โทรศัพท์</label>
-                <input 
-                  type="tel" 
-                  disabled={!editingPersonal} 
-                  value={formData.phone} 
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>วันเกิด</label>
-                <input 
-                  type="date" 
-                  disabled={!editingPersonal} 
-                  value={formData.birthDate} 
-                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>อีเมล</label>
-              <input type="email" disabled defaultValue={profile?.email || 'staff@company.com'} style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: '#F1F5F9', color: '#94A3B8' }} />
-            </div>
-
-            <button 
-              onClick={handleSaveProfile}
-              disabled={saving || !editingPersonal}
-              style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                background: (saving || !editingPersonal) ? '#9ca3af' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: 12, 
-                fontFamily: "'Kanit', sans-serif", 
-                fontWeight: 700, 
-                fontSize: '1.1rem', 
-                cursor: (saving || !editingPersonal) ? 'not-allowed' : 'pointer', 
-                boxShadow: (saving || !editingPersonal) ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' 
-              }}
-            >
-              {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
-            </button>
-          </div>
-
-          {/* Shipping Addresses */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0' }}>
-              <span>📍 ที่อยู่จัดส่ง</span>
-            </div>
-
-            {addresses.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8' }}>
-                ยังไม่มีที่อยู่ กดปุ่มด้านล่างเพื่อเพิ่มที่อยู่
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {addresses.map((addr) => (
-                  <div 
-                    key={addr.id} 
-                    style={{ 
-                      padding: '1.5rem', 
-                      border: addr.isDefault ? '2px solid #10B981' : '2px solid #E2E8F0', 
-                      borderRadius: 12, 
-                      background: addr.isDefault ? 'rgba(16,185,129,0.03)' : '#fff',
-                      position: 'relative',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {addr.isDefault && (
-                      <span style={{ position: 'absolute', top: '1rem', right: '1rem', padding: '0.3rem 0.8rem', background: '#10B981', color: '#fff', fontSize: '0.75rem', fontWeight: 700, borderRadius: 6 }}>
-                        ค่าเริ่มต้น
-                      </span>
-                    )}
-                    <div style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '1.05rem' }}>{addr.name}</div>
-                    <div style={{ color: '#475569', lineHeight: 1.8, marginBottom: '1rem' }}>
-                      {addr.address}<br />
-                      {addr.district && `${addr.district} `}
-                      {addr.city && `${addr.city}`}<br />
-                      {addr.province && `${addr.province} `}
-                      {addr.postalCode && addr.postalCode}<br />
-                      {addr.phone && `โทร: ${addr.phone}`}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                      {!addr.isDefault && (
-                        <button 
-                          onClick={() => handleSetDefaultAddress(addr.id)}
-                          style={{ padding: '0.5rem 1rem', border: '2px solid #E2E8F0', background: '#fff', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
-                        >
-                          ตั้งเป็นค่าเริ่มต้น
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => handleDeleteAddress(addr.id)}
-                        style={{ padding: '0.5rem 1rem', border: '2px solid #E2E8F0', background: '#fff', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
-                      >
-                        ลบ
-                      </button>
+              <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }}>
+                <div className={styles.formGrid}>
+                  {/* Current Password */}
+                  <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                    <label className={styles.formLabel}>Current Password</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
+                      </div>
+                      <input
+                        type="password"
+                        className={styles.formInput}
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
+                        placeholder="Enter current password"
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
 
-            <button 
-              onClick={openAddAddressModal}
-              style={{ width: '100%', padding: '1rem', background: '#F1F5F9', border: '2px dashed #E2E8F0', borderRadius: 12, color: '#475569', fontWeight: 600, cursor: 'pointer', marginTop: '1rem' }}
-            >
-              ➕ เพิ่มที่อยู่ใหม่
-            </button>
-          </div>
+                  {/* New Password */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>New Password</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
+                      </div>
+                      <input
+                        type="password"
+                        className={styles.formInput}
+                        value={passwordForm.newPassword}
+                        onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
+                        placeholder="Enter new password (min 6 characters)"
+                      />
+                    </div>
+                  </div>
 
-          {/* Change Password */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0' }}>
-              <span>🔒 เปลี่ยนรหัสผ่าน</span>
+                  {/* Confirm Password */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Confirm New Password</label>
+                    <div className={styles.inputWrapper}>
+                      <div className={styles.inputIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
+                      </div>
+                      <input
+                        type="password"
+                        className={styles.formInput}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.formActions}>
+                  <button 
+                    type="submit" 
+                    className={styles.saveButton}
+                    disabled={changingPassword}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>lock</span>
+                    {changingPassword ? 'Changing...' : 'Change Password'}
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>รหัสผ่านปัจจุบัน</label>
-              <input 
-                type="password" 
-                value={passwordForm.currentPassword}
-                onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
-                placeholder="กรอกรหัสผ่านปัจจุบัน" 
-                style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }} 
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>รหัสผ่านใหม่</label>
-                <input 
-                  type="password" 
-                  value={passwordForm.newPassword}
-                  onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
-                  placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)" 
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }} 
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>ยืนยันรหัสผ่านใหม่</label>
-                <input 
-                  type="password" 
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
-                  placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" 
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }} 
-                />
-              </div>
-            </div>
-
-            <button 
-              onClick={handleChangePassword}
-              disabled={changingPassword}
-              style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                background: changingPassword ? '#9ca3af' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: 12, 
-                fontFamily: "'Kanit', sans-serif", 
-                fontWeight: 700, 
-                fontSize: '1.1rem', 
-                cursor: changingPassword ? 'not-allowed' : 'pointer', 
-                boxShadow: changingPassword ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' 
-              }}
-            >
-              {changingPassword ? 'กำลังเปลี่ยน...' : 'เปลี่ยนรหัสผ่าน'}
-            </button>
-          </div>
-
-          {/* Account Settings */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0' }}>
-              <span>⚙️ การตั้งค่าบัญชี</span>
-            </div>
-
-            <button 
-              onClick={() => setShowDeleteAccountModal(true)}
-              style={{ width: '100%', padding: '1rem', background: '#EF4444', color: '#fff', border: 'none', borderRadius: 12, fontFamily: "'Kanit', sans-serif", fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}
-            >
-              ลบบัญชีผู้ใช้
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Delete Account Modal */}
-      {showDeleteAccountModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#2D3748', borderRadius: 16, padding: '2rem', maxWidth: 500, width: '90%', color: '#fff' }}>
-            <h2 style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', color: '#fff' }}>
-              localhost:3000 บอกว่า
-            </h2>
-            <p style={{ fontSize: '1rem', marginBottom: '2rem', color: '#E2E8F0', lineHeight: 1.6 }}>
-              คุณต้องการลบบัญชีผู้ใช้ไหม? การดำเนินการนี้ไม่สามารถยกเลิกได้
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-              <button 
-                onClick={() => setShowDeleteAccountModal(false)}
-                style={{ 
-                  padding: '0.75rem 2rem', 
-                  background: 'rgba(255,255,255,0.1)', 
-                  border: '2px solid rgba(255,255,255,0.3)', 
-                  borderRadius: 999, 
-                  color: '#FFC0CB', 
-                  fontWeight: 600, 
-                  cursor: 'pointer',
-                  fontSize: '0.95rem'
-                }}
-              >
-                ตกลง
-              </button>
-              <button 
-                onClick={() => setShowDeleteAccountModal(false)}
-                style={{ 
-                  padding: '0.75rem 2rem', 
-                  background: '#8B5A8E', 
-                  border: 'none', 
-                  borderRadius: 999, 
-                  color: '#fff', 
-                  fontWeight: 600, 
-                  cursor: 'pointer',
-                  fontSize: '0.95rem'
-                }}
-              >
-                ยกเลิก
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Address Modal */}
       {showAddressModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', maxWidth: 600, width: '90%', maxHeight: '90vh', overflow: 'auto' }}>
-            <h2 style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem' }}>
-              ➕ เพิ่มที่อยู่ใหม่
-            </h2>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h2 className={styles.modalTitle}>Add New Address</h2>
 
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              <div>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>ชื่อที่อยู่ *</label>
-                <input 
-                  type="text" 
-                  value={addressForm.name}
-                  onChange={(e) => handleAddressInputChange('name', e.target.value)}
-                  placeholder="เช่น บ้าน, ที่ทำงาน"
-                  style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
-                />
-              </div>
+            <form className={styles.form}>
+              <div className={styles.formGrid}>
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>Address Label *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem' }}
+                    value={addressForm.name}
+                    onChange={(e) => handleAddressInputChange('name', e.target.value)}
+                    placeholder="e.g. Home, Office"
+                  />
+                </div>
 
-              <div>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>ที่อยู่ *</label>
-                <textarea 
-                  value={addressForm.address}
-                  onChange={(e) => handleAddressInputChange('address', e.target.value)}
-                  placeholder="เลขที่, ถนน, หมู่บ้าน"
-                  rows={3}
-                  style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', fontFamily: 'inherit', resize: 'vertical' }}
-                />
-              </div>
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>Address *</label>
+                  <textarea
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem', minHeight: '80px', resize: 'vertical' }}
+                    value={addressForm.address}
+                    onChange={(e) => handleAddressInputChange('address', e.target.value)}
+                    placeholder="Street address, building, floor"
+                  />
+                </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>แขวง/ตำบล</label>
-                  <input 
-                    type="text" 
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>District</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem' }}
                     value={addressForm.district}
                     onChange={(e) => handleAddressInputChange('district', e.target.value)}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
                   />
                 </div>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>เขต/อำเภอ</label>
-                  <input 
-                    type="text" 
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>City</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem' }}
                     value={addressForm.city}
                     onChange={(e) => handleAddressInputChange('city', e.target.value)}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
                   />
                 </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>จังหวัด</label>
-                  <input 
-                    type="text" 
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Province</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem' }}
                     value={addressForm.province}
                     onChange={(e) => handleAddressInputChange('province', e.target.value)}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
                   />
                 </div>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>รหัสไปรษณีย์</label>
-                  <input 
-                    type="text" 
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Postal Code</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem' }}
                     value={addressForm.postalCode}
                     onChange={(e) => handleAddressInputChange('postalCode', e.target.value)}
                     maxLength={5}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
+                  />
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>Phone</label>
+                  <input
+                    type="tel"
+                    className={styles.formInput}
+                    style={{ paddingLeft: '0.75rem' }}
+                    value={addressForm.phone}
+                    onChange={(e) => handleAddressInputChange('phone', e.target.value)}
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>เบอร์โทรศัพท์</label>
-                <input 
-                  type="tel" 
-                  value={addressForm.phone}
-                  onChange={(e) => handleAddressInputChange('phone', e.target.value)}
-                  placeholder="098-765-4321"
-                  style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
-                />
+              <div className={styles.modalActions}>
+                <button 
+                  type="button" 
+                  className={styles.cancelButton}
+                  onClick={() => setShowAddressModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className={styles.saveButton}
+                  onClick={handleSaveAddress}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save Address'}
+                </button>
               </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button 
-                onClick={() => setShowAddressModal(false)}
-                disabled={saving}
-                style={{ flex: 1, padding: '1rem', background: '#fff', border: '2px solid #E2E8F0', borderRadius: 12, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', color: '#475569' }}
-              >
-                ❌ ยกเลิก
-              </button>
-              <button 
-                onClick={handleSaveAddress}
-                disabled={saving}
-                style={{ flex: 1, padding: '1rem', background: saving ? '#9ca3af' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', border: 'none', borderRadius: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', color: '#fff', boxShadow: saving ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' }}
-              >
-                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

@@ -99,12 +99,6 @@ const CustomerLayout = () => {
           {/* Language Switcher */}
           <LanguageSwitcher />
           
-          {/* Notifications */}
-          <button className={styles.notificationButton} type="button">
-            <span className="material-symbols-outlined">notifications</span>
-            <span className={styles.notificationDot} />
-          </button>
-          
           {/* Cart */}
           <button 
             className={styles.cartButton} 
