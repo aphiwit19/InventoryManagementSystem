@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
 import { useTranslation } from 'react-i18next';
+import styles from './CustomerOrdersPage.module.css';
 
 export default function CustomerOrdersPage() {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ export default function CustomerOrdersPage() {
         };
         const aTime = toDate(a.withdrawDate);
         const bTime = toDate(b.withdrawDate);
-        return bTime - aTime; // ใหม่สุดอยู่บน
+        return bTime - aTime;
       });
       setOrders(sorted);
     } finally {
@@ -43,9 +44,10 @@ export default function CustomerOrdersPage() {
   const filtered = orders.filter(o => {
     const hit = (
       (o.trackingNumber || '').toLowerCase().includes(search.toLowerCase()) ||
-      (o.shippingCarrier || '').toLowerCase().includes(search.toLowerCase())
+      (o.shippingCarrier || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.id || '').toLowerCase().includes(search.toLowerCase())
     );
-    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
+    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'pending') === statusFilter;
     return hit && statusOk;
   });
 
@@ -86,534 +88,228 @@ export default function CustomerOrdersPage() {
     return pages;
   };
 
-  const totalOrders = orders.length;
-  const completedCount = orders.filter(
-    (o) => (o.shippingStatus || 'รอดำเนินการ') === 'ส่งสำเร็จ',
-  ).length;
-  const inProgressCount = totalOrders - completedCount;
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+    let date;
+    if (dateValue.seconds) {
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'shipped':
+      case 'กำลังดำเนินการส่ง':
+        return styles.statusShipped;
+      case 'delivered':
+      case 'ส่งสำเร็จ':
+        return styles.statusDelivered;
+      case 'cancelled':
+      case 'ยกเลิก':
+        return styles.statusCancelled;
+      default:
+        return styles.statusPending;
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'shipped':
+      case 'กำลังดำเนินการส่ง':
+        return 'Shipped';
+      case 'delivered':
+      case 'ส่งสำเร็จ':
+        return 'Delivered';
+      case 'cancelled':
+      case 'ยกเลิก':
+        return 'Cancelled';
+      default:
+        return 'Pending';
+    }
+  };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F1F5F9',
-        padding: '24px 24px 32px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-        {/* Page Header with Stats */}
-        <section
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 16,
-            padding: '24px 28px',
-            marginBottom: 24,
-            boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-            border: '1px solid #E2E8F0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 24,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                fontSize: 24,
-                fontWeight: 700,
-                color: '#2563EB',
-              }}
-            >
-              {t('order.my_orders')}
-            </h1>
-            <p
-              style={{
-                margin: '6px 0 0',
-                fontSize: 14,
-                color: '#64748B',
-              }}
-            >
-              {t('order.order_history') ||
-                'จัดการและติดตามสถานะคำสั่งซื้อทั้งหมดของคุณ'}
-            </p>
-          </div>
+    <div className={styles.container}>
+      {/* Page Header */}
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderContent}>
+          <h1 className={styles.pageTitle}>{t('orderHistory') || 'Order History'}</h1>
+          <p className={styles.pageSubtitle}>{t('orderHistoryDesc') || 'Manage and track your recent purchases and returns.'}</p>
+        </div>
+        <div className={styles.pageHeaderDecor}></div>
+      </div>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: 24,
-              flexWrap: 'wrap',
-            }}
+      {/* Filter Toolbar */}
+      <div className={styles.filterToolbar}>
+        {/* Filter Chips */}
+        <div className={styles.filterChips}>
+          <button 
+            className={`${styles.filterChip} ${statusFilter === 'all' ? styles.filterChipActive : ''}`}
+            onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
           >
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily:
-                    'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: '#0F172A',
-                }}
-              >
-                {totalOrders}
-              </div>
-              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
-                {t('order.all_orders')}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily:
-                    'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: '#0F172A',
-                }}
-              >
-                {inProgressCount}
-              </div>
-              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
-                {t('order.processing')}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily:
-                    'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: '#0F172A',
-                }}
-              >
-                {completedCount}
-              </div>
-              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
-                {t('order.success')}
-              </div>
-            </div>
-          </div>
-        </section>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>list</span>
+            <span>{t('allOrders') || 'All Orders'}</span>
+          </button>
+          <button 
+            className={`${styles.filterChip} ${statusFilter === 'pending' ? styles.filterChipActive : ''}`}
+            onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>schedule</span>
+            <span>{t('pending') || 'Pending'}</span>
+          </button>
+          <button 
+            className={`${styles.filterChip} ${statusFilter === 'shipped' ? styles.filterChipActive : ''}`}
+            onClick={() => { setStatusFilter('shipped'); setCurrentPage(1); }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>local_shipping</span>
+            <span>{t('shipped') || 'Shipped'}</span>
+          </button>
+          <button 
+            className={`${styles.filterChip} ${statusFilter === 'delivered' ? styles.filterChipActive : ''}`}
+            onClick={() => { setStatusFilter('delivered'); setCurrentPage(1); }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>check_circle</span>
+            <span>{t('delivered') || 'Delivered'}</span>
+          </button>
+        </div>
 
-        {/* Filter Section */}
-        <section
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 12,
-            padding: '16px 20px',
-            marginBottom: 24,
-            boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-            border: '1px solid #E2E8F0',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.4fr) 220px',
-              gap: 12,
-              alignItems: 'center',
-            }}
-          >
+        {/* Search Field */}
+        <div className={styles.searchWrapper}>
+          <div className={styles.searchField}>
+            <div className={styles.searchIcon}>
+              <span className="material-symbols-outlined">search</span>
+            </div>
             <input
+              type="text"
+              className={styles.searchInput}
+              placeholder={t('searchByOrderNumber') || 'Search by Order Number...'}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('order.search_orders_placeholder') ||
-                t('common.search')}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: '2px solid #E2E8F0',
-                fontSize: 14,
-                background: '#F9FAFB',
-                outline: 'none',
-              }}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                border: '2px solid #E2E8F0',
-                fontSize: 14,
-                background: '#FFFFFF',
-                cursor: 'pointer',
-                minWidth: 0,
-              }}
-            >
-              <option value="all">{t('common.all_status')}</option>
-              <option value="รอดำเนินการ">{t('order.status_pending')}</option>
-              <option value="กำลังดำเนินการส่ง">
-                {t('order.status_shipping')}
-              </option>
-              <option value="ส่งสำเร็จ">{t('order.status_delivered')}</option>
-            </select>
           </div>
-        </section>
+        </div>
+      </div>
 
-        {/* Orders Table */}
-        <section
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 16,
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-            border: '1px solid #E2E8F0',
-          }}
-        >
-          {loading ? (
-            <div
-              style={{
-                padding: 40,
-                textAlign: 'center',
-                color: '#6B7280',
-              }}
-            >
-              {t('common.loading')}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div
-              style={{
-                padding: 40,
-                textAlign: 'center',
-                color: '#6B7280',
-              }}
-            >
-              {t('order.no_orders_found')}
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  minWidth: 800,
-                }}
-              >
-                <thead
-                  style={{
-                    background: '#F1F5F9',
-                  }}
-                >
+      {/* Orders Table Card */}
+      <div className={styles.tableCard}>
+        {loading ? (
+          <div className={styles.loadingState}>
+            {t('loading') || 'Loading...'}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className={styles.emptyState}>
+            {t('noOrdersFound') || 'No orders found'}
+          </div>
+        ) : (
+          <>
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead className={styles.tableHead}>
                   <tr>
-                    <th
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('order.order_id')}
-                    </th>
-                    <th
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('order.order_date')}
-                    </th>
-                    <th
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('order.order_items')}
-                    </th>
-                    <th
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('common.total')}
-                    </th>
-                    <th
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('order.order_status')}
-                    </th>
-                    <th
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('order.tracking_number')}
-                    </th>
-                    <th
-                      style={{
-                        padding: '14px 16px',
-                        textAlign: 'left',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: '#64748B',
-                        letterSpacing: '0.5px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t('order.manage')}
-                    </th>
+                    <th className={styles.tableHeadCell}>{t('orderId') || 'Order ID'}</th>
+                    <th className={styles.tableHeadCell}>{t('datePlaced') || 'Date Placed'}</th>
+                    <th className={styles.tableHeadCell}>{t('items') || 'Items'}</th>
+                    <th className={styles.tableHeadCell}>{t('totalAmount') || 'Total Amount'}</th>
+                    <th className={styles.tableHeadCell}>{t('status') || 'Status'}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('actions') || 'Actions'}</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {currentOrders.map((o) => {
-                    const date = new Date(
-                      o.withdrawDate?.seconds
-                        ? o.withdrawDate.seconds * 1000
-                        : o.withdrawDate,
-                    );
-                    const dateStr = date.toLocaleDateString('th-TH');
-                    const timeStr = date.toLocaleTimeString('th-TH', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    });
-                    const status = o.shippingStatus || 'รอดำเนินการ';
-                    const items = o.items || [];
-
-                    let statusClassColor = '#EA580C';
-                    let statusBg = 'rgba(249,115,22,0.1)';
-                    if (status === 'ส่งสำเร็จ') {
-                      statusClassColor = '#059669';
-                      statusBg = 'rgba(16,185,129,0.1)';
-                    } else if (status === 'กำลังดำเนินการส่ง') {
-                      statusClassColor = '#2563EB';
-                      statusBg = 'rgba(59,130,246,0.1)';
-                    }
-
-                    const itemsTitle = items
-                      .map((it) => `${it.productName || ''}`)
-                      .filter(Boolean)
-                      .join(', ');
-                    const itemsDetail = `${items.length || 0} ${
-                      t('common.items')
-                    }`;
-
-                    return (
-                      <tr key={o.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <div
-                            style={{
-                              fontFamily:
-                                'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                              fontWeight: 700,
-                              color: '#2563EB',
-                              fontSize: 14,
-                            }}
-                          >
-                            {o.orderNumber || (o.id ? `#${o.id.slice(0, 8).toUpperCase()}` : '-')}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <div style={{ fontSize: 13, color: '#475569' }}>{dateStr}</div>
-                          <div style={{ fontSize: 12, color: '#94A3B8' }}>{timeStr}</div>
-                        </td>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <div
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: '#0F172A',
-                            }}
-                          >
-                            {itemsTitle || '-'}
-                          </div>
-                          <div
-                            style={{
-                              marginTop: 2,
-                              fontSize: 12,
-                              color: '#94A3B8',
-                            }}
-                          >
-                            {itemsDetail}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <div
-                            style={{
-                              fontFamily:
-                                'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              color: '#0F172A',
-                            }}
-                          >
-                            ฿{(o.total || 0).toLocaleString()}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '4px 12px',
-                              borderRadius: 999,
-                              background: statusBg,
-                              color: statusClassColor,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <div style={{ fontSize: 13, color: '#475569', fontFamily: 'monospace' }}>
-                            {o.trackingNumber || '-'}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', verticalAlign: 'top' }}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(`/customer/orders/${o.id}`, {
-                                state: { order: o },
-                              })
-                            }
-                            style={{
-                              padding: '8px 14px',
-                              borderRadius: 10,
-                              border: '2px solid #2563EB',
-                              background: '#2563EB',
-                              color: '#FFFFFF',
-                              fontSize: 13,
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {t('order.view_detail')}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                <tbody className={styles.tableBody}>
+                  {currentOrders.map((order) => (
+                    <tr key={order.id} className={styles.tableRow}>
+                      <td className={styles.tableCell}>
+                        <span className={styles.orderId}>#{order.id?.slice(-8).toUpperCase() || 'N/A'}</span>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span className={styles.orderDate}>{formatDate(order.withdrawDate)}</span>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <div className={styles.orderItems}>
+                          {order.items && order.items.length > 0 ? (
+                            <span className={styles.itemCount}>
+                              {order.items.map(item => item.productName).join(', ').slice(0, 50)}
+                              {order.items.map(item => item.productName).join(', ').length > 50 ? '...' : ''}
+                            </span>
+                          ) : (
+                            <span className={styles.itemCount}>{t('noItems') || 'No items'}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span className={styles.orderTotal}>฿{(order.total || 0).toLocaleString()}</span>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span className={`${styles.statusBadge} ${getStatusClass(order.shippingStatus)}`}>
+                          <span className={styles.statusDot}></span>
+                          {getStatusText(order.shippingStatus)}
+                        </span>
+                      </td>
+                      <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                        <button 
+                          className={styles.viewDetailsButton}
+                          onClick={() => navigate(`/customer/orders/${order.id}`)}
+                        >
+                          {t('viewDetails') || 'View Details'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </section>
 
-        {/* Pagination */}
-        {filtered.length > 0 && totalPages > 1 && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 8,
-              padding: '16px 18px',
-              marginTop: 20,
-              background: '#FFFFFF',
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-              border: '1px solid #E2E8F0',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={{
-                minWidth: 40,
-                height: 40,
-                padding: '0 12px',
-                borderRadius: 8,
-                border: '2px solid #E2E8F0',
-                background:
-                  currentPage === 1 ? '#F1F5F9' : '#FFFFFF',
-                cursor:
-                  currentPage === 1 ? 'not-allowed' : 'pointer',
-                color: currentPage === 1 ? '#94A3B8' : '#1D4ED8',
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {t('common.previous')}
-            </button>
-            {buildPageRange().map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => handlePageChange(page)}
-                style={{
-                  minWidth: 40,
-                  height: 40,
-                  padding: '0 10px',
-                  borderRadius: 8,
-                  border:
-                    currentPage === page
-                      ? 'none'
-                      : '2px solid #E2E8F0',
-                  background:
-                    currentPage === page
-                      ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
-                      : '#FFFFFF',
-                  color: currentPage === page ? '#FFFFFF' : '#111827',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 600,
-                }}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={{
-                minWidth: 40,
-                height: 40,
-                padding: '0 12px',
-                borderRadius: 8,
-                border: '2px solid #E2E8F0',
-                background:
-                  currentPage === totalPages ? '#F1F5F9' : '#FFFFFF',
-                cursor:
-                  currentPage === totalPages ? 'not-allowed' : 'pointer',
-                color:
-                  currentPage === totalPages ? '#94A3B8' : '#1D4ED8',
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {t('common.next')}
-            </button>
-          </div>
+            {/* Pagination */}
+            <div className={styles.pagination}>
+              <span className={styles.paginationInfo}>
+                {t('showing') || 'Showing'} <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span> {t('to') || 'to'}{' '}
+                <span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filtered.length)}</span> {t('of') || 'of'}{' '}
+                <span className={styles.paginationInfoHighlight}>{filtered.length}</span> {t('results') || 'results'}
+              </span>
+              <div className={styles.paginationButtons}>
+                <button 
+                  className={styles.paginationButton}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                {buildPageRange().map((page) => (
+                  <button
+                    key={page}
+                    className={`${styles.paginationButton} ${currentPage === page ? styles.paginationButtonActive : ''}`}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <>
+                    <span className={styles.paginationEllipsis}>...</span>
+                    <button
+                      className={styles.paginationButton}
+                      onClick={() => handlePageChange(totalPages)}
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+                <button 
+                  className={styles.paginationButton}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
