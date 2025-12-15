@@ -1,0 +1,942 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getProductById, updateProduct, DEFAULT_UNITS, DEFAULT_CATEGORIES, DEFAULT_SIZES, DEFAULT_COLORS } from '../../services';
+import { storage } from '../../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
+
+export default function EditProductPage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  // Basic product info
+  const [formData, setFormData] = useState({
+    productName: '',
+    description: '',
+    purchaseLocation: '',
+    image: '',
+    addDate: '',
+    unit: '',
+    category: '',
+  });
+
+  // Toggle for variants mode
+  const [hasVariants, setHasVariants] = useState(false);
+
+  // For non-variant products
+  const [simpleProduct, setSimpleProduct] = useState({
+    costPrice: '',
+    sellPrice: '',
+    quantity: '',
+  });
+
+  // For variant products
+  const [variants, setVariants] = useState([]);
+  const [newVariant, setNewVariant] = useState({
+    size: '',
+    color: '',
+    quantity: '',
+    costPrice: '',
+    sellPrice: '',
+  });
+
+  // Custom input toggles
+  const [showCustomUnit, setShowCustomUnit] = useState(false);
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [showCustomSize, setShowCustomSize] = useState(false);
+  const [showCustomColor, setShowCustomColor] = useState(false);
+
+  // Promotion state
+  const [promotion, setPromotion] = useState({
+    active: false,
+    type: 'percentage',
+    value: '',
+    startDate: '',
+    endDate: '',
+  });
+
+  // UI states
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const product = await getProductById(id);
+        
+        // Parse date
+        const addDate = product.addDate?.toDate ? product.addDate.toDate() : new Date(product.addDate);
+        const formattedDate = addDate.toISOString().split('T')[0];
+
+        setFormData({
+          productName: product.productName || '',
+          description: product.description || '',
+          purchaseLocation: product.purchaseLocation || '',
+          image: product.image || '',
+          addDate: formattedDate,
+          unit: product.unit || '',
+          category: product.category || '',
+        });
+
+        if (product.image) {
+          setImagePreview(product.image);
+        }
+
+        // Check if has variants
+        if (product.hasVariants && Array.isArray(product.variants)) {
+          setHasVariants(true);
+          setVariants(product.variants.map((v, idx) => ({
+            ...v,
+            id: idx,
+          })));
+        } else {
+          setHasVariants(false);
+          setSimpleProduct({
+            costPrice: product.costPrice || '',
+            sellPrice: product.sellPrice || product.price || '',
+            quantity: product.quantity || '',
+          });
+        }
+
+        // Load promotion data
+        if (product.promotion) {
+          setPromotion({
+            active: product.promotion.active || false,
+            type: product.promotion.type || 'percentage',
+            value: product.promotion.value || '',
+            startDate: product.promotion.startDate || '',
+            endDate: product.promotion.endDate || '',
+          });
+        }
+
+        // Check custom unit/category
+        if (product.unit && !DEFAULT_UNITS.includes(product.unit)) {
+          setShowCustomUnit(true);
+        }
+        if (product.category && !DEFAULT_CATEGORIES.includes(product.category)) {
+          setShowCustomCategory(true);
+        }
+      } catch (err) {
+        console.error('Error loading product:', err);
+        setError('ไม่พบสินค้านี้');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProduct();
+  }, [id]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSimpleChange = (e) => {
+    const { name, value } = e.target;
+    setSimpleProduct(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleNewVariantChange = (e) => {
+    const { name, value } = e.target;
+    setNewVariant(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleVariantChange = (id, field, value) => {
+    setVariants(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
+  };
+
+  const addVariant = () => {
+    if (!newVariant.size || !newVariant.color || !newVariant.quantity || !newVariant.costPrice || !newVariant.sellPrice) {
+      alert('กรุณากรอกข้อมูล Variant ให้ครบถ้วน');
+      return;
+    }
+    const exists = variants.find(v => v.size === newVariant.size && v.color === newVariant.color);
+    if (exists) {
+      alert('มี Variant นี้อยู่แล้ว (ไซส์ + สี ซ้ำกัน)');
+      return;
+    }
+    setVariants(prev => [...prev, { ...newVariant, id: Date.now() }]);
+    setNewVariant({ size: '', color: '', quantity: '', costPrice: '', sellPrice: '' });
+    setShowCustomSize(false);
+    setShowCustomColor(false);
+  };
+
+  const removeVariant = (id) => {
+    setVariants(prev => prev.filter(v => v.id !== id));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      if (uploading) {
+        throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
+      }
+
+      console.log('Current promotion state:', promotion);
+      console.log('promotion.active:', promotion.active);
+      console.log('promotion.value:', promotion.value);
+
+      // Calculate promotion price if active
+      let promotionData = null;
+      
+      // Always save promotion data if checkbox is checked or has value
+      if (promotion.active || promotion.value) {
+        const basePrice = hasVariants ? 0 : parseFloat(simpleProduct.sellPrice || 0);
+        let promotionPrice = basePrice;
+        
+        if (!hasVariants && promotion.value) {
+          if (promotion.type === 'percentage') {
+            promotionPrice = basePrice - (basePrice * parseFloat(promotion.value) / 100);
+          } else {
+            promotionPrice = basePrice - parseFloat(promotion.value);
+          }
+          promotionPrice = Math.max(0, promotionPrice);
+        }
+
+        promotionData = {
+          active: promotion.active,
+          type: promotion.type,
+          value: promotion.value ? parseFloat(promotion.value) : 0,
+          startDate: promotion.startDate || '',
+          endDate: promotion.endDate || '',
+          promotionPrice: !hasVariants && promotion.value ? promotionPrice : null,
+        };
+        
+        console.log('Saving promotion data:', promotionData);
+      }
+
+      if (hasVariants) {
+        if (variants.length === 0) {
+          throw new Error('กรุณาเพิ่มอย่างน้อย 1 Variant');
+        }
+        await updateProduct(id, {
+          ...formData,
+          hasVariants: true,
+          variants: variants.map(v => ({
+            size: v.size,
+            color: v.color,
+            quantity: v.quantity,
+            costPrice: v.costPrice,
+            sellPrice: v.sellPrice,
+            reserved: v.reserved || 0,
+            staffReserved: v.staffReserved || 0,
+          })),
+          promotion: promotionData,
+        });
+      } else {
+        if (!simpleProduct.quantity || !simpleProduct.costPrice || !simpleProduct.sellPrice) {
+          throw new Error('กรุณากรอกราคาและจำนวนสินค้า');
+        }
+        await updateProduct(id, {
+          ...formData,
+          hasVariants: false,
+          ...simpleProduct,
+          promotion: promotionData,
+        });
+      }
+
+      navigate('/admin/products');
+    } catch (err) {
+      console.error('Error updating product:', err);
+      setError('เกิดข้อผิดพลาด: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const totalVariantQuantity = variants.reduce((sum, v) => sum + (parseInt(v.quantity) || 0), 0);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 50, height: 50, border: '4px solid #f3f3f3', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
+          <p style={{ color: '#666' }}>{t('common.loading')}</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
+        <div style={{ background: '#fff', borderRadius: 18, padding: '32px 40px', boxShadow: '0 10px 40px rgba(15,23,42,0.12)' }}>
+          <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: 28, fontWeight: 700 }}>{t('product.edit_product')}</h1>
+          <p style={{ margin: '0 0 28px', color: '#3b82f6', fontSize: 14 }}>{t('product.update_product_info')}</p>
+
+          {error && (
+            <div style={{ padding: '12px 16px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: 10, marginBottom: 20, fontSize: 14, border: '1px solid #fecaca' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* ชื่อสินค้า */}
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                {t('product.product_name')} <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input
+                type="text"
+                name="productName"
+                value={formData.productName}
+                onChange={handleChange}
+                required
+                style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, outline: 'none', boxSizing: 'border-box', background: '#f9fafb' }}
+              />
+            </div>
+
+            {/* คำอธิบาย */}
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.description')}</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', background: '#f9fafb' }}
+              />
+            </div>
+
+            {/* หน่วย + ประเภท */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              {/* หน่วย */}
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                  {t('common.unit')} <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                {!showCustomUnit ? (
+                  <select
+                    name="unit"
+                    value={formData.unit}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setShowCustomUnit(true);
+                        setFormData(prev => ({ ...prev, unit: '' }));
+                      } else {
+                        handleChange(e);
+                      }
+                    }}
+                    required
+                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
+                  >
+                    <option value="">-- {t('product.select_unit')} --</option>
+                    {DEFAULT_UNITS.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
+                    <option value="__custom__">+ {t('product.add_new_unit')}</option>
+                  </select>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      name="unit"
+                      value={formData.unit}
+                      onChange={handleChange}
+                      required
+                      placeholder={t('product.type_new_unit')}
+                      style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}
+                    />
+                    <button type="button" onClick={() => { setShowCustomUnit(false); setFormData(prev => ({ ...prev, unit: '' })); }}
+                      style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* ประเภท */}
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                  {t('product.category')} <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                {!showCustomCategory ? (
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setShowCustomCategory(true);
+                        setFormData(prev => ({ ...prev, category: '' }));
+                      } else {
+                        handleChange(e);
+                      }
+                    }}
+                    required
+                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
+                  >
+                    <option value="">-- {t('product.select_category')} --</option>
+                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
+                    <option value="__custom__">+ {t('product.add_new_category')}</option>
+                  </select>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      required
+                      placeholder={t('product.type_new_category')}
+                      style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}
+                    />
+                    <button type="button" onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
+                      style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Toggle Variants */}
+            <div style={{ background: '#f0f9ff', padding: '16px 20px', borderRadius: 12, border: '1px solid #bae6fd' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={hasVariants}
+                  onChange={(e) => setHasVariants(e.target.checked)}
+                  style={{ width: 20, height: 20, cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, color: '#0369a1' }}>{t('product.has_variants')}</div>
+                  <div style={{ fontSize: 13, color: '#0284c7' }}>{t('product.variants_description')}</div>
+                </div>
+              </label>
+            </div>
+
+            {/* Simple Product */}
+            {!hasVariants && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                    {t('product.cost_price')} <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="costPrice"
+                    value={simpleProduct.costPrice}
+                    onChange={handleSimpleChange}
+                    required={!hasVariants}
+                    min="0"
+                    step="0.01"
+                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                    {t('product.sell_price')} <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="sellPrice"
+                    value={simpleProduct.sellPrice}
+                    onChange={handleSimpleChange}
+                    required={!hasVariants}
+                    min="0"
+                    step="0.01"
+                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                    {t('common.quantity')} <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    value={simpleProduct.quantity}
+                    onChange={handleSimpleChange}
+                    required={!hasVariants}
+                    min="0"
+                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Variants Section */}
+            {hasVariants && (
+              <div style={{ background: '#fefce8', padding: '20px', borderRadius: 12, border: '1px solid #fde047' }}>
+                <h3 style={{ margin: '0 0 16px', color: '#854d0e', fontSize: 16 }}>
+                  📦 Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
+                </h3>
+
+                {/* Existing Variants - Editable */}
+                {variants.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 100px 100px 40px', gap: 8, padding: '8px 12px', background: '#fef9c3', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#713f12' }}>
+                      <div>{t('product.size')}</div>
+                      <div>{t('product.color')}</div>
+                      <div>{t('common.quantity')}</div>
+                      <div>{t('product.cost_price')}</div>
+                      <div>{t('product.sell_price')}</div>
+                      <div></div>
+                    </div>
+                    {variants.map(v => (
+                      <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 100px 100px 40px', gap: 8, padding: '8px 12px', background: '#fff', borderRadius: 8, marginTop: 6, alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          value={v.size}
+                          onChange={(e) => handleVariantChange(v.id, 'size', e.target.value)}
+                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
+                        />
+                        <input
+                          type="text"
+                          value={v.color}
+                          onChange={(e) => handleVariantChange(v.id, 'color', e.target.value)}
+                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
+                        />
+                        <input
+                          type="number"
+                          value={v.quantity}
+                          onChange={(e) => handleVariantChange(v.id, 'quantity', e.target.value)}
+                          min="0"
+                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
+                        />
+                        <input
+                          type="number"
+                          value={v.costPrice}
+                          onChange={(e) => handleVariantChange(v.id, 'costPrice', e.target.value)}
+                          min="0"
+                          step="0.01"
+                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
+                        />
+                        <input
+                          type="number"
+                          value={v.sellPrice}
+                          onChange={(e) => handleVariantChange(v.id, 'sellPrice', e.target.value)}
+                          min="0"
+                          step="0.01"
+                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
+                        />
+                        <button type="button" onClick={() => removeVariant(v.id)} style={{ background: '#fef2f2', border: 'none', color: '#dc2626', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', fontSize: 12 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add New Variant */}
+                <div style={{ background: '#fff', padding: '16px', borderRadius: 10, border: '1px dashed #d1d5db' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>+ {t('product.add_variant')}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    {/* Size */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.size')}</label>
+                      {!showCustomSize ? (
+                        <select
+                          name="size"
+                          value={newVariant.size}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              setShowCustomSize(true);
+                              setNewVariant(prev => ({ ...prev, size: '' }));
+                            } else {
+                              handleNewVariantChange(e);
+                            }
+                          }}
+                          style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
+                        >
+                          <option value="">-- {t('product.select_size')} --</option>
+                          {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                          <option value="__custom__">+ {t('product.add_new_size')}</option>
+                        </select>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            type="text"
+                            name="size"
+                            value={newVariant.size}
+                            onChange={handleNewVariantChange}
+                            placeholder={t('product.type_size')}
+                            style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
+                          />
+                          <button type="button" onClick={() => { setShowCustomSize(false); setNewVariant(prev => ({ ...prev, size: '' })); }}
+                            style={{ padding: '8px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>✕</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Color */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.color')}</label>
+                      {!showCustomColor ? (
+                        <select
+                          name="color"
+                          value={newVariant.color}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              setShowCustomColor(true);
+                              setNewVariant(prev => ({ ...prev, color: '' }));
+                            } else {
+                              handleNewVariantChange(e);
+                            }
+                          }}
+                          style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
+                        >
+                          <option value="">-- {t('product.select_color')} --</option>
+                          {DEFAULT_COLORS.map(c => <option key={c} value={c}>{t(`colors.${c}`, c)}</option>)}
+                          <option value="__custom__">+ {t('product.add_new_color')}</option>
+                        </select>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            type="text"
+                            name="color"
+                            value={newVariant.color}
+                            onChange={handleNewVariantChange}
+                            placeholder={t('product.type_color')}
+                            style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
+                          />
+                          <button type="button" onClick={() => { setShowCustomColor(false); setNewVariant(prev => ({ ...prev, color: '' })); }}
+                            style={{ padding: '8px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>✕</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('common.quantity')}</label>
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={newVariant.quantity}
+                        onChange={handleNewVariantChange}
+                        min="1"
+                        placeholder="0"
+                        style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.cost_price')}</label>
+                      <input
+                        type="number"
+                        name="costPrice"
+                        value={newVariant.costPrice}
+                        onChange={handleNewVariantChange}
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.sell_price')}</label>
+                      <input
+                        type="number"
+                        name="sellPrice"
+                        value={newVariant.sellPrice}
+                        onChange={handleNewVariantChange}
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
+                  >
+                    + {t('product.add_variant')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* รูปภาพ + วันที่ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.product_image')}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label htmlFor="image" style={{ padding: '10px 20px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#374151' }}>
+                    {t('product.change_image')}
+                  </label>
+                </div>
+                <input
+                  type="file"
+                  id="image"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    setUploadError('');
+                    if (!file) return;
+                    try {
+                      setUploading(true);
+                      const path = `products/${Date.now()}_${file.name}`;
+                      const ref = storageRef(storage, path);
+                      await uploadBytes(ref, file);
+                      const url = await getDownloadURL(ref);
+                      setFormData(prev => ({ ...prev, image: url }));
+                      setImagePreview(url);
+                    } catch (err) {
+                      console.error(err);
+                      setUploadError('อัพโหลดรูปภาพล้มเหลว');
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                />
+                {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>{t('product.uploading_image')}</div>}
+                {uploadError && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 13 }}>{uploadError}</div>}
+                {imagePreview && (
+                  <div style={{ marginTop: 12, width: 120, height: 120, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                    <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                  {t('product.date_added')} <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  name="addDate"
+                  value={formData.addDate}
+                  onChange={handleChange}
+                  required
+                  style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* ที่ตั้งซื้อ */}
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.purchase_location')}</label>
+              <input
+                type="text"
+                name="purchaseLocation"
+                value={formData.purchaseLocation}
+                onChange={handleChange}
+                placeholder={t('product.purchase_location_placeholder')}
+                style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Promotion Section */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
+              border: '2px solid #3b82f6', 
+              borderRadius: 16, 
+              padding: '24px', 
+              marginTop: 24,
+              boxShadow: '0 4px 16px rgba(59,130,246,0.15)'
+            }}>
+              <div style={{ 
+                fontSize: 18, 
+                fontWeight: 800, 
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: 20, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10 
+              }}>
+                🎁 ตั้งค่าโปรโมชั่น
+              </div>
+
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                background: '#fff',
+                padding: '14px 18px',
+                borderRadius: 12,
+                border: '2px solid #fed7aa',
+                marginBottom: 20,
+                transition: 'all 0.2s ease'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={promotion.active}
+                  onChange={(e) => setPromotion({ ...promotion, active: e.target.checked })}
+                  style={{ 
+                    marginRight: 12, 
+                    width: 20, 
+                    height: 20, 
+                    cursor: 'pointer',
+                    accentColor: '#3b82f6'
+                  }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 700, color: '#1e40af' }}>
+                  เปิดใช้งานโปรโมชั่น
+                </span>
+              </label>
+
+              {promotion.active && (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {/* Type and Value */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '75%' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        ประเภท
+                      </label>
+                      <select
+                        value={promotion.type}
+                        onChange={(e) => setPromotion({ ...promotion, type: e.target.value })}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 14, 
+                          fontWeight: 600,
+                          background: '#fff',
+                          color: '#1e40af',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="percentage">% เปอร์เซ็นต์</option>
+                        <option value="fixed">฿ จำนวนเงิน</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        {promotion.type === 'percentage' ? 'ส่วนลด (%)' : 'ส่วนลด (฿)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={promotion.value}
+                        onChange={(e) => setPromotion({ ...promotion, value: e.target.value })}
+                        min="0"
+                        step={promotion.type === 'percentage' ? '1' : '0.01'}
+                        placeholder={promotion.type === 'percentage' ? 'เช่น 20' : 'เช่น 100'}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: '#2563eb',
+                          background: '#fff'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Range */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 45, width: '75%' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        วันเริ่มต้น
+                      </label>
+                      <input
+                        type="date"
+                        value={promotion.startDate}
+                        onChange={(e) => setPromotion({ ...promotion, startDate: e.target.value })}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: '#fff',
+                          color: '#1e40af'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                        วันสิ้นสุด
+                      </label>
+                      <input
+                        type="date"
+                        value={promotion.endDate}
+                        onChange={(e) => setPromotion({ ...promotion, endDate: e.target.value })}
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 14px', 
+                          border: '2px solid #bfdbfe', 
+                          borderRadius: 10, 
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: '#fff',
+                          color: '#1e40af'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Price Preview */}
+                  {!hasVariants && promotion.value && simpleProduct.sellPrice && (
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #fff 0%, #fef3c7 100%)', 
+                      padding: '18px 20px', 
+                      borderRadius: 12, 
+                      border: '2px solid #fbbf24',
+                      boxShadow: '0 4px 12px rgba(251,191,36,0.2)'
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 8 }}>
+                        💵 ราคาหลังลด:
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 28, fontWeight: 800, color: '#ea580c' }}>
+                          ฿{(() => {
+                            const basePrice = parseFloat(simpleProduct.sellPrice);
+                            let promoPrice = basePrice;
+                            if (promotion.type === 'percentage') {
+                              promoPrice = basePrice - (basePrice * parseFloat(promotion.value) / 100);
+                            } else {
+                              promoPrice = basePrice - parseFloat(promotion.value);
+                            }
+                            return Math.max(0, promoPrice).toLocaleString();
+                          })()}
+                        </span>
+                        <span style={{ fontSize: 16, color: '#a16207', textDecoration: 'line-through', fontWeight: 500 }}>
+                          ฿{parseFloat(simpleProduct.sellPrice).toLocaleString()}
+                        </span>
+                        <span style={{ 
+                          background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                          color: '#fff',
+                          padding: '4px 12px',
+                          borderRadius: 20,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          marginLeft: 'auto'
+                        }}>
+                          🔥 ลด {promotion.type === 'percentage' ? `${promotion.value}%` : `฿${promotion.value}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+              <button
+                type="submit"
+                disabled={saving || uploading}
+                style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: saving || uploading ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', border: 'none', borderRadius: 10, cursor: saving || uploading ? 'not-allowed' : 'pointer', boxShadow: saving || uploading ? 'none' : '0 4px 12px rgba(59,130,246,0.3)' }}
+              >
+                {saving ? t('message.saving') : t('common.save')}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/products')}
+                style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 10, cursor: 'pointer' }}
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getProductById, updateProduct, DEFAULT_UNITS, DEFAULT_CATEGORIES, DEFAULT_SIZES, DEFAULT_COLORS } from '../../services';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
+import styles from './EditProductPage.module.css';
 
 export default function EditProductPage() {
   const { t } = useTranslation();
@@ -170,6 +171,26 @@ export default function EditProductPage() {
     setVariants(prev => prev.filter(v => v.id !== id));
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    setUploadError('');
+    if (!file) return;
+    try {
+      setUploading(true);
+      const path = `products/${Date.now()}_${file.name}`;
+      const ref = storageRef(storage, path);
+      await uploadBytes(ref, file);
+      const url = await getDownloadURL(ref);
+      setFormData(prev => ({ ...prev, image: url }));
+      setImagePreview(url);
+    } catch (err) {
+      console.error(err);
+      setUploadError('อัพโหลดรูปภาพล้มเหลว');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -180,14 +201,9 @@ export default function EditProductPage() {
         throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
       }
 
-      console.log('Current promotion state:', promotion);
-      console.log('promotion.active:', promotion.active);
-      console.log('promotion.value:', promotion.value);
-
       // Calculate promotion price if active
       let promotionData = null;
       
-      // Always save promotion data if checkbox is checked or has value
       if (promotion.active || promotion.value) {
         const basePrice = hasVariants ? 0 : parseFloat(simpleProduct.sellPrice || 0);
         let promotionPrice = basePrice;
@@ -209,8 +225,6 @@ export default function EditProductPage() {
           endDate: promotion.endDate || '',
           promotionPrice: !hasVariants && promotion.value ? promotionPrice : null,
         };
-        
-        console.log('Saving promotion data:', promotionData);
       }
 
       if (hasVariants) {
@@ -254,559 +268,629 @@ export default function EditProductPage() {
 
   const totalVariantQuantity = variants.reduce((sum, v) => sum + (parseInt(v.quantity) || 0), 0);
 
+  const calculateProfitMargin = () => {
+    const cost = parseFloat(simpleProduct.costPrice) || 0;
+    const sell = parseFloat(simpleProduct.sellPrice) || 0;
+    if (sell === 0) return 0;
+    return Math.round(((sell - cost) / sell) * 100);
+  };
+
+  const calculatePromotionPrice = () => {
+    const basePrice = parseFloat(simpleProduct.sellPrice) || 0;
+    if (!promotion.value) return basePrice;
+    if (promotion.type === 'percentage') {
+      return Math.max(0, basePrice - (basePrice * parseFloat(promotion.value) / 100));
+    }
+    return Math.max(0, basePrice - parseFloat(promotion.value));
+  };
+
   if (loading) {
     return (
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 50, height: 50, border: '4px solid #f3f3f3', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
-          <p style={{ color: '#666' }}>{t('common.loading')}</p>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <div className={styles.loadingSpinner}></div>
+          <p className={styles.loadingText}>{t('common.loading')}</p>
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <div style={{ background: '#fff', borderRadius: 18, padding: '32px 40px', boxShadow: '0 10px 40px rgba(15,23,42,0.12)' }}>
-          <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: 28, fontWeight: 700 }}>{t('product.edit_product')}</h1>
-          <p style={{ margin: '0 0 28px', color: '#3b82f6', fontSize: 14 }}>{t('product.update_product_info')}</p>
+    <div className={styles.pageContainer}>
+      {/* Sticky Header */}
+      <header className={styles.stickyHeader}>
+        <div className={styles.headerContent}>
+          {/* Breadcrumbs */}
+          <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
+            <ol className={styles.breadcrumbList}>
+              <li className={styles.breadcrumbItem}>
+                <Link to="/admin/dashboard" className={styles.breadcrumbLink}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.125rem', marginRight: '0.25rem' }}>home</span>
+                  Home
+                </Link>
+              </li>
+              <li className={styles.breadcrumbItem}>
+                <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
+                <Link to="/admin/products" className={styles.breadcrumbLink}>{t('admin.products')}</Link>
+              </li>
+              <li className={styles.breadcrumbItem}>
+                <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
+                <span className={styles.breadcrumbCurrent}>{t('product.edit_product')}</span>
+              </li>
+            </ol>
+          </nav>
 
-          {error && (
-            <div style={{ padding: '12px 16px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: 10, marginBottom: 20, fontSize: 14, border: '1px solid #fecaca' }}>
-              {error}
+          {/* Title Row */}
+          <div className={styles.headerTitleRow}>
+            <div className={styles.headerTitleGroup}>
+              <h1 className={styles.pageTitle}>
+                {t('product.edit_product')}: {formData.productName || 'Product'}
+              </h1>
+              <p className={styles.pageSubtitle}>{t('product.update_product_info')}</p>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* ชื่อสินค้า */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                {t('product.product_name')} <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <input
-                type="text"
-                name="productName"
-                value={formData.productName}
-                onChange={handleChange}
-                required
-                style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, outline: 'none', boxSizing: 'border-box', background: '#f9fafb' }}
-              />
+            <div className={styles.headerActions}>
+              <button 
+                type="button" 
+                onClick={() => navigate('/admin/products')} 
+                className={styles.cancelButton}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>close</span>
+                {t('common.cancel')}
+              </button>
+              <button 
+                type="submit" 
+                form="editProductForm"
+                disabled={saving || uploading}
+                className={styles.saveButton}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>save</span>
+                {saving ? t('message.saving') : t('common.save')}
+              </button>
             </div>
+          </div>
+        </div>
+      </header>
 
-            {/* คำอธิบาย */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.description')}</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-                style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', background: '#f9fafb' }}
-              />
-            </div>
+      {/* Form Content */}
+      <div className={styles.formContent}>
+        {error && (
+          <div className={styles.errorMessage}>{error}</div>
+        )}
 
-            {/* หน่วย + ประเภท */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              {/* หน่วย */}
-              <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  {t('common.unit')} <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                {!showCustomUnit ? (
-                  <select
-                    name="unit"
-                    value={formData.unit}
-                    onChange={(e) => {
-                      if (e.target.value === '__custom__') {
-                        setShowCustomUnit(true);
-                        setFormData(prev => ({ ...prev, unit: '' }));
-                      } else {
-                        handleChange(e);
-                      }
-                    }}
+        <form id="editProductForm" onSubmit={handleSubmit}>
+          <div className={styles.formGrid}>
+            {/* Left Column (Main Data) */}
+            <div className={styles.mainColumn}>
+              {/* Basic Info Card */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>
+                    <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>info</span>
+                    {t('product.basic_info') || 'Basic Information'}
+                  </h2>
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
+                    {t('product.product_name')}
+                  </label>
+                  <input
+                    type="text"
+                    name="productName"
+                    value={formData.productName}
+                    onChange={handleChange}
                     required
-                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
-                  >
-                    <option value="">-- {t('product.select_unit')} --</option>
-                    {DEFAULT_UNITS.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
-                    <option value="__custom__">+ {t('product.add_new_unit')}</option>
-                  </select>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      type="text"
-                      name="unit"
-                      value={formData.unit}
-                      onChange={handleChange}
-                      required
-                      placeholder={t('product.type_new_unit')}
-                      style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}
-                    />
-                    <button type="button" onClick={() => { setShowCustomUnit(false); setFormData(prev => ({ ...prev, unit: '' })); }}
-                      style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
-                      {t('common.cancel')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* ประเภท */}
-              <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  {t('product.category')} <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                {!showCustomCategory ? (
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={(e) => {
-                      if (e.target.value === '__custom__') {
-                        setShowCustomCategory(true);
-                        setFormData(prev => ({ ...prev, category: '' }));
-                      } else {
-                        handleChange(e);
-                      }
-                    }}
-                    required
-                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', cursor: 'pointer' }}
-                  >
-                    <option value="">-- {t('product.select_category')} --</option>
-                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
-                    <option value="__custom__">+ {t('product.add_new_category')}</option>
-                  </select>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      type="text"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      required
-                      placeholder={t('product.type_new_category')}
-                      style={{ flex: 1, padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}
-                    />
-                    <button type="button" onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
-                      style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
-                      {t('common.cancel')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Toggle Variants */}
-            <div style={{ background: '#f0f9ff', padding: '16px 20px', borderRadius: 12, border: '1px solid #bae6fd' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={hasVariants}
-                  onChange={(e) => setHasVariants(e.target.checked)}
-                  style={{ width: 20, height: 20, cursor: 'pointer' }}
-                />
-                <div>
-                  <div style={{ fontWeight: 600, color: '#0369a1' }}>{t('product.has_variants')}</div>
-                  <div style={{ fontSize: 13, color: '#0284c7' }}>{t('product.variants_description')}</div>
-                </div>
-              </label>
-            </div>
-
-            {/* Simple Product */}
-            {!hasVariants && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    {t('product.cost_price')} <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="costPrice"
-                    value={simpleProduct.costPrice}
-                    onChange={handleSimpleChange}
-                    required={!hasVariants}
-                    min="0"
-                    step="0.01"
-                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+                    className={styles.formInput}
                   />
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    {t('product.sell_price')} <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="sellPrice"
-                    value={simpleProduct.sellPrice}
-                    onChange={handleSimpleChange}
-                    required={!hasVariants}
-                    min="0"
-                    step="0.01"
-                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>{t('product.description')}</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={4}
+                    placeholder={t('product.description_placeholder') || 'Enter product description...'}
+                    className={styles.formTextarea}
                   />
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                    {t('common.quantity')} <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={simpleProduct.quantity}
-                    onChange={handleSimpleChange}
-                    required={!hasVariants}
-                    min="0"
-                    style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
-                  />
-                </div>
-              </div>
-            )}
 
-            {/* Variants Section */}
-            {hasVariants && (
-              <div style={{ background: '#fefce8', padding: '20px', borderRadius: 12, border: '1px solid #fde047' }}>
-                <h3 style={{ margin: '0 0 16px', color: '#854d0e', fontSize: 16 }}>
-                  📦 Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
-                </h3>
-
-                {/* Existing Variants - Editable */}
-                {variants.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 100px 100px 40px', gap: 8, padding: '8px 12px', background: '#fef9c3', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#713f12' }}>
-                      <div>{t('product.size')}</div>
-                      <div>{t('product.color')}</div>
-                      <div>{t('common.quantity')}</div>
-                      <div>{t('product.cost_price')}</div>
-                      <div>{t('product.sell_price')}</div>
-                      <div></div>
-                    </div>
-                    {variants.map(v => (
-                      <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 100px 100px 40px', gap: 8, padding: '8px 12px', background: '#fff', borderRadius: 8, marginTop: 6, alignItems: 'center' }}>
-                        <input
-                          type="text"
-                          value={v.size}
-                          onChange={(e) => handleVariantChange(v.id, 'size', e.target.value)}
-                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
-                        />
-                        <input
-                          type="text"
-                          value={v.color}
-                          onChange={(e) => handleVariantChange(v.id, 'color', e.target.value)}
-                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
-                        />
-                        <input
-                          type="number"
-                          value={v.quantity}
-                          onChange={(e) => handleVariantChange(v.id, 'quantity', e.target.value)}
-                          min="0"
-                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
-                        />
-                        <input
-                          type="number"
-                          value={v.costPrice}
-                          onChange={(e) => handleVariantChange(v.id, 'costPrice', e.target.value)}
-                          min="0"
-                          step="0.01"
-                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
-                        />
-                        <input
-                          type="number"
-                          value={v.sellPrice}
-                          onChange={(e) => handleVariantChange(v.id, 'sellPrice', e.target.value)}
-                          min="0"
-                          step="0.01"
-                          style={{ padding: '8px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 6, background: '#f9fafb' }}
-                        />
-                        <button type="button" onClick={() => removeVariant(v.id)} style={{ background: '#fef2f2', border: 'none', color: '#dc2626', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', fontSize: 12 }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add New Variant */}
-                <div style={{ background: '#fff', padding: '16px', borderRadius: 10, border: '1px dashed #d1d5db' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>+ {t('product.add_variant')}</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                    {/* Size */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.size')}</label>
-                      {!showCustomSize ? (
-                        <select
-                          name="size"
-                          value={newVariant.size}
-                          onChange={(e) => {
-                            if (e.target.value === '__custom__') {
-                              setShowCustomSize(true);
-                              setNewVariant(prev => ({ ...prev, size: '' }));
-                            } else {
-                              handleNewVariantChange(e);
-                            }
-                          }}
-                          style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
-                        >
-                          <option value="">-- {t('product.select_size')} --</option>
-                          {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                          <option value="__custom__">+ {t('product.add_new_size')}</option>
-                        </select>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <input
-                            type="text"
-                            name="size"
-                            value={newVariant.size}
-                            onChange={handleNewVariantChange}
-                            placeholder={t('product.type_size')}
-                            style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
-                          />
-                          <button type="button" onClick={() => { setShowCustomSize(false); setNewVariant(prev => ({ ...prev, size: '' })); }}
-                            style={{ padding: '8px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>✕</button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Color */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.color')}</label>
-                      {!showCustomColor ? (
-                        <select
-                          name="color"
-                          value={newVariant.color}
-                          onChange={(e) => {
-                            if (e.target.value === '__custom__') {
-                              setShowCustomColor(true);
-                              setNewVariant(prev => ({ ...prev, color: '' }));
-                            } else {
-                              handleNewVariantChange(e);
-                            }
-                          }}
-                          style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
-                        >
-                          <option value="">-- {t('product.select_color')} --</option>
-                          {DEFAULT_COLORS.map(c => <option key={c} value={c}>{t(`colors.${c}`, c)}</option>)}
-                          <option value="__custom__">+ {t('product.add_new_color')}</option>
-                        </select>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <input
-                            type="text"
-                            name="color"
-                            value={newVariant.color}
-                            onChange={handleNewVariantChange}
-                            placeholder={t('product.type_color')}
-                            style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}
-                          />
-                          <button type="button" onClick={() => { setShowCustomColor(false); setNewVariant(prev => ({ ...prev, color: '' })); }}
-                            style={{ padding: '8px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>✕</button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('common.quantity')}</label>
-                      <input
-                        type="number"
-                        name="quantity"
-                        value={newVariant.quantity}
-                        onChange={handleNewVariantChange}
-                        min="1"
-                        placeholder="0"
-                        style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.cost_price')}</label>
-                      <input
-                        type="number"
-                        name="costPrice"
-                        value={newVariant.costPrice}
-                        onChange={handleNewVariantChange}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>{t('product.sell_price')}</label>
-                      <input
-                        type="number"
-                        name="sellPrice"
-                        value={newVariant.sellPrice}
-                        onChange={handleNewVariantChange}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        style={{ width: '100%', padding: '10px 12px', fontSize: 14, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={addVariant}
-                    style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
-                  >
-                    + {t('product.add_variant')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* รูปภาพ + วันที่ */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.product_image')}</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label htmlFor="image" style={{ padding: '10px 20px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#374151' }}>
-                    {t('product.change_image')}
-                  </label>
-                </div>
-                <input
-                  type="file"
-                  id="image"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    setUploadError('');
-                    if (!file) return;
-                    try {
-                      setUploading(true);
-                      const path = `products/${Date.now()}_${file.name}`;
-                      const ref = storageRef(storage, path);
-                      await uploadBytes(ref, file);
-                      const url = await getDownloadURL(ref);
-                      setFormData(prev => ({ ...prev, image: url }));
-                      setImagePreview(url);
-                    } catch (err) {
-                      console.error(err);
-                      setUploadError('อัพโหลดรูปภาพล้มเหลว');
-                    } finally {
-                      setUploading(false);
-                    }
-                  }}
-                  style={{ display: 'none' }}
-                />
-                {uploading && <div style={{ marginTop: 8, color: '#3b82f6', fontSize: 13 }}>{t('product.uploading_image')}</div>}
-                {uploadError && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 13 }}>{uploadError}</div>}
-                {imagePreview && (
-                  <div style={{ marginTop: 12, width: 120, height: 120, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-                    <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                  {t('product.date_added')} <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="date"
-                  name="addDate"
-                  value={formData.addDate}
-                  onChange={handleChange}
-                  required
-                  style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
-                />
-              </div>
-            </div>
-
-            {/* ที่ตั้งซื้อ */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('product.purchase_location')}</label>
-              <input
-                type="text"
-                name="purchaseLocation"
-                value={formData.purchaseLocation}
-                onChange={handleChange}
-                placeholder={t('product.purchase_location_placeholder')}
-                style={{ width: '100%', padding: '14px 16px', fontSize: 15, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            {/* Promotion Section */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
-              border: '2px solid #3b82f6', 
-              borderRadius: 16, 
-              padding: '24px', 
-              marginTop: 24,
-              boxShadow: '0 4px 16px rgba(59,130,246,0.15)'
-            }}>
-              <div style={{ 
-                fontSize: 18, 
-                fontWeight: 800, 
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                marginBottom: 20, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10 
-              }}>
-                🎁 ตั้งค่าโปรโมชั่น
-              </div>
-
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                cursor: 'pointer',
-                background: '#fff',
-                padding: '14px 18px',
-                borderRadius: 12,
-                border: '2px solid #fed7aa',
-                marginBottom: 20,
-                transition: 'all 0.2s ease'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={promotion.active}
-                  onChange={(e) => setPromotion({ ...promotion, active: e.target.checked })}
-                  style={{ 
-                    marginRight: 12, 
-                    width: 20, 
-                    height: 20, 
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6'
-                  }}
-                />
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#1e40af' }}>
-                  เปิดใช้งานโปรโมชั่น
-                </span>
-              </label>
-
-              {promotion.active && (
-                <div style={{ display: 'grid', gap: 16 }}>
-                  {/* Type and Value */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '75%' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
-                        ประเภท
-                      </label>
+                <div className={styles.formRow2}>
+                  {/* Unit */}
+                  <div className={styles.formGroup}>
+                    <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
+                      {t('common.unit')}
+                    </label>
+                    {!showCustomUnit ? (
                       <select
-                        value={promotion.type}
-                        onChange={(e) => setPromotion({ ...promotion, type: e.target.value })}
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px 14px', 
-                          border: '2px solid #bfdbfe', 
-                          borderRadius: 10, 
-                          fontSize: 14, 
-                          fontWeight: 600,
-                          background: '#fff',
-                          color: '#1e40af',
-                          cursor: 'pointer'
+                        name="unit"
+                        value={formData.unit}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setShowCustomUnit(true);
+                            setFormData(prev => ({ ...prev, unit: '' }));
+                          } else {
+                            handleChange(e);
+                          }
                         }}
+                        required
+                        className={styles.formSelect}
                       >
-                        <option value="percentage">% เปอร์เซ็นต์</option>
-                        <option value="fixed">฿ จำนวนเงิน</option>
+                        <option value="">-- {t('product.select_unit')} --</option>
+                        {DEFAULT_UNITS.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
+                        <option value="__custom__">+ {t('product.add_new_unit')}</option>
                       </select>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                          type="text"
+                          name="unit"
+                          value={formData.unit}
+                          onChange={handleChange}
+                          required
+                          placeholder={t('product.type_new_unit')}
+                          className={styles.formInput}
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => { setShowCustomUnit(false); setFormData(prev => ({ ...prev, unit: '' })); }}
+                          className={styles.cancelButton}
+                          style={{ padding: '0.5rem 0.75rem' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Category */}
+                  <div className={styles.formGroup}>
+                    <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
+                      {t('product.category')}
+                    </label>
+                    {!showCustomCategory ? (
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setShowCustomCategory(true);
+                            setFormData(prev => ({ ...prev, category: '' }));
+                          } else {
+                            handleChange(e);
+                          }
+                        }}
+                        required
+                        className={styles.formSelect}
+                      >
+                        <option value="">-- {t('product.select_category')} --</option>
+                        {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
+                        <option value="__custom__">+ {t('product.add_new_category')}</option>
+                      </select>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                          type="text"
+                          name="category"
+                          value={formData.category}
+                          onChange={handleChange}
+                          required
+                          placeholder={t('product.type_new_category')}
+                          className={styles.formInput}
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
+                          className={styles.cancelButton}
+                          style={{ padding: '0.5rem 0.75rem' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Media Gallery Card */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>
+                    <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>imagesmode</span>
+                    {t('product.product_image') || 'Product Media'}
+                  </h2>
+                </div>
+
+                <div className={styles.mediaGrid}>
+                  {/* Current Image */}
+                  {imagePreview && (
+                    <div className={styles.imagePreview}>
+                      <img src={imagePreview} alt="preview" />
+                      <div className={styles.imageOverlay}>
+                        <label className={styles.imageActionButton}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: '#0f172a' }}>edit</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                      </div>
+                      <div className={styles.mainBadge}>Main</div>
                     </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
+                  )}
+
+                </div>
+
+                {uploadError && (
+                  <p style={{ color: '#dc2626', fontSize: '0.8125rem', marginTop: '0.5rem' }}>{uploadError}</p>
+                )}
+              </div>
+
+              {/* Pricing & Inventory Card */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>
+                    <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>payments</span>
+                    {t('product.pricing_inventory') || 'Pricing & Inventory'}
+                  </h2>
+                </div>
+
+                {/* Variants Toggle */}
+                <label className={styles.variantsToggle}>
+                  <input
+                    type="checkbox"
+                    checked={hasVariants}
+                    onChange={(e) => setHasVariants(e.target.checked)}
+                    className={styles.variantsCheckbox}
+                  />
+                  <div className={styles.variantsToggleText}>
+                    <div className={styles.variantsToggleTitle}>{t('product.has_variants')}</div>
+                    <div className={styles.variantsToggleDesc}>{t('product.variants_description')}</div>
+                  </div>
+                </label>
+
+                {/* Simple Product Pricing */}
+                {!hasVariants && (
+                  <>
+                    <div className={styles.divider}></div>
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
+                          {t('product.sell_price')}
+                        </label>
+                        <div className={styles.priceInputWrapper}>
+                          <span className={styles.priceSymbol}>฿</span>
+                          <input
+                            type="number"
+                            name="sellPrice"
+                            value={simpleProduct.sellPrice}
+                            onChange={handleSimpleChange}
+                            required={!hasVariants}
+                            min="0"
+                            step="0.01"
+                            className={`${styles.formInput} ${styles.priceInput}`}
+                          />
+                        </div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
+                          {t('product.cost_price')}
+                        </label>
+                        <div className={styles.priceInputWrapper}>
+                          <span className={styles.priceSymbol}>฿</span>
+                          <input
+                            type="number"
+                            name="costPrice"
+                            value={simpleProduct.costPrice}
+                            onChange={handleSimpleChange}
+                            required={!hasVariants}
+                            min="0"
+                            step="0.01"
+                            className={`${styles.formInput} ${styles.priceInput}`}
+                          />
+                        </div>
+                        {simpleProduct.costPrice && simpleProduct.sellPrice && (
+                          <p className={styles.profitMargin}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>trending_up</span>
+                            Profit Margin: {calculateProfitMargin()}%
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+
+                    <div className={styles.formRow3}>
+                      <div className={styles.formGroup}>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
+                          {t('common.quantity')}
+                        </label>
+                        <div className={styles.quantityWrapper}>
+                          <button 
+                            type="button" 
+                            onClick={() => setSimpleProduct(prev => ({ ...prev, quantity: Math.max(0, (parseInt(prev.quantity) || 0) - 1).toString() }))}
+                            className={`${styles.quantityButton} ${styles.quantityButtonLeft}`}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>remove</span>
+                          </button>
+                          <input
+                            type="number"
+                            name="quantity"
+                            value={simpleProduct.quantity}
+                            onChange={handleSimpleChange}
+                            required={!hasVariants}
+                            min="0"
+                            className={styles.quantityInput}
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => setSimpleProduct(prev => ({ ...prev, quantity: ((parseInt(prev.quantity) || 0) + 1).toString() }))}
+                            className={`${styles.quantityButton} ${styles.quantityButtonRight}`}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.date_added')}</label>
+                        <input
+                          type="date"
+                          name="addDate"
+                          value={formData.addDate}
+                          onChange={handleChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.purchase_location')}</label>
+                        <input
+                          type="text"
+                          name="purchaseLocation"
+                          value={formData.purchaseLocation}
+                          onChange={handleChange}
+                          placeholder={t('product.purchase_location_placeholder')}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Variants Section */}
+                {hasVariants && (
+                  <>
+                    <div className={styles.divider}></div>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>style</span>
+                        Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
+                      </h3>
+                    </div>
+
+                    {/* Variants Table */}
+                    {variants.length > 0 && (
+                      <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+                        <table className={styles.variantsTable}>
+                          <thead className={styles.variantsTableHead}>
+                            <tr>
+                              <th>{t('product.size')} / {t('product.color')}</th>
+                              <th>{t('common.quantity')}</th>
+                              <th>{t('product.cost_price')}</th>
+                              <th>{t('product.sell_price')}</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody className={styles.variantsTableBody}>
+                            {variants.map(v => (
+                              <tr key={v.id}>
+                                <td>
+                                  <div className={styles.variantCell}>
+                                    <div className={styles.variantColorBox}></div>
+                                    <span className={styles.variantName}>{v.size} / {v.color}</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className={styles.stockIndicator}>
+                                    <span className={`${styles.stockDot} ${(v.quantity || 0) > 10 ? styles.stockDotGreen : (v.quantity || 0) > 0 ? styles.stockDotOrange : styles.stockDotRed}`}></span>
+                                    <input
+                                      type="number"
+                                      value={v.quantity}
+                                      onChange={(e) => handleVariantChange(v.id, 'quantity', e.target.value)}
+                                      min="0"
+                                      style={{ width: '60px', padding: '0.25rem 0.5rem', fontSize: '0.875rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }}
+                                    />
+                                  </div>
+                                </td>
+                                <td>
+                                  <input
+                                    type="number"
+                                    value={v.costPrice}
+                                    onChange={(e) => handleVariantChange(v.id, 'costPrice', e.target.value)}
+                                    min="0"
+                                    step="0.01"
+                                    style={{ width: '80px', padding: '0.25rem 0.5rem', fontSize: '0.875rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }}
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="number"
+                                    value={v.sellPrice}
+                                    onChange={(e) => handleVariantChange(v.id, 'sellPrice', e.target.value)}
+                                    min="0"
+                                    step="0.01"
+                                    style={{ width: '80px', padding: '0.25rem 0.5rem', fontSize: '0.875rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }}
+                                  />
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                  <button 
+                                    type="button" 
+                                    onClick={() => removeVariant(v.id)} 
+                                    className={styles.variantDeleteButton}
+                                  >
+                                    ✕
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Add New Variant */}
+                    <div className={styles.addVariantForm}>
+                      <div className={styles.addVariantTitle}>+ {t('product.add_variant')}</div>
+                      <div className={styles.formRow2} style={{ marginBottom: '0.75rem' }}>
+                        {/* Size */}
+                        <div>
+                          {!showCustomSize ? (
+                            <select
+                              name="size"
+                              value={newVariant.size}
+                              onChange={(e) => {
+                                if (e.target.value === '__custom__') {
+                                  setShowCustomSize(true);
+                                  setNewVariant(prev => ({ ...prev, size: '' }));
+                                } else {
+                                  handleNewVariantChange(e);
+                                }
+                              }}
+                              className={styles.formSelect}
+                            >
+                              <option value="">-- {t('product.select_size')} --</option>
+                              {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                              <option value="__custom__">+ {t('product.add_new_size')}</option>
+                            </select>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <input
+                                type="text"
+                                name="size"
+                                value={newVariant.size}
+                                onChange={handleNewVariantChange}
+                                placeholder={t('product.type_size')}
+                                className={styles.formInput}
+                              />
+                              <button type="button" onClick={() => { setShowCustomSize(false); setNewVariant(prev => ({ ...prev, size: '' })); }}
+                                style={{ padding: '0.5rem', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.375rem', cursor: 'pointer' }}>✕</button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Color */}
+                        <div>
+                          {!showCustomColor ? (
+                            <select
+                              name="color"
+                              value={newVariant.color}
+                              onChange={(e) => {
+                                if (e.target.value === '__custom__') {
+                                  setShowCustomColor(true);
+                                  setNewVariant(prev => ({ ...prev, color: '' }));
+                                } else {
+                                  handleNewVariantChange(e);
+                                }
+                              }}
+                              className={styles.formSelect}
+                            >
+                              <option value="">-- {t('product.select_color')} --</option>
+                              {DEFAULT_COLORS.map(c => <option key={c} value={c}>{t(`colors.${c}`, c)}</option>)}
+                              <option value="__custom__">+ {t('product.add_new_color')}</option>
+                            </select>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <input
+                                type="text"
+                                name="color"
+                                value={newVariant.color}
+                                onChange={handleNewVariantChange}
+                                placeholder={t('product.type_color')}
+                                className={styles.formInput}
+                              />
+                              <button type="button" onClick={() => { setShowCustomColor(false); setNewVariant(prev => ({ ...prev, color: '' })); }}
+                                style={{ padding: '0.5rem', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.375rem', cursor: 'pointer' }}>✕</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={styles.formRow3} style={{ marginBottom: '0.75rem' }}>
+                        <input
+                          type="number"
+                          name="quantity"
+                          value={newVariant.quantity}
+                          onChange={handleNewVariantChange}
+                          min="1"
+                          placeholder={t('common.quantity')}
+                          className={styles.formInput}
+                        />
+                        <input
+                          type="number"
+                          name="costPrice"
+                          value={newVariant.costPrice}
+                          onChange={handleNewVariantChange}
+                          min="0"
+                          step="0.01"
+                          placeholder={t('product.cost_price')}
+                          className={styles.formInput}
+                        />
+                        <input
+                          type="number"
+                          name="sellPrice"
+                          value={newVariant.sellPrice}
+                          onChange={handleNewVariantChange}
+                          min="0"
+                          step="0.01"
+                          placeholder={t('product.sell_price')}
+                          className={styles.formInput}
+                        />
+                      </div>
+
+                      <button type="button" onClick={addVariant} className={styles.addVariantButton}>
+                        + {t('product.add_variant')}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column (Sidebar/Meta) */}
+            <div className={styles.sideColumn}>
+              {/* Promotions Card */}
+              <div className={styles.card}>
+                <div className={styles.promotionToggle}>
+                  <h2 className={styles.cardTitleSmall} style={{ margin: 0 }}>{t('product.promotions') || 'Promotions'}</h2>
+                  <div 
+                    className={`${styles.promotionSwitch} ${promotion.active ? styles.active : ''}`}
+                    onClick={() => setPromotion({ ...promotion, active: !promotion.active })}
+                  >
+                    <div className={styles.promotionSwitchThumb}></div>
+                  </div>
+                </div>
+
+                {promotion.active && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>
                         {promotion.type === 'percentage' ? 'ส่วนลด (%)' : 'ส่วนลด (฿)'}
                       </label>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <select
+                          value={promotion.type}
+                          onChange={(e) => setPromotion({ ...promotion, type: e.target.value })}
+                          className={styles.formSelect}
+                          style={{ width: 'auto' }}
+                        >
+                          <option value="percentage">% เปอร์เซ็นต์</option>
+                          <option value="fixed">฿ จำนวนเงิน</option>
+                        </select>
+                      </div>
                       <input
                         type="number"
                         value={promotion.value}
@@ -814,128 +898,57 @@ export default function EditProductPage() {
                         min="0"
                         step={promotion.type === 'percentage' ? '1' : '0.01'}
                         placeholder={promotion.type === 'percentage' ? 'เช่น 20' : 'เช่น 100'}
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px 14px', 
-                          border: '2px solid #bfdbfe', 
-                          borderRadius: 10, 
-                          fontSize: 16,
-                          fontWeight: 700,
-                          color: '#2563eb',
-                          background: '#fff'
-                        }}
+                        className={`${styles.formInput} ${styles.promotionPriceInput}`}
                       />
                     </div>
-                  </div>
 
-                  {/* Date Range */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 45, width: '75%' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
-                        วันเริ่มต้น
-                      </label>
-                      <input
-                        type="date"
-                        value={promotion.startDate}
-                        onChange={(e) => setPromotion({ ...promotion, startDate: e.target.value })}
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px 14px', 
-                          border: '2px solid #bfdbfe', 
-                          borderRadius: 10, 
-                          fontSize: 14,
-                          fontWeight: 600,
-                          background: '#fff',
-                          color: '#1e40af'
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#1e40af' }}>
-                        วันสิ้นสุด
-                      </label>
-                      <input
-                        type="date"
-                        value={promotion.endDate}
-                        onChange={(e) => setPromotion({ ...promotion, endDate: e.target.value })}
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px 14px', 
-                          border: '2px solid #bfdbfe', 
-                          borderRadius: 10, 
-                          fontSize: 14,
-                          fontWeight: 600,
-                          background: '#fff',
-                          color: '#1e40af'
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Price Preview */}
-                  {!hasVariants && promotion.value && simpleProduct.sellPrice && (
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #fff 0%, #fef3c7 100%)', 
-                      padding: '18px 20px', 
-                      borderRadius: 12, 
-                      border: '2px solid #fbbf24',
-                      boxShadow: '0 4px 12px rgba(251,191,36,0.2)'
-                    }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 8 }}>
-                        💵 ราคาหลังลด:
+                    <div className={styles.promotionDateGrid}>
+                      <div>
+                        <label className={styles.promotionDateLabel}>วันเริ่มต้น</label>
+                        <input
+                          type="date"
+                          value={promotion.startDate}
+                          onChange={(e) => setPromotion({ ...promotion, startDate: e.target.value })}
+                          className={styles.promotionDateInput}
+                        />
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 28, fontWeight: 800, color: '#ea580c' }}>
-                          ฿{(() => {
-                            const basePrice = parseFloat(simpleProduct.sellPrice);
-                            let promoPrice = basePrice;
-                            if (promotion.type === 'percentage') {
-                              promoPrice = basePrice - (basePrice * parseFloat(promotion.value) / 100);
-                            } else {
-                              promoPrice = basePrice - parseFloat(promotion.value);
-                            }
-                            return Math.max(0, promoPrice).toLocaleString();
-                          })()}
-                        </span>
-                        <span style={{ fontSize: 16, color: '#a16207', textDecoration: 'line-through', fontWeight: 500 }}>
-                          ฿{parseFloat(simpleProduct.sellPrice).toLocaleString()}
-                        </span>
-                        <span style={{ 
-                          background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-                          color: '#fff',
-                          padding: '4px 12px',
-                          borderRadius: 20,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          marginLeft: 'auto'
-                        }}>
-                          🔥 ลด {promotion.type === 'percentage' ? `${promotion.value}%` : `฿${promotion.value}`}
-                        </span>
+                      <div>
+                        <label className={styles.promotionDateLabel}>วันสิ้นสุด</label>
+                        <input
+                          type="date"
+                          value={promotion.endDate}
+                          onChange={(e) => setPromotion({ ...promotion, endDate: e.target.value })}
+                          className={styles.promotionDateInput}
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
-              <button
-                type="submit"
-                disabled={saving || uploading}
-                style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: saving || uploading ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', border: 'none', borderRadius: 10, cursor: saving || uploading ? 'not-allowed' : 'pointer', boxShadow: saving || uploading ? 'none' : '0 4px 12px rgba(59,130,246,0.3)' }}
-              >
-                {saving ? t('message.saving') : t('common.save')}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/admin/products')}
-                style={{ padding: '14px 32px', fontSize: 15, fontWeight: 600, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 10, cursor: 'pointer' }}
-              >
-                {t('common.cancel')}
-              </button>
+                    {/* Price Preview */}
+                    {!hasVariants && promotion.value && simpleProduct.sellPrice && (
+                      <div className={styles.pricePreview}>
+                        <div className={styles.pricePreviewLabel}>💵 ราคาหลังลด:</div>
+                        <div className={styles.pricePreviewRow}>
+                          <span className={styles.pricePreviewNew}>
+                            ฿{calculatePromotionPrice().toLocaleString()}
+                          </span>
+                          <span className={styles.pricePreviewOld}>
+                            ฿{parseFloat(simpleProduct.sellPrice).toLocaleString()}
+                          </span>
+                          <span className={styles.pricePreviewBadge}>
+                            🔥 ลด {promotion.type === 'percentage' ? `${promotion.value}%` : `฿${promotion.value}`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
+
+        {/* Footer spacing */}
+        <div className={styles.footerSpacing}></div>
       </div>
     </div>
   );
