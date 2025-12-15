@@ -3,12 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
+import styles from './CustomerOrderSuccessPage.module.css';
 
 export default function CustomerOrderSuccessPage() {
+  // eslint-disable-next-line no-unused-vars
   const { t } = useTranslation();
   const { user } = useAuth();
   const [latestOrder, setLatestOrder] = useState(null);
   const [, setLoading] = useState(true);
+  const [showItems, setShowItems] = useState(false);
 
   useEffect(() => {
     const loadLatest = async () => {
@@ -41,172 +44,114 @@ export default function CustomerOrderSuccessPage() {
     loadLatest();
   }, [user?.uid]);
 
-  const orderId = latestOrder?.orderNumber || latestOrder?.id || null;
-  const itemsCount = Array.isArray(latestOrder?.items)
-    ? latestOrder.items.length
-    : null;
-  const totalAmount = latestOrder?.total ?? null;
+  const orderId = latestOrder?.orderNumber || latestOrder?.id?.slice(-8).toUpperCase() || 'XXXX';
+  const items = latestOrder?.items || [];
+  const itemsCount = items.length;
+  const totalAmount = latestOrder?.total ?? 0;
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+    let date;
+    if (dateValue.seconds) {
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F1F5F9',
-        padding: '32px 24px 40px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        {/* Success Card */}
-        <div
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 24,
-            padding: '48px 32px',
-            textAlign: 'center',
-            boxShadow: '0 4px 20px rgba(15,23,42,0.12)',
-            marginBottom: 24,
-          }}
-        >
-          <div
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 56,
-              margin: '0 auto 24px',
-              boxShadow: '0 8px 32px rgba(16,185,129,0.35)',
-            }}
-          >
-            ✓
+    <div className={styles.container}>
+      {/* Background Gradient */}
+      <div className={styles.backgroundGradient}></div>
+
+      {/* Success Card */}
+      <div className={styles.successCard}>
+        {/* Top Bar */}
+        <div className={styles.topBar}></div>
+
+        <div className={styles.cardContent}>
+          {/* Success Icon */}
+          <div className={styles.successIconWrapper}>
+            <span className={`material-symbols-outlined ${styles.successIcon}`}>check_circle</span>
           </div>
 
-          <h1
-            style={{
-              fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-              fontSize: 32,
-              fontWeight: 800,
-              color: '#10B981',
-              margin: '0 0 12px',
-            }}
-          >
-            {t('message.order_success_title') || 'ดำเนินการสำเร็จ!'}
-          </h1>
-
-          <p
-            style={{
-              fontSize: 16,
-              color: '#64748B',
-              margin: '0 0 20px',
-              lineHeight: 1.7,
-            }}
-          >
-            {t('message.order_success_message') ||
-              'คำสั่งซื้อของคุณได้รับการยืนยันแล้ว เราจะดำเนินการจัดเตรียมสินค้าและจัดส่งให้โดยเร็วที่สุด'}
+          {/* Heading */}
+          <h1 className={styles.heading}>Thank you for your order!</h1>
+          <p className={styles.subtitle}>
+            Your order has been placed successfully. A confirmation email has been sent to{' '}
+            <span className={styles.subtitleEmail}>{user?.email || 'your email'}</span>.
           </p>
 
-          {/* Order number box (uses latest order if available) */}
-          <div
-            style={{
-              display: 'inline-block',
-              background: 'rgba(59,130,246,0.04)',
-              border: '2px dashed #3B82F6',
-              borderRadius: 16,
-              padding: '14px 20px',
-              marginBottom: 24,
-            }}
-          >
-            <div style={{ fontSize: 13, color: '#64748B', marginBottom: 4 }}>
-              {t('order.order_id')}
+          {/* Order Details Box */}
+          <div className={styles.orderDetailsBox}>
+            <div className={styles.orderDetailsHeader}>
+              <div className={styles.orderNumberSection}>
+                <p className={styles.orderLabel}>Order Number</p>
+                <p className={styles.orderNumber}>#{orderId}</p>
+              </div>
+              <div className={styles.orderDateSection}>
+                <p className={styles.orderLabel}>Placed On</p>
+                <p className={styles.orderDate}>{formatDate(latestOrder?.withdrawDate)}</p>
+              </div>
             </div>
-            <div
-              style={{
-                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                fontSize: 22,
-                fontWeight: 800,
-                color: '#2563EB',
-                letterSpacing: 1,
-              }}
-            >
-              {orderId ? `#${orderId}` : '#ORD-XXXX'}
+
+            {/* Order Summary Accordion */}
+            <div className={styles.accordionWrapper}>
+              <details open={showItems} onToggle={(e) => setShowItems(e.target.open)}>
+                <summary className={styles.accordionSummary}>
+                  <span className={styles.accordionTitle}>
+                    <span className={`material-symbols-outlined ${styles.accordionIcon}`}>shopping_bag</span>
+                    Order Summary ({itemsCount} Items)
+                  </span>
+                  <span className={styles.accordionArrow}>
+                    <span className="material-symbols-outlined">expand_more</span>
+                  </span>
+                </summary>
+                <div className={styles.accordionContent}>
+                  <ul className={styles.itemsList}>
+                    {items.map((item, idx) => (
+                      <li key={idx} className={styles.itemRow}>
+                        <div className={styles.itemInfo}>
+                          <span className={styles.itemName}>{item.productName || 'Product'}</span>
+                        </div>
+                        <span className={styles.itemQty}>x {item.quantity || 1}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className={styles.totalRow}>
+                    <span>Total</span>
+                    <span>฿{totalAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+              </details>
             </div>
           </div>
 
-          {/* Brief summary for this order if data is available */}
-          {(itemsCount != null || totalAmount != null) && (
-            <div
-              style={{
-                fontSize: 13,
-                color: '#64748B',
-                marginBottom: 8,
-              }}
-            >
-              {itemsCount != null && (
-                <span>
-                  {itemsCount} {t('common.items')}
-                </span>
-              )}
-              {itemsCount != null && totalAmount != null && ' · '}
-              {totalAmount != null && (
-                <span>
-                  {t('common.total')} ฿{totalAmount.toLocaleString()}
-                </span>
-              )}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
-              gap: 12,
-              marginTop: 8,
-            }}
-          >
-            <Link
-              to="/customer/orders"
-              style={{
-                padding: '12px 20px',
-                borderRadius: 12,
-                border: '2px solid #3B82F6',
-                color: '#3B82F6',
-                textDecoration: 'none',
-                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                fontWeight: 700,
-                fontSize: 14,
-                textAlign: 'center',
-              }}
-            >
-              📋 {t('message.view_orders')}
+          {/* Action Buttons */}
+          <div className={styles.actionButtons}>
+            <Link to={`/customer/orders/${latestOrder?.id || ''}`} className={styles.primaryButton}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>visibility</span>
+              View Order Details
             </Link>
-
-            <Link
-              to="/customer"
-              style={{
-                padding: '12px 20px',
-                borderRadius: 12,
-                background: 'linear-gradient(135deg,#2563EB,#1D4ED8)',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                fontWeight: 700,
-                fontSize: 14,
-                boxShadow: '0 4px 16px rgba(37,99,235,0.35)',
-                textAlign: 'center',
-              }}
-            >
-              🏠 {t('cart.continue_shopping')}
+            <Link to="/customer" className={styles.secondaryButton}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>arrow_back</span>
+              Back to Dashboard
             </Link>
           </div>
         </div>
-
-        {/* Removed follow-up steps card as requested */}
       </div>
+
+      {/* Help Text */}
+      <p className={styles.helpText}>
+        Need help? <Link to="/customer" className={styles.helpLink}>Contact Support</Link>
+      </p>
     </div>
   );
 }
-
