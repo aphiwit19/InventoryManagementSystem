@@ -164,12 +164,6 @@ export default function AdminOverviewPage() {
           <h1 className={styles.pageTitle}>Overview</h1>
           <p className={styles.pageSubtitle}>Welcome back, Admin. Here's what's happening today.</p>
         </div>
-        <div className={styles.headerActions}>
-          <button className={styles.addButton} onClick={() => navigate('/admin/products/new')}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>add</span>
-            Add Product
-          </button>
-        </div>
       </div>
 
       {/* KPI Cards */}

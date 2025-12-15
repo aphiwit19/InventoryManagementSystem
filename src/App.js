@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AddProductPage from './pages/admin/AddProductPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminBankAccountPage from './pages/admin/AdminBankAccountPage';
 import AdminAlertsPage from './pages/admin/AdminAlertsPage';
@@ -60,7 +60,7 @@ function App() {
               <Route path="orders/:id" element={<AdminOrderDetailPage />} />
               <Route path="coupons" element={<AdminCouponsPage />} />
               <Route path="users" element={<UsersPage />} />
-              <Route path="addproduct" element={<AdminDashboard />} />
+              <Route path="addproduct" element={<AddProductPage />} />
               <Route path="products/:id/edit" element={<EditProductPage />} />
               <Route path="products/:id/history" element={<InventoryHistoryPage />} />
               <Route path="inventory_history" element={<InventoryHistoryIndex />} />
