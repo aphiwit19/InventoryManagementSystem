@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { th, enUS } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
+import styles from './InventoryHistory.module.css';
 
 // Register locales
 registerLocale('th', th);
@@ -15,15 +16,14 @@ export default function InventoryHistoryIndex() {
   const [history, setHistory] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [typeFilter, setTypeFilter] = useState('all'); // all | in | out
+  const [typeFilter, setTypeFilter] = useState('all');
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   
-  // Get current locale for datepicker
   const currentLocale = i18n.language?.startsWith('en') ? 'en' : 'th';
   const dateFormat = currentLocale === 'en' ? 'MM/dd/yyyy' : 'dd/MM/yyyy';
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(8);
+  const [pageSize] = useState(10);
 
   useEffect(() => {
     const load = async () => {
@@ -31,7 +31,6 @@ export default function InventoryHistoryIndex() {
       setLoadingHistory(true);
       try {
         const list = await getAllProducts();
-        // load inventory history for all products
         const allRows = [];
         for (const p of list) {
           try {
@@ -41,6 +40,7 @@ export default function InventoryHistoryIndex() {
                 ...r,
                 productId: p.id,
                 productName: p.productName || '-',
+                productImage: p.image || '',
               });
             });
           } catch (e) {
@@ -57,16 +57,17 @@ export default function InventoryHistoryIndex() {
   }, []);
 
   const formatDate = (ts) => {
-    if (!ts) return '';
+    if (!ts) return { date: '-', time: '' };
     const d = ts.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleDateString('th-TH');
+    return {
+      date: d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }),
+      time: d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+    };
   };
 
-  // filter by date range and type
   const filteredHistory = useMemo(() => {
     let rows = history;
 
-    // filter by product name search
     if (search.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter((r) => (r.productName || '').toLowerCase().includes(q));
@@ -87,10 +88,8 @@ export default function InventoryHistoryIndex() {
         return ts <= end.getTime();
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (typeFilter !== 'all') rows = rows.filter(r => (r.type || 'in') === typeFilter);
 
-    // sort by date desc (latest first)
     const sorted = [...rows].sort((a, b) => {
       const ta = a.date?.toDate ? a.date.toDate().getTime() : new Date(a.date).getTime();
       const tb = b.date?.toDate ? b.date.toDate().getTime() : new Date(b.date).getTime();
@@ -118,15 +117,12 @@ export default function InventoryHistoryIndex() {
     }, 0);
   }, [filteredHistory]);
 
-  // pagination
   const totalPages = Math.max(1, Math.ceil(filteredHistory.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredHistory.slice(start, start + pageSize);
-  }, [filteredHistory, currentPage, pageSize]);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const pageItems = filteredHistory.slice(startIndex, endIndex);
 
-  // reset page when filters change
   useEffect(() => { setPage(1); }, [typeFilter, fromDate, toDate, search]);
 
   const handlePageChange = (p) => {
@@ -139,90 +135,57 @@ export default function InventoryHistoryIndex() {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-
     const pages = [];
     let start = currentPage - 2;
     let end = currentPage + 2;
-
-    if (start < 1) {
-      start = 1;
-      end = 5;
-    }
-
-    if (end > totalPages) {
-      end = totalPages;
-      start = totalPages - 4;
-    }
-
-    for (let i = start; i <= end; i += 1) {
-      pages.push(i);
-    }
-
+    if (start < 1) { start = 1; end = 5; }
+    if (end > totalPages) { end = totalPages; start = totalPages - 4; }
+    for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   };
 
-  return (
-    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
-      {/* Header */}
-      <div
-        style={{
-          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-          padding: '20px 24px',
-          borderRadius: 18,
-          marginBottom: 20,
-          boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
-          border: '1px solid rgba(255,255,255,0.9)',
-        }}
-      >
-        <h1 style={{ margin: 0, color: '#1e40af', fontSize: 24, fontWeight: 700 }}>{t('inventory.inventory_in_out_history')}</h1>
-        <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('inventory.view_all_movements')}</div>
-      </div>
+  const handleClearFilters = () => {
+    setSearch('');
+    setFromDate(null);
+    setToDate(null);
+    setTypeFilter('all');
+  };
 
-      {/* Filters */}
-      <div
-        style={{
-          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-          borderRadius: 18,
-          padding: '20px 24px',
-          boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
-          border: '1px solid rgba(255,255,255,0.9)',
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto auto', gap: 14, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
+  const getTypeBadge = (type) => {
+    if (type === 'out') {
+      return { class: styles.typeBadgeOut, icon: 'arrow_upward', label: t('inventory.stock_out') };
+    }
+    return { class: styles.typeBadgeIn, icon: 'arrow_downward', label: t('inventory.stock_in') };
+  };
+
+  return (
+    <div className={styles.pageContainer}>
+      <div className={styles.contentWrapper}>
+        {/* Page Header */}
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>{t('inventory.inventory_in_out_history')}</h1>
+            <p className={styles.pageSubtitle}>{t('inventory.view_all_movements')}</p>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div className={styles.toolbar}>
+          {/* Search */}
+          <div className={styles.searchWrapper}>
+            <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
             <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('inventory.search_product_name')}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '2px solid #e2e8f0',
-                borderRadius: 12,
-                fontSize: 14,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              className={styles.searchInput}
             />
           </div>
-          <button
-            onClick={() => { setSearch(''); setFromDate(''); setToDate(''); setTypeFilter('all'); }}
-            style={{
-              padding: '12px 20px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-              color: '#fff',
-              borderRadius: 12,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(100,116,139,0.3)',
-            }}
-          >
-            {t('common.clear')}
-          </button>
-          <div style={{ width: 150, flexShrink: 0 }}>
+
+          {/* From Date */}
+          <div className={styles.datePickerWrapper}>
+            <span className={`material-symbols-outlined ${styles.datePickerIcon}`}>calendar_today</span>
             <DatePicker
               selected={fromDate}
               onChange={(date) => setFromDate(date)}
@@ -230,25 +193,13 @@ export default function InventoryHistoryIndex() {
               dateFormat={dateFormat}
               placeholderText={t('common.from_date')}
               isClearable
-              customInput={
-                <input
-                  style={{
-                    padding: '12px 16px',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: 12,
-                    fontSize: 14,
-                    outline: 'none',
-                    color: '#1e40af',
-                    fontWeight: 500,
-                    width: '100%',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              }
+              className={styles.dateInput}
             />
           </div>
-          <div style={{ width: 150, flexShrink: 0 }}>
+
+          {/* To Date */}
+          <div className={styles.datePickerWrapper}>
+            <span className={`material-symbols-outlined ${styles.datePickerIcon}`}>calendar_today</span>
             <DatePicker
               selected={toDate}
               onChange={(date) => setToDate(date)}
@@ -256,200 +207,169 @@ export default function InventoryHistoryIndex() {
               dateFormat={dateFormat}
               placeholderText={t('common.to_date')}
               isClearable
-              customInput={
-                <input
-                  style={{
-                    padding: '12px 16px',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: 12,
-                    fontSize: 14,
-                    outline: 'none',
-                    color: '#1e40af',
-                    fontWeight: 500,
-                    width: '100%',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              }
+              className={styles.dateInput}
             />
           </div>
-          <select
-            value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value)}
-            style={{
-              padding: '12px 16px',
-              border: '2px solid #e2e8f0',
-              borderRadius: 12,
-              fontSize: 14,
-              outline: 'none',
-              color: '#1e40af',
-              fontWeight: 500,
-              background: '#fff',
-              cursor: 'pointer',
-              minWidth: 140,
-            }}
-          >
-            <option value="all">{t('common.all_types')}</option>
-            <option value="in">{t('inventory.stock_in')} (IN)</option>
-            <option value="out">{t('inventory.stock_out')} (OUT)</option>
-          </select>
-        </div>
-        {loadingProducts && (
-          <div style={{ marginTop: 12, color: '#64748b', fontSize: 14 }}>{t('inventory.loading_products')}</div>
-        )}
-      </div>
 
-      {/* Summary */}
-      {!loadingHistory && filteredHistory.length > 0 && (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-              color: '#fff',
-              padding: '10px 20px',
-              borderRadius: 12,
-              fontWeight: 600,
-              fontSize: 14,
-              boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
-            }}
-          >
-            📥 IN ฿{totalIn.toLocaleString()}
-          </span>
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              color: '#fff',
-              padding: '10px 20px',
-              borderRadius: 12,
-              fontWeight: 600,
-              fontSize: 14,
-              boxShadow: '0 2px 8px rgba(239,68,68,0.3)',
-            }}
-          >
-            📤 OUT ฿{totalOut.toLocaleString()}
-          </span>
-        </div>
-      )}
-
-      {/* List */}
-      <div
-        style={{
-          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-          borderRadius: 18,
-          boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
-          border: '1px solid rgba(255,255,255,0.9)',
-          overflow: 'hidden',
-        }}
-      >
-        {loadingHistory ? (
-          <div style={{ padding: 20, color:'#666' }}>{t('inventory.loading_history')}</div>
-        ) : pageItems.length === 0 ? (
-          <div style={{ padding: 20, color:'#777' }}>{t('inventory.no_data_found')}</div>
-        ) : (
-          <>
-            <div style={{ padding: '8px 8px 0 8px', color:'#666', textAlign:'right' }}>{t('common.page')} {currentPage} {t('common.of')} {totalPages} | {t('inventory.showing')} {pageItems.length} {t('common.of')} {filteredHistory.length}</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8, padding:8 }}>
-              {pageItems.map(h => {
-                const isOut = (h.type || 'in') === 'out';
-                const sign = isOut ? '-' : '+';
-                const color = isOut ? '#e53935' : '#2e7d32';
-                const unitCost = (h.costPrice === null || h.costPrice === undefined) ? null : parseFloat(h.costPrice || 0);
-                const total = unitCost === null ? 0 : unitCost * parseInt(h.quantity || 0);
-                return (
-                  <div key={h.id} style={{ display:'grid', gridTemplateColumns:'150px 1fr 120px', alignItems:'center', gap:12, padding:'14px 16px', border:'1px solid #eee', borderRadius:12 }}>
-                    <div style={{ color, fontWeight:700, fontSize:18 }}>฿{(isOut ? total : total).toLocaleString(undefined,{minimumFractionDigits:0})}</div>
-                    <div>
-                      <div style={{ fontWeight:700, marginBottom:6, fontSize:16, color:'#333' }}>{h.productName || '-'}</div>
-                      <div style={{ lineHeight:1.5 }}>
-                        <span style={{ background: isOut ? '#fdecea' : '#e8f5e9', color, padding:'4px 8px', borderRadius:12, fontSize:12, fontWeight:700 }}>{(h.type || 'in').toUpperCase()}</span>
-                        <span style={{ marginLeft:8, color:'#444', fontSize:14 }}>{t('common.quantity')} {sign}{parseInt(h.quantity || 0).toLocaleString()} | {t('inventory.cost_per_unit')} {unitCost === null ? '-' : `฿${unitCost.toLocaleString()}`}</span>
-                      </div>
-                      {h.source && <div style={{ marginTop:6, color:'#666', fontSize:13 }}>{t('inventory.history_source')}: {h.source}</div>}
-                    </div>
-                    <div style={{ textAlign:'right', color:'#666', fontSize:13 }}>{formatDate(h.date)}</div>
-                  </div>
-                );
-              })}
-            </div>
-
-          </>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 8,
-            padding: '20px 24px',
-            marginTop: 16,
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-            borderRadius: 18,
-            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
-            border: '1px solid rgba(255,255,255,0.9)',
-          }}
-        >
-          <button
-            disabled={currentPage === 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-            style={{
-              padding: '10px 18px',
-              border: '2px solid #e2e8f0',
-              borderRadius: 10,
-              background: currentPage === 1 ? '#f1f5f9' : '#fff',
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              color: currentPage === 1 ? '#94a3b8' : '#1e40af',
-              fontSize: 14,
-              fontWeight: 600,
-            }}
-          >
-            {t('common.previous')}
-          </button>
-          {buildPageRange().map((p) => (
-            <button
-              key={p}
-              onClick={() => handlePageChange(p)}
-              style={{
-                padding: '10px 16px',
-                border: currentPage === p ? 'none' : '2px solid #e2e8f0',
-                borderRadius: 10,
-                background: currentPage === p
-                  ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                  : '#fff',
-                color: currentPage === p ? '#fff' : '#374151',
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 600,
-                boxShadow: currentPage === p ? '0 2px 8px rgba(37,99,235,0.4)' : 'none',
-                minWidth: 44,
-              }}
+          {/* Type Filter */}
+          <div className={styles.selectWrapper}>
+            <span className={`material-symbols-outlined ${styles.selectIcon}`}>tune</span>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className={styles.selectInput}
             >
-              {p}
-            </button>
-          ))}
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-            style={{
-              padding: '10px 18px',
-              border: '2px solid #e2e8f0',
-              borderRadius: 10,
-              background: currentPage === totalPages ? '#f1f5f9' : '#fff',
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              color: currentPage === totalPages ? '#94a3b8' : '#1e40af',
-              fontSize: 14,
-              fontWeight: 600,
-            }}
-          >
-            {t('common.next')}
-          </button>
+              <option value="all">{t('common.all_types')}</option>
+              <option value="in">{t('inventory.stock_in')}</option>
+              <option value="out">{t('inventory.stock_out')}</option>
+            </select>
+            <span className={`material-symbols-outlined ${styles.selectArrow}`}>expand_more</span>
+          </div>
+
         </div>
-      )}
+
+        {/* Summary Cards */}
+        {!loadingHistory && filteredHistory.length > 0 && (
+          <div className={styles.summaryCards}>
+            <div className={`${styles.summaryCard} ${styles.summaryCardIn}`}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>arrow_downward</span>
+              Stock In: ฿{totalIn.toLocaleString()}
+            </div>
+            <div className={`${styles.summaryCard} ${styles.summaryCardOut}`}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>arrow_upward</span>
+              Stock Out: ฿{totalOut.toLocaleString()}
+            </div>
+          </div>
+        )}
+
+        {/* Table */}
+        <div className={styles.tableContainer}>
+          {loadingHistory || loadingProducts ? (
+            <div className={styles.loadingState}>
+              <p className={styles.loadingText}>{t('inventory.loading_history')}</p>
+            </div>
+          ) : pageItems.length === 0 ? (
+            <div className={styles.emptyState}>
+              <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: '#cbd5e1', marginBottom: '1rem', display: 'block' }}>inventory_2</span>
+              {t('inventory.no_data_found')}
+            </div>
+          ) : (
+            <>
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead className={styles.tableHead}>
+                    <tr>
+                      <th className={styles.tableHeadCell}>{t('common.date')}</th>
+                      <th className={styles.tableHeadCell}>{t('product.product')}</th>
+                      <th className={styles.tableHeadCell}>Type</th>
+                      <th className={styles.tableHeadCell}>{t('inventory.history_source')}</th>
+                      <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.quantity')}</th>
+                      <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('inventory.cost_per_unit')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className={styles.tableBody}>
+                    {pageItems.map((h) => {
+                      const isOut = (h.type || 'in') === 'out';
+                      const typeInfo = getTypeBadge(h.type || 'in');
+                      const { date, time } = formatDate(h.date);
+                      const unitCost = (h.costPrice === null || h.costPrice === undefined) ? null : parseFloat(h.costPrice || 0);
+
+                      return (
+                        <tr key={h.id} className={styles.tableRow}>
+                          <td className={styles.tableCell}>
+                            <span className={styles.dateText}>{date}</span>
+                          </td>
+                          <td className={styles.tableCell}>
+                            <div className={styles.productCell}>
+                              <div className={styles.productImage}>
+                                {h.productImage ? (
+                                  <img src={h.productImage} alt={h.productName} />
+                                ) : (
+                                  <span className="material-symbols-outlined" style={{ color: '#cbd5e1', fontSize: '1.25rem' }}>inventory_2</span>
+                                )}
+                              </div>
+                              <div className={styles.productInfo}>
+                                <span className={styles.productName}>{h.productName}</span>
+                                <span className={styles.productSku}>{h.productId?.slice(0, 8) || '-'}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className={styles.tableCell}>
+                            <span className={`${styles.typeBadge} ${typeInfo.class}`}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>{typeInfo.icon}</span>
+                              {typeInfo.label}
+                            </span>
+                          </td>
+                          <td className={styles.tableCell}>
+                            <span className={styles.reasonText}>
+                              {h.source || '-'}
+                            </span>
+                          </td>
+                          <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                            <span className={isOut ? styles.quantityNegative : styles.quantityPositive}>
+                              {isOut ? '-' : '+'}{parseInt(h.quantity || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                            <span className={styles.stockLevel}>
+                              {unitCost === null ? '-' : `฿${unitCost.toLocaleString()}`}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className={styles.pagination}>
+                  <div className={styles.paginationInfo}>
+                    Showing <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span> to <span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filteredHistory.length)}</span> of <span className={styles.paginationInfoHighlight}>{filteredHistory.length}</span> results
+                  </div>
+                  <div className={styles.paginationButtons}>
+                    <button
+                      className={styles.paginationArrow}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>chevron_left</span>
+                    </button>
+                    {buildPageRange().map((p) => (
+                      <button
+                        key={p}
+                        className={`${styles.paginationNumber} ${currentPage === p ? styles.paginationNumberActive : ''}`}
+                        onClick={() => handlePageChange(p)}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <>
+                        <span className={styles.paginationEllipsis}>...</span>
+                        <button
+                          className={styles.paginationNumber}
+                          onClick={() => handlePageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </button>
+                      </>
+                    )}
+                    <button
+                      className={styles.paginationArrow}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
-
