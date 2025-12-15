@@ -441,7 +441,7 @@ export default function CustomerWithdrawPage() {
                   <div className={styles.summaryRow}>
                     <span className={styles.summaryLabel}>Shipping Estimate</span>
                     <span className={styles.summaryValue}>
-                      {shippingFee === 0 ? (t('common.free') || 'FREE') : `฿${shippingFee.toLocaleString()}`}
+                      {shippingFee === 0 ? 'FREE' : `฿${shippingFee.toLocaleString()}`}
                     </span>
                   </div>
                   <div className={styles.summaryRow}>

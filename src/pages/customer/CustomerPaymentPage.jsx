@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart, validateAndUseCoupon, incrementCouponUsage } from '../../services';
 import { useTranslation } from 'react-i18next';
+import styles from './CustomerPaymentPage.module.css';
 
 export default function CustomerPaymentPage() {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export default function CustomerPaymentPage() {
   const [items, setItems] = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
-  const [loadingPaymentAccount, setLoadingPaymentAccount] = useState(true);
+  const [, setLoadingPaymentAccount] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requestedBy, setRequestedBy] = useState('');
   const [phone, setPhone] = useState('');
@@ -29,6 +30,9 @@ export default function CustomerPaymentPage() {
   const [, setSlipUploading] = useState(false);
   const [slipPreviewText, setSlipPreviewText] = useState('');
   
+  // Payment method tab
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  
   // Coupon states
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -36,6 +40,7 @@ export default function CustomerPaymentPage() {
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+
   const total = useMemo(
     () =>
       items.reduce((s, it) => {
@@ -46,6 +51,10 @@ export default function CustomerPaymentPage() {
   );
 
   const shippingFromCart = location.state && location.state.shipping ? location.state.shipping : null;
+  const shippingFee = 150; // Fixed shipping fee
+  const vat = Math.round((total - couponDiscount) * 0.07);
+  const finalTotal = total - couponDiscount + shippingFee + vat;
+  const totalItems = items.reduce((sum, it) => sum + (it.quantity || 0), 0);
 
   // Load cart items
   useEffect(() => {
@@ -84,19 +93,13 @@ export default function CustomerPaymentPage() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          // ดึงชื่อ
           const name = data.displayName || data.name || profile?.displayName || user.displayName || user.email || '';
           setRequestedBy(name);
-          
-          // ดึงเบอร์โทร
           const userPhone = data.phone || data.tel || '';
           setPhone(userPhone);
-          
-          // ดึงที่อยู่
           const userAddress = data.address || data.requestedAddress || '';
           setRequestedAddress(userAddress);
         } else {
-          // ถ้าไม่มีข้อมูลใน Firestore ให้ใช้จาก profile หรือ user
           setRequestedBy(profile?.displayName || user.displayName || user.email || '');
         }
       } catch (err) {
@@ -126,11 +129,11 @@ export default function CustomerPaymentPage() {
             qrUrl: data.qrUrl || '',
           });
         } else {
-          setPaymentAccountError('ยังไม่ได้ตั้งค่าบัญชีสำหรับชำระเงิน');
+          setPaymentAccountError('Payment account not configured');
         }
       } catch (e) {
         console.error('load paymentAccount failed:', e);
-        setPaymentAccountError('โหลดข้อมูลบัญชีสำหรับชำระเงินไม่สำเร็จ');
+        setPaymentAccountError('Failed to load payment account');
       } finally {
         setLoadingPaymentAccount(false);
       }
@@ -138,24 +141,24 @@ export default function CustomerPaymentPage() {
     loadPaymentAccount();
   }, []);
 
-  // ถ้ามีข้อมูลที่อยู่จากหน้าตะกร้า ให้ override ค่าในฟอร์ม (แต่ล็อกไม่ให้แก้ไขในหน้านี้)
+  // Override form values from cart shipping info
   useEffect(() => {
     if (!shippingFromCart) return;
     if (shippingFromCart.recipientName) {
       setRequestedBy(shippingFromCart.recipientName);
     }
-    if (shippingFromCart.recipientPhone) {
-      setPhone(shippingFromCart.recipientPhone);
+    if (shippingFromCart.phone) {
+      setPhone(shippingFromCart.phone);
     }
-    if (shippingFromCart.recipientAddress) {
-      setRequestedAddress(shippingFromCart.recipientAddress);
+    if (shippingFromCart.address) {
+      setRequestedAddress(shippingFromCart.address);
     }
   }, [shippingFromCart]);
 
   // Apply coupon
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      setCouponError('กรุณากรอกรหัสคูปอง');
+      setCouponError('Please enter a coupon code');
       return;
     }
 
@@ -167,9 +170,9 @@ export default function CustomerPaymentPage() {
       const result = await validateAndUseCoupon(couponCode, total);
       setAppliedCoupon(result.coupon);
       setCouponDiscount(result.discountAmount);
-      setCouponSuccess(`ใช้คูปองสำเร็จ! ลด ฿${result.discountAmount.toLocaleString()}`);
+      setCouponSuccess(`Coupon applied! -฿${result.discountAmount.toLocaleString()}`);
     } catch (err) {
-      setCouponError(err.message || 'ไม่สามารถใช้คูปองได้');
+      setCouponError(err.message || 'Invalid coupon');
       setAppliedCoupon(null);
       setCouponDiscount(0);
     } finally {
@@ -186,37 +189,33 @@ export default function CustomerPaymentPage() {
     setCouponSuccess('');
   };
 
-  // Calculate final total
-  const finalTotal = total - couponDiscount;
-
   const handleConfirm = async () => {
     setFormError('');
     if (!user?.uid) {
-      setFormError('กรุณาเข้าสู่ระบบก่อนทำรายการ');
+      setFormError('Please login to continue');
       return;
     }
     if (items.length === 0) {
-      setFormError('ยังไม่มีสินค้าในตะกร้า');
+      setFormError('Your cart is empty');
       return;
     }
     if (!requestedBy.trim() || !requestedAddress.trim()) {
-      setFormError('กรุณากรอกชื่อและที่อยู่ให้ครบ');
+      setFormError('Please fill in name and address');
       return;
     }
 
     if (!paymentAccount.bankName || !paymentAccount.accountName || !paymentAccount.accountNumber) {
-      setFormError('ไม่สามารถทำรายการได้: ระบบยังไม่ได้ตั้งค่าบัญชีสำหรับชำระเงิน');
+      setFormError('Payment account not configured');
       return;
     }
 
     if (!slipFile) {
-      setFormError('กรุณาอัปโหลดสลิปการโอนเงิน');
+      setFormError('Please upload payment slip');
       return;
     }
 
     setSaving(true);
     try {
-      // Upload slip image to Firebase Storage
       setSlipUploading(true);
       const path = `customer/payment-slips/${user.uid}/${Date.now()}_${slipFile.name}`;
       const storageRef = ref(storage, path);
@@ -260,7 +259,6 @@ export default function CustomerPaymentPage() {
         createdSource: 'customer'
       });
 
-      // Increment coupon usage if applied
       if (appliedCoupon) {
         await incrementCouponUsage(appliedCoupon.id);
       }
@@ -270,7 +268,7 @@ export default function CustomerPaymentPage() {
       navigate('/customer/payment/success');
     } catch (e) {
       console.error('Error confirming order:', e);
-      alert('ไม่สามารถยืนยันคำสั่งซื้อได้: ' + (e?.message || ''));
+      alert('Failed to confirm order: ' + (e?.message || ''));
     } finally {
       setSaving(false);
       setSlipUploading(false);
@@ -279,542 +277,320 @@ export default function CustomerPaymentPage() {
 
   const isLoading = loadingCart || loadingUser;
 
-  return (
-    <div style={{ padding: '30px', background: '#f0f4ff', minHeight: '100vh' }}>
-      {/* Step indicator */}
-      <div
-        style={{
-          maxWidth: 930,
-          margin: '0 auto 20px',
-          background: '#fff',
-          borderRadius: 16,
-          padding: '16px 24px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: 14,
-            fontWeight: 600
-          }}
-        >
-          <span style={{ color: '#4CAF50' }}>1 {t('payment.step_cart')}</span>
-          <span style={{ color: '#2e7d32', borderBottom: '2px solid #2e7d32', paddingBottom: 4 }}>
-            2 {t('payment.step_payment')}
-          </span>
-          <span style={{ color: '#9e9e9e' }}>3 {t('payment.step_complete')}</span>
-        </div>
-        <div
-          style={{
-            marginTop: 10,
-            height: 4,
-            borderRadius: 999,
-            background: 'linear-gradient(90deg,#4CAF50 0%,#4CAF50 50%,#e0e0e0 50%)'
-          }}
-        />
+  if (isLoading) {
+    return (
+      <div className={styles.loadingState}>
+        <p className={styles.loadingText}>{t('common.loading')}</p>
       </div>
+    );
+  }
 
-      <div
-        style={{
-          maxWidth: 930,
-          margin: '0 auto',
-          background: '#fff',
-          borderRadius: 24,
-          padding: '24px 24px 28px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-          boxSizing: 'border-box',
-        }}
-      >
-        <h2 style={{ textAlign: 'center', margin: '0 0 24px', fontSize: 24 }}>{t('payment.payment')}</h2>
+  if (items.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyStateIcon}>🛒</div>
+          <h2 className={styles.emptyStateTitle}>Your cart is empty</h2>
+          <p className={styles.emptyStateDesc}>Add some items to your cart before checkout.</p>
+          <Link to="/customer" className={styles.emptyStateButton}>
+            Browse Inventory
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-        {isLoading ? (
-          <p style={{ textAlign: 'center', color: '#777', padding: 40 }}>{t('common.loading')}</p>
-        ) : items.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: '#777', marginBottom: 16 }}>{t('cart.cart_empty_message')}</p>
-            <Link
-              to="/customer"
-              style={{
-                padding: '10px 20px',
-                background: '#4A90E2',
-                color: '#fff',
-                borderRadius: 999,
-                textDecoration: 'none',
-                fontWeight: 600
-              }}
-            >
-              {t('cart.go_shopping')}
-            </Link>
+  return (
+    <div className={styles.container}>
+      <div className={styles.mainGrid}>
+        {/* Left Column: Checkout Process */}
+        <div className={styles.leftColumn}>
+          {/* Page Header */}
+          <div className={styles.pageHeader}>
+            <h1 className={styles.pageTitle}>Checkout</h1>
+            <p className={styles.pageSubtitle}>Complete your purchase securely.</p>
           </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)',
-              gap: 24,
-              alignItems: 'flex-start',
-            }}
-          >
-            {/* Left: Payment (manual transfer) + read-only shipping info */}
-            <div
-              style={{
-                background: '#f9fafb',
-                borderRadius: 20,
-                padding: 20,
-                border: '1px solid #e5e7eb',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Payment section */}
-              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>{t('payment.payment')}</h3>
-              <div
-                style={{
-                  background: '#ffffff',
-                  borderRadius: 16,
-                  padding: 16,
-                  border: '1px solid #e5e7eb',
-                  marginBottom: 14,
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: 260,
-                    margin: '0 auto 12px',
-                    borderRadius: 16,
-                    background: '#f1f5f9',
-                    border: '1px dashed #cbd5e1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 16,
-                  }}
-                >
-                  {paymentAccount.qrUrl ? (
-                    <img
-                      src={paymentAccount.qrUrl}
-                      alt="QR สำหรับชำระเงิน"
-                      style={{ maxWidth: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 12 }}
-                    />
-                  ) : (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 40, marginBottom: 4 }}>💳</div>
-                      <div style={{ fontSize: 13, color: '#475569' }}>
-                        {loadingPaymentAccount
-                          ? t('payment.loading_payment_account')
-                          : t('payment.no_qr')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {/* removed time limit helper text */}
-                {paymentAccount.bankName && (
-                  <div
-                    style={{
-                      marginTop: 4,
-                      padding: '10px 12px',
-                      borderRadius: 12,
-                      background: '#eff6ff',
-                      border: '1px solid #bfdbfe',
-                      fontSize: 13,
-                      color: '#1e40af',
-                    }}
-                  >
-                    <div style={{ fontWeight: 700 }}>{paymentAccount.bankName}</div>
-                    <div style={{ marginTop: 2 }}>{paymentAccount.accountName}</div>
-                    <div style={{ marginTop: 2 }}>{t('payment.account_number')}: {paymentAccount.accountNumber}</div>
-                    {paymentAccount.note && (
-                      <div style={{ marginTop: 4, fontSize: 12, color: '#334155' }}>{paymentAccount.note}</div>
-                    )}
-                  </div>
-                )}
-                {paymentAccountError && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: '8px 10px',
-                      borderRadius: 10,
-                      background: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      color: '#b91c1c',
-                      fontSize: 12,
-                    }}
-                  >
-                    {paymentAccountError}
-                  </div>
-                )}
-              </div>
 
-              {/* Slip upload + basic transfer info (UI only) */}
-              <div
-                style={{
-                  background: '#ffffff',
-                  borderRadius: 16,
-                  padding: 16,
-                  border: '1px solid #e5e7eb',
-                  marginBottom: 18,
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#374151' }}>
-                  {t('payment.notify_payment')}
-                </div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-                  <div style={{ flex: 1, minWidth: 120 }}>
-                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_date')}</div>
-                    <input
-                      type="date"
-                      style={{
-                        width: 'calc(100% - 50px)',
-                        margin: '0 auto',
-                        padding: '8px 10px',
-                        borderRadius: 10,
-                        border: '1px solid #d1d5db',
-                        fontSize: 13,
-                      }}
-                    />
+          {/* Step 1: Shipping Address */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>
+                <span className={styles.stepNumber}>1</span>
+                Shipping Address
+              </h3>
+            </div>
+            <div className={styles.addressCard}>
+              <div className={styles.addressContent}>
+                <div className={styles.addressInfo}>
+                  <div className={styles.addressDetails}>
+                    <div className={styles.addressHeader}>
+                      <span className={`material-symbols-outlined ${styles.addressIcon}`}>location_on</span>
+                      <p className={styles.addressName}>{requestedBy || 'No name'}</p>
+                    </div>
+                    <p className={styles.addressText}>
+                      {requestedAddress || 'No address provided'}
+                      {phone && <><br />{phone}</>}
+                    </p>
                   </div>
-                  <div style={{ width: 120 }}>
-                    <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_time')}</div>
-                    <input
-                      type="time"
-                      style={{
-                        width: 'calc(100% - 50px)',
-                        margin: '0 auto',
-                        padding: '8px 10px',
-                        borderRadius: 10,
-                        border: '1px solid #d1d5db',
-                        fontSize: 13,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>{t('order.transfer_amount')}</div>
-                  <input
-                    type="text"
-                    value={`฿${finalTotal.toLocaleString()}`}
-                    readOnly
-                    style={{
-                      width: 'calc(100% - 50px)',
-                      margin: '0 auto',
-                      padding: '8px 10px',
-                      borderRadius: 10,
-                      border: '1px solid #d1d5db',
-                      fontSize: 13,
-                      background: '#f9fafb',
-                    }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, marginBottom: 6, color: '#6b7280' }}>{t('order.upload_slip')}</div>
-                  <label
-                    style={{
-                      display: 'block',
-                      padding: '10px 12px',
-                      borderRadius: 12,
-                      border: slipFile ? '1px solid #4ade80' : '1px dashed #cbd5e1',
-                      background: slipFile ? '#ecfdf3' : '#f8fafc',
-                      textAlign: 'center',
-                      fontSize: 13,
-                      color: slipFile ? '#166534' : '#475569',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
+                  <button 
+                    className={styles.changeButton}
+                    onClick={() => navigate('/customer/withdraw')}
                   >
-                    {slipFile ? `${t('order.slip_uploaded')} (${t('order.click_to_change')})` : t('order.select_slip_file')}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setSlipFile(file);
-                        setSlipPreviewText(file.name);
-                      }}
-                    />
-                  </label>
-                  {slipFile && (
-                    <div style={{ fontSize: 11, color: '#16a34a', marginTop: 4 }}>
-                      {t('order.slip_uploaded')}: {slipPreviewText}
-                    </div>
-                  )}
-                  {!slipFile && (
-                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
-                      {slipPreviewText}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-                    {t('order.slip_file_hint')}
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipping address (read-only) */}
-              <div
-                style={{
-                  background: '#f9fafb',
-                  borderRadius: 16,
-                  padding: 16,
-                  border: '1px solid #e5e7eb',
-                }}
-              >
-                <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>{t('order.shipping_address')}</h4>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        marginBottom: 4,
-                        color: '#374151',
-                      }}
-                    >
-                      {t('auth.full_name')}
-                    </div>
-                    <input
-                      type="text"
-                      value={requestedBy}
-                      readOnly
-                      style={{
-                        width: 'calc(100% - 50px)',
-                        margin: '0 auto',
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        border: '1px solid #d1d5db',
-                        background: '#ffffff',
-                        fontSize: 13,
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        marginBottom: 4,
-                        color: '#374151',
-                      }}
-                    >
-                      {t('common.phone')}
-                    </div>
-                    <input
-                      type="tel"
-                      value={phone}
-                      readOnly
-                      style={{
-                        width: 'calc(100% - 50px)',
-                        margin: '0 auto',
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        border: '1px solid #d1d5db',
-                        background: '#ffffff',
-                        fontSize: 13,
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        marginBottom: 4,
-                        color: '#374151',
-                      }}
-                    >
-                      {t('order.shipping_address')}
-                    </div>
-                    <textarea
-                      value={requestedAddress}
-                      readOnly
-                      rows={3}
-                      style={{
-                        width: 'calc(100% - 50px)',
-                        margin: '0 auto',
-                        padding: '8px 12px',
-                        borderRadius: 14,
-                        border: '1px solid #d1d5db',
-                        background: '#ffffff',
-                        fontSize: 13,
-                        resize: 'vertical',
-                        fontFamily: 'inherit',
-                      }}
-                    />
-                  </div>
+                    Change
+                  </button>
                 </div>
               </div>
             </div>
+          </section>
 
-            {/* Order summary */}
-            <div
-              style={{
-                background: '#f9fafb',
-                borderRadius: 20,
-                padding: 20,
-                border: '1px solid #e5e7eb'
-              }}
-            >
-              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 16 }}>{t('order.order_summary')}</h3>
-              <div style={{ marginBottom: 12, fontSize: 14, color: '#4b5563' }}>
-                {items.map((it, idx) => {
-                  const unitPrice = it.price ?? it.sellPrice ?? 0;
+          {/* Step 2: Payment Method */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>
+                <span className={styles.stepNumber}>2</span>
+                Payment Method
+              </h3>
+              <div className={styles.securityBadge}>
+                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
+                <span className={styles.securityText}>Encrypted</span>
+              </div>
+            </div>
+            <div className={styles.paymentCard}>
+              {/* Payment Tabs */}
+              <div className={styles.paymentTabs}>
+                                <button 
+                  className={`${styles.paymentTab} ${paymentMethod === 'bank_transfer' ? styles.paymentTabActive : ''}`}
+                  onClick={() => setPaymentMethod('bank_transfer')}
+                >
+                  <span className={`material-symbols-outlined ${styles.paymentTabIcon}`}>account_balance</span>
+                  <span className={styles.paymentTabText}>Bank Transfer</span>
+                </button>
+                <button 
+                  className={`${styles.paymentTab} ${paymentMethod === 'promptpay' ? styles.paymentTabActive : ''}`}
+                  onClick={() => setPaymentMethod('promptpay')}
+                >
+                  <span className={`material-symbols-outlined ${styles.paymentTabIcon}`}>qr_code_scanner</span>
+                  <span className={styles.paymentTabText}>PromptPay</span>
+                </button>
+              </div>
+
+              {/* Payment Content */}
+              <div className={styles.paymentContent}>
+                
+                {paymentMethod === 'bank_transfer' && (
+                  <div className={styles.formGrid}>
+                    {/* Bank Info */}
+                    {paymentAccount.bankName && (
+                      <div className={styles.bankInfo}>
+                        <div className={styles.bankLogo}>
+                          {paymentAccount.bankName.substring(0, 4).toUpperCase()}
+                        </div>
+                        <div className={styles.bankDetails}>
+                          <p className={styles.bankName}>{paymentAccount.bankName}</p>
+                          <p className={styles.bankAccountName}>{paymentAccount.accountName}</p>
+                          <p className={styles.bankAccountNumber}>{paymentAccount.accountNumber}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentAccountError && (
+                      <div className={styles.errorMessage}>{paymentAccountError}</div>
+                    )}
+
+                    {/* Upload Slip */}
+                    <label className={styles.uploadArea}>
+                      <span className={`material-symbols-outlined ${styles.uploadIcon}`}>cloud_upload</span>
+                      <p className={styles.uploadTitle}>Upload Payment Slip</p>
+                      <p className={styles.uploadDesc}>Drag and drop or click to browse</p>
+                      <p className={styles.uploadHint}>JPG, PNG or PDF up to 5MB</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setSlipFile(file);
+                          setSlipPreviewText(file.name);
+                        }}
+                      />
+                    </label>
+                    {slipFile && (
+                      <div className={styles.uploadPreview}>
+                        <span className={`material-symbols-outlined ${styles.uploadPreviewIcon}`}>check_circle</span>
+                        <span className={styles.uploadPreviewText}>{slipPreviewText}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {paymentMethod === 'promptpay' && (
+                  <div className={styles.formGrid}>
+                    {/* QR Code */}
+                    <div className={styles.qrSection}>
+                      <div className={styles.qrImage}>
+                        {paymentAccount.qrUrl ? (
+                          <img src={paymentAccount.qrUrl} alt="PromptPay QR" />
+                        ) : (
+                          <span className="material-symbols-outlined" style={{ fontSize: '4rem', color: '#9ca3af' }}>qr_code_2</span>
+                        )}
+                      </div>
+                      <p className={styles.qrText}>
+                        Scan QR code to pay ฿{finalTotal.toLocaleString()}
+                      </p>
+                    </div>
+
+                    {/* Upload Slip */}
+                    <label className={styles.uploadArea}>
+                      <span className={`material-symbols-outlined ${styles.uploadIcon}`}>cloud_upload</span>
+                      <p className={styles.uploadTitle}>Upload Payment Slip</p>
+                      <p className={styles.uploadDesc}>Drag and drop or click to browse</p>
+                      <p className={styles.uploadHint}>JPG, PNG or PDF up to 5MB</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setSlipFile(file);
+                          setSlipPreviewText(file.name);
+                        }}
+                      />
+                    </label>
+                    {slipFile && (
+                      <div className={styles.uploadPreview}>
+                        <span className={`material-symbols-outlined ${styles.uploadPreviewIcon}`}>check_circle</span>
+                        <span className={styles.uploadPreviewText}>{slipPreviewText}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column: Order Summary */}
+        <aside className={styles.rightColumn}>
+          <div className={styles.summarySticky}>
+            <div className={styles.summaryCard}>
+              <div className={styles.summaryHeader}>
+                <h3 className={styles.summaryTitle}>Order Summary</h3>
+                <Link to="/customer/withdraw" className={styles.editOrderLink}>Edit Order</Link>
+              </div>
+
+              {/* Product List */}
+              <div className={styles.productList}>
+                {items.map((item, idx) => {
+                  const unitPrice = item.price ?? item.sellPrice ?? 0;
                   return (
-                    <div
-                      key={it.productId ?? it.id ?? idx}
-                      style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}
-                    >
-                      <span>
-                        {it.productName} x {it.quantity}
-                      </span>
-                      <span>฿{(unitPrice * (it.quantity || 0)).toLocaleString()}</span>
+                    <div key={item.productId ?? item.id ?? idx} className={styles.productItem}>
+                      <div 
+                        className={styles.productImage}
+                        style={{ backgroundImage: item.image ? `url('${item.image}')` : 'none' }}
+                      />
+                      <div className={styles.productInfo}>
+                        <div className={styles.productHeader}>
+                          <h4 className={styles.productName}>{item.productName}</h4>
+                          <p className={styles.productPrice}>฿{(unitPrice * item.quantity).toLocaleString()}</p>
+                        </div>
+                        <p className={styles.productSku}>
+                          {item.variantSize && `Size: ${item.variantSize}`}
+                          {item.variantSize && item.variantColor && ' | '}
+                          {item.variantColor && `Color: ${item.variantColor}`}
+                        </p>
+                        <span className={styles.productQty}>Qty: {item.quantity}</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              <hr style={{ border: 0, borderTop: '1px solid #e5e7eb', margin: '10px 0' }} />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: 4,
-                  fontSize: 14
-                }}
-              >
-                <span>{t('order.product_total')}</span>
-                <span>฿{total.toLocaleString()}</span>
-              </div>
 
-              {/* Coupon Section */}
-              {!appliedCoupon ? (
-                <div style={{ marginBottom: 12, padding: '12px', background: '#f9fafb', borderRadius: 10, border: '1px dashed #d1d5db' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>🎫 มีรหัสส่วนลด?</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="กรอกรหัสคูปอง"
-                      style={{ flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleApplyCoupon}
-                      disabled={applyingCoupon}
-                      style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: applyingCoupon ? 'not-allowed' : 'pointer', opacity: applyingCoupon ? 0.6 : 1 }}
-                    >
-                      {applyingCoupon ? 'กำลังตรวจสอบ...' : 'ใช้'}
-                    </button>
-                  </div>
-                  {couponError && <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>{couponError}</div>}
-                  {couponSuccess && <div style={{ marginTop: 6, fontSize: 12, color: '#059669' }}>{couponSuccess}</div>}
-                </div>
-              ) : (
-                <div style={{ marginBottom: 12, padding: '12px', background: '#d1fae5', borderRadius: 10, border: '1px solid #10b981' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>🎫 {appliedCoupon.code}</div>
-                      <div style={{ fontSize: 12, color: '#047857', marginTop: 2 }}>ลด ฿{couponDiscount.toLocaleString()}</div>
+              {/* Discount Code */}
+              <div className={styles.discountSection}>
+                {!appliedCoupon ? (
+                  <>
+                    <div className={styles.discountInputWrapper}>
+                      <input
+                        type="text"
+                        className={styles.discountInput}
+                        placeholder="Discount Code"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      />
+                      <button 
+                        className={styles.discountButton}
+                        onClick={handleApplyCoupon}
+                        disabled={applyingCoupon}
+                      >
+                        {applyingCoupon ? '...' : 'Apply'}
+                      </button>
                     </div>
-                    <button
-                      type="button"
+                    {couponError && <p className={styles.discountError}>{couponError}</p>}
+                    {couponSuccess && <p className={styles.discountSuccess}>{couponSuccess}</p>}
+                  </>
+                ) : (
+                  <div className={styles.discountInputWrapper}>
+                    <span className={styles.discountSuccess}>🎫 {appliedCoupon.code} applied!</span>
+                    <button 
+                      className={styles.discountButton}
                       onClick={handleRemoveCoupon}
-                      style={{ padding: '4px 8px', background: '#fff', border: '1px solid #10b981', borderRadius: 6, fontSize: 12, color: '#059669', cursor: 'pointer' }}
                     >
-                      ลบ
+                      Remove
                     </button>
                   </div>
-                </div>
-              )}
-
-              {/* Discount */}
-              {couponDiscount > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: 4,
-                    fontSize: 14,
-                    color: '#059669'
-                  }}
-                >
-                  <span>ส่วนลด</span>
-                  <span>-฿{couponDiscount.toLocaleString()}</span>
-                </div>
-              )}
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: 12,
-                  fontSize: 14
-                }}
-              >
-                <span>{t('order.shipping_fee')}</span>
-                <span>{t('order.shipping_fee_note')}</span>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 16
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>{t('order.grand_total')}</span>
-                <span style={{ fontWeight: 700, fontSize: 20, color: couponDiscount > 0 ? '#059669' : '#000' }}>
-                  ฿{finalTotal.toLocaleString()}
-                </span>
+                )}
               </div>
 
-              {formError && (
-                <div
-                  style={{
-                    background: '#fef2f2',
-                    border: '1px solid #fecaca',
-                    color: '#dc2626',
-                    padding: '10px 14px',
-                    borderRadius: 10,
-                    marginBottom: 12,
-                    fontSize: 14,
-                    textAlign: 'center',
-                  }}
-                >
-                  {formError}
+              {/* Calculations */}
+              <div className={styles.calculations}>
+                <div className={styles.calcRow}>
+                  <span>Subtotal ({totalItems} items)</span>
+                  <span className={styles.calcValue}>฿{total.toLocaleString()}</span>
                 </div>
-              )}
+                <div className={styles.calcRow}>
+                  <span>Shipping</span>
+                  <span className={styles.calcValue}>฿{shippingFee.toLocaleString()}</span>
+                </div>
+                {couponDiscount > 0 && (
+                  <div className={`${styles.calcRow} ${styles.calcRowDiscount}`}>
+                    <span>Discount ({appliedCoupon?.code})</span>
+                    <span className={styles.calcValue}>-฿{couponDiscount.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className={styles.calcRow}>
+                  <span>VAT (7%)</span>
+                  <span className={styles.calcValue}>฿{vat.toLocaleString()}</span>
+                </div>
+                <div className={styles.calcDivider}></div>
+                <div className={styles.calcTotal}>
+                  <span className={styles.calcTotalLabel}>Total Amount</span>
+                  <span className={styles.calcTotalValue}>฿{finalTotal.toLocaleString()}</span>
+                </div>
 
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={saving}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: 999,
-                  border: 'none',
-                  background: saving ? '#9ca3af' : 'linear-gradient(90deg,#2563EB,#1D4ED8)',
-                  color: '#fff',
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 4px 10px rgba(37,99,235,0.35)'
-                }}
-              >
-                {saving ? t('order.confirming_order') : t('order.confirm_order')}
-              </button>
+                {formError && (
+                  <div className={styles.errorMessage} style={{ marginTop: '1rem' }}>
+                    {formError}
+                  </div>
+                )}
+
+                <button 
+                  className={styles.payButton}
+                  onClick={handleConfirm}
+                  disabled={saving}
+                >
+                  {saving ? 'Processing...' : 'Pay Now'}
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+                <p className={styles.securePaymentText}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>verified_user</span>
+                  Payments are secure and encrypted
+                </p>
+              </div>
             </div>
           </div>
-        )}
+        </aside>
       </div>
     </div>
   );
