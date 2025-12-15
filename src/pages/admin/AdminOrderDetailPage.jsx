@@ -75,10 +75,23 @@ export default function AdminOrderDetailPage() {
 
   if (!order) {
     return (
-      <div style={{ padding: 24 }}>
+      <div style={{ padding: 24, background: '#f8f9fc', minHeight: '100vh', boxSizing: 'border-box' }}>
         <div style={{ background: '#fff', borderRadius: 8, padding: 24 }}>
           <p>{t('order.no_orders_found')}</p>
-          <button type="button" onClick={handleBack} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>
+          <button
+            type="button"
+            onClick={handleBack}
+            style={{
+              padding: '10px 16px',
+              borderRadius: 10,
+              border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+            }}
+          >
             {t('order.back_to_orders')}
           </button>
         </div>
@@ -97,7 +110,7 @@ export default function AdminOrderDetailPage() {
   ).toLocaleDateString('th-TH');
 
   return (
-    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div style={{ padding: '32px 24px', background: '#f8f9fc', minHeight: '100vh', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         {/* Header Card */}
         <div
@@ -468,7 +481,7 @@ export default function AdminOrderDetailPage() {
               border: 'none',
               background: saving || !canSave()
                 ? '#9ca3af'
-                : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
               color: '#fff',
               cursor: saving || !canSave() ? 'not-allowed' : 'pointer',
               fontSize: 16,

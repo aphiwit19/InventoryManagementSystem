@@ -5,9 +5,11 @@ import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDef
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { Link } from 'react-router-dom';
+import styles from './ProfilePage.module.css';
 
 export default function ProfilePage() {
-  useTranslation();
+  const { t } = useTranslation();
   const { user, profile } = useAuth();
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -313,163 +315,212 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '32px 24px', background: '#f3f4f6', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-          <div style={{ fontSize: '1.2rem', color: '#64748B' }}>กำลังโหลดข้อมูล...</div>
+      <div className={styles.loadingPage}>
+        <div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', textAlign: 'center' }}>⏳</div>
+          <div style={{ fontSize: '1.05rem', color: '#64748b', textAlign: 'center' }}>{t('common.loading') || 'กำลังโหลดข้อมูล...'}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '32px 24px', background: '#f3f4f6', minHeight: '100vh' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', maxWidth: 1400, margin: '0 auto' }}>
-        
+    <div className={styles.page}>
+      <div className={styles.content}>
+        <div className={styles.breadcrumbs}>
+          <Link className={styles.breadcrumbLink} to="/admin/dashboard">{t('common.dashboard') || 'Dashboard'}</Link>
+          <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
+          <Link className={styles.breadcrumbLink} to="/admin/profile">{t('common.settings') || 'Settings'}</Link>
+          <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
+          <span className={styles.breadcrumbCurrent}>{t('common.profile') || 'Profile'}</span>
+        </div>
+
+        <div className={styles.heading}>
+          <h1 className={styles.title}>{t('common.profile') || 'My Profile'} / โปรไฟล์ของฉัน</h1>
+          <p className={styles.subtitle}>{t('common.manage_profile') || 'Manage your personal information and system preferences.'}</p>
+        </div>
+
         {/* Left: Profile Card */}
-        <div>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', textAlign: 'center', position: 'sticky', top: 20 }}>
-            <div style={{ width: 120, height: 120, background: photoURL ? 'transparent' : 'linear-gradient(135deg, #6366F1, #8B5CF6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', margin: '0 auto 1.5rem', boxShadow: '0 8px 24px rgba(99,102,241,0.3)', overflow: 'hidden', position: 'relative' }}>
-              {photoURL ? (
-                <img src={photoURL} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                '👤'
-              )}
-              {uploadingPhoto && (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1rem' }}>
-                  ⏳
+        <div className={styles.card}>
+          <div className={styles.cardBody}>
+            <div className={styles.profileHeader}>
+              <div className={styles.avatarWrap}>
+                <div className={styles.avatar}>
+                  {photoURL ? (
+                    <img className={styles.avatarImg} src={photoURL} alt="Profile" />
+                  ) : (
+                    <span className={styles.avatarPlaceholder}>👤</span>
+                  )}
+                  {uploadingPhoto && (
+                    <div className={styles.avatarOverlay}>⏳</div>
+                  )}
                 </div>
-              )}
+                <label htmlFor="avatar-upload" className={styles.avatarCameraButton} title={t('common.change_photo') || 'Change Photo'}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
+                </label>
+              </div>
+
+              <div className={styles.profileInfo}>
+                <h2 className={styles.profileName}>{profile?.displayName || 'Admin'}</h2>
+                <p className={styles.profileRole}>{profile?.email || user?.email || '-'}</p>
+
+                <div className={styles.buttonRow}>
+                  <label
+                    htmlFor="avatar-upload"
+                    className={`${styles.button} ${styles.buttonSecondary} ${uploadingPhoto ? styles.buttonDisabled : ''}`}
+                  >
+                    {uploadingPhoto ? (t('message.uploading') || 'Uploading...') : (t('common.change_photo') || 'Change Photo')}
+                  </label>
+                </div>
+              </div>
             </div>
-            <h2 style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.8rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.5rem' }}>
-              {profile?.displayName || 'Staff'}
-            </h2>
-            <p style={{ color: '#475569', marginBottom: '0.3rem' }}>{profile?.email || 'staff@company.com'}</p>
-            <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginBottom: '2rem' }}>ID: STAFF-001</p>
-            
-            <input 
-              type="file" 
-              accept="image/*" 
+
+            <input
+              type="file"
+              accept="image/*"
               onChange={handleUploadPhoto}
               disabled={uploadingPhoto}
-              style={{ display: 'none' }} 
+              style={{ display: 'none' }}
               id="avatar-upload"
             />
-            <label 
-              htmlFor="avatar-upload"
-              style={{ 
-                width: '100%', 
-                padding: '0.8rem', 
-                background: uploadingPhoto ? '#9ca3af' : '#F1F5F9', 
-                border: '2px dashed #E2E8F0', 
-                borderRadius: 10, 
-                color: uploadingPhoto ? '#fff' : '#475569', 
-                fontWeight: 600, 
-                cursor: uploadingPhoto ? 'not-allowed' : 'pointer', 
-                transition: 'all 0.2s',
-                display: 'block'
-              }}
-            >
-              {uploadingPhoto ? '⏳ กำลังอัพโหลด...' : '📸 เปลี่ยนรูปโปรไฟล์'}
-            </label>
           </div>
         </div>
 
         {/* Right: Profile Details */}
         <div>
           {/* Personal Information */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>📋 ข้อมูลส่วนตัว</span>
-              <button 
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Personal Information</h3>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonSecondary}`}
                 onClick={() => setEditingPersonal(!editingPersonal)}
-                style={{ padding: '0.5rem 1rem', background: '#3B82F6', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
               >
-                {editingPersonal ? '❌ ยกเลิก' : '✏️ แก้ไข'}
+                {editingPersonal ? (t('common.cancel') || 'Cancel') : (t('common.edit') || 'Edit')}
               </button>
             </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>ชื่อ</label>
-                <input 
-                  type="text" 
-                  disabled={!editingPersonal} 
-                  value={formData.firstName} 
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>นามสกุล</label>
-                <input 
-                  type="text" 
-                  disabled={!editingPersonal} 
-                  value={formData.lastName} 
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>เบอร์โทรศัพท์</label>
-                <input 
-                  type="tel" 
-                  disabled={!editingPersonal} 
-                  value={formData.phone} 
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>วันเกิด</label>
-                <input 
-                  type="date" 
-                  disabled={!editingPersonal} 
-                  value={formData.birthDate} 
-                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: editingPersonal ? '#fff' : '#F1F5F9', color: editingPersonal ? '#0F172A' : '#94A3B8' }} 
-                />
-              </div>
-            </div>
+            <div className={styles.cardBody}>
+              <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+                <div className={styles.formGrid}>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="firstName">
+                      First Name <span className={styles.labelHint}>/ ชื่อจริง</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <input
+                        id="firstName"
+                        type="text"
+                        className={`${styles.input} ${!editingPersonal ? styles.inputDisabled : ''}`}
+                        disabled={!editingPersonal}
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>อีเมล</label>
-              <input type="email" disabled defaultValue={profile?.email || 'staff@company.com'} style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', background: '#F1F5F9', color: '#94A3B8' }} />
-            </div>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="lastName">
+                      Last Name <span className={styles.labelHint}>/ นามสกุล</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <input
+                        id="lastName"
+                        type="text"
+                        className={`${styles.input} ${!editingPersonal ? styles.inputDisabled : ''}`}
+                        disabled={!editingPersonal}
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-            <button 
-              onClick={handleSaveProfile}
-              disabled={saving || !editingPersonal}
-              style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                background: (saving || !editingPersonal) ? '#9ca3af' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: 12, 
-                fontFamily: "'Kanit', sans-serif", 
-                fontWeight: 700, 
-                fontSize: '1.1rem', 
-                cursor: (saving || !editingPersonal) ? 'not-allowed' : 'pointer', 
-                boxShadow: (saving || !editingPersonal) ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' 
-              }}
-            >
-              {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
-            </button>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="phone">
+                      Phone Number <span className={styles.labelHint}>/ เบอร์โทรศัพท์</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <span className={`material-symbols-outlined ${styles.iconLeft}`}>call</span>
+                      <input
+                        id="phone"
+                        type="tel"
+                        className={`${styles.input} ${styles.inputWithIconLeft} ${!editingPersonal ? styles.inputDisabled : ''}`}
+                        disabled={!editingPersonal}
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="birthDate">
+                      Birth Date <span className={styles.labelHint}>/ วันเกิด</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <input
+                        id="birthDate"
+                        type="date"
+                        className={`${styles.input} ${!editingPersonal ? styles.inputDisabled : ''}`}
+                        disabled={!editingPersonal}
+                        value={formData.birthDate}
+                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
+                    <label className={styles.label} htmlFor="email">
+                      Email Address <span className={styles.labelHint}>/ อีเมล</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <span className={`material-symbols-outlined ${styles.iconLeft}`}>mail</span>
+                      <input
+                        id="email"
+                        type="email"
+                        className={`${styles.input} ${styles.inputWithIconLeft} ${styles.inputWithIconRight} ${styles.inputDisabled}`}
+                        disabled
+                        value={profile?.email || user?.email || ''}
+                        readOnly
+                      />
+                      <span className={`material-symbols-outlined ${styles.iconRight}`}>lock</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.actionBar}>
+                  <button
+                    type="button"
+                    className={`${styles.button} ${styles.buttonSecondary} ${styles.actionButton}`}
+                    onClick={() => setEditingPersonal(false)}
+                  >
+                    {t('common.cancel') || 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.button} ${styles.buttonPrimary} ${styles.actionButton} ${(saving || !editingPersonal) ? styles.buttonDisabled : ''}`}
+                    onClick={handleSaveProfile}
+                    disabled={saving || !editingPersonal}
+                  >
+                    {saving ? (t('message.saving') || 'Saving...') : (t('common.save_changes') || 'Save Changes')}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
 
           {/* Shipping Addresses */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0' }}>
-              <span>📍 ที่อยู่จัดส่ง</span>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Shipping Addresses</h3>
+              <span className={styles.cardMeta}>{t('common.address') || 'Address'}</span>
             </div>
 
+            <div className={styles.cardBody}>
+
             {addresses.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8' }}>
-                ยังไม่มีที่อยู่ กดปุ่มด้านล่างเพื่อเพิ่มที่อยู่
+              <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94A3B8' }}>
+                {t('common.no_data') || 'ยังไม่มีที่อยู่ กดปุ่มด้านล่างเพื่อเพิ่มที่อยู่'}
               </div>
             ) : (
               <div style={{ display: 'grid', gap: '1rem' }}>
@@ -522,129 +573,130 @@ export default function ProfilePage() {
 
             <button 
               onClick={openAddAddressModal}
-              style={{ width: '100%', padding: '1rem', background: '#F1F5F9', border: '2px dashed #E2E8F0', borderRadius: 12, color: '#475569', fontWeight: 600, cursor: 'pointer', marginTop: '1rem' }}
+              type="button"
+              className={`${styles.button} ${styles.buttonSecondary}`}
+              style={{ width: '100%', marginTop: '1rem' }}
             >
               ➕ เพิ่มที่อยู่ใหม่
             </button>
           </div>
 
+          </div>
+
           {/* Change Password */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0' }}>
-              <span>🔒 เปลี่ยนรหัสผ่าน</span>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Change Password</h3>
+              <span className={styles.cardMeta}>{t('common.security') || 'Security'}</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>รหัสผ่านปัจจุบัน</label>
-              <input 
-                type="password" 
-                value={passwordForm.currentPassword}
-                onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
-                placeholder="กรอกรหัสผ่านปัจจุบัน" 
-                style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }} 
-              />
-            </div>
+            <div className={styles.cardBody}>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>รหัสผ่านใหม่</label>
-                <input 
-                  type="password" 
-                  value={passwordForm.newPassword}
-                  onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
-                  placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)" 
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }} 
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="currentPassword">รหัสผ่านปัจจุบัน</label>
+                <input
+                  id="currentPassword"
+                  type="password"
+                  className={styles.input}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
+                  placeholder="กรอกรหัสผ่านปัจจุบัน"
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem' }}>ยืนยันรหัสผ่านใหม่</label>
-                <input 
-                  type="password" 
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
-                  placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" 
-                  style={{ padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }} 
-                />
+
+              <div className={styles.formGrid} style={{ marginTop: '1rem' }}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="newPassword">รหัสผ่านใหม่</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    className={styles.input}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
+                    placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="confirmNewPassword">ยืนยันรหัสผ่านใหม่</label>
+                  <input
+                    id="confirmNewPassword"
+                    type="password"
+                    className={styles.input}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
+                    placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                  />
+                </div>
               </div>
-            </div>
 
             <button 
               onClick={handleChangePassword}
               disabled={changingPassword}
-              style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                background: changingPassword ? '#9ca3af' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: 12, 
-                fontFamily: "'Kanit', sans-serif", 
-                fontWeight: 700, 
-                fontSize: '1.1rem', 
-                cursor: changingPassword ? 'not-allowed' : 'pointer', 
-                boxShadow: changingPassword ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' 
-              }}
+              type="button"
+              className={`${styles.button} ${styles.buttonPrimary} ${changingPassword ? styles.buttonDisabled : ''}`}
+              style={{ width: '100%', marginTop: '1rem' }}
             >
               {changingPassword ? 'กำลังเปลี่ยน...' : 'เปลี่ยนรหัสผ่าน'}
             </button>
+            </div>
           </div>
 
           {/* Account Settings */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #E2E8F0' }}>
-              <span>⚙️ การตั้งค่าบัญชี</span>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Account Settings</h3>
+              <span className={styles.cardMeta}>{t('common.settings') || 'Settings'}</span>
             </div>
 
-            <button 
-              onClick={() => setShowDeleteAccountModal(true)}
-              style={{ width: '100%', padding: '1rem', background: '#EF4444', color: '#fff', border: 'none', borderRadius: 12, fontFamily: "'Kanit', sans-serif", fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}
-            >
-              ลบบัญชีผู้ใช้
-            </button>
+            <div className={styles.cardBody}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccountModal(true)}
+                className={`${styles.button} ${styles.buttonDanger}`}
+                style={{ width: '100%' }}
+              >
+                ลบบัญชีผู้ใช้
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Delete Account Modal */}
       {showDeleteAccountModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#2D3748', borderRadius: 16, padding: '2rem', maxWidth: 500, width: '90%', color: '#fff' }}>
-            <h2 style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', color: '#fff' }}>
-              localhost:3000 บอกว่า
-            </h2>
-            <p style={{ fontSize: '1rem', marginBottom: '2rem', color: '#E2E8F0', lineHeight: 1.6 }}>
-              คุณต้องการลบบัญชีผู้ใช้ไหม? การดำเนินการนี้ไม่สามารถยกเลิกได้
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-              <button 
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>{t('common.confirm') || 'Confirm'}</h2>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonDanger}`}
                 onClick={() => setShowDeleteAccountModal(false)}
-                style={{ 
-                  padding: '0.75rem 2rem', 
-                  background: 'rgba(255,255,255,0.1)', 
-                  border: '2px solid rgba(255,255,255,0.3)', 
-                  borderRadius: 999, 
-                  color: '#FFC0CB', 
-                  fontWeight: 600, 
-                  cursor: 'pointer',
-                  fontSize: '0.95rem'
-                }}
+                style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
               >
-                ตกลง
+                ✕
               </button>
-              <button 
+            </div>
+            <div className={styles.modalBody}>
+              <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+                คุณต้องการลบบัญชีผู้ใช้ไหม? การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </p>
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonSecondary}`}
                 onClick={() => setShowDeleteAccountModal(false)}
-                style={{ 
-                  padding: '0.75rem 2rem', 
-                  background: '#8B5A8E', 
-                  border: 'none', 
-                  borderRadius: 999, 
-                  color: '#fff', 
-                  fontWeight: 600, 
-                  cursor: 'pointer',
-                  fontSize: '0.95rem'
-                }}
               >
-                ยกเลิก
+                {t('common.cancel') || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonDanger}`}
+                onClick={() => setShowDeleteAccountModal(false)}
+              >
+                {t('common.ok') || 'OK'}
               </button>
             </div>
           </div>
@@ -653,102 +705,122 @@ export default function ProfilePage() {
 
       {/* Address Modal */}
       {showAddressModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', maxWidth: 600, width: '90%', maxHeight: '90vh', overflow: 'auto' }}>
-            <h2 style={{ fontFamily: "'Kanit', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem' }}>
-              ➕ เพิ่มที่อยู่ใหม่
-            </h2>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>➕ เพิ่มที่อยู่ใหม่</h2>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonDanger}`}
+                onClick={() => setShowAddressModal(false)}
+                style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
+              >
+                ✕
+              </button>
+            </div>
 
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              <div>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>ชื่อที่อยู่ *</label>
-                <input 
-                  type="text" 
-                  value={addressForm.name}
-                  onChange={(e) => handleAddressInputChange('name', e.target.value)}
-                  placeholder="เช่น บ้าน, ที่ทำงาน"
-                  style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>ที่อยู่ *</label>
-                <textarea 
-                  value={addressForm.address}
-                  onChange={(e) => handleAddressInputChange('address', e.target.value)}
-                  placeholder="เลขที่, ถนน, หมู่บ้าน"
-                  rows={3}
-                  style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem', fontFamily: 'inherit', resize: 'vertical' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>แขวง/ตำบล</label>
-                  <input 
-                    type="text" 
-                    value={addressForm.district}
-                    onChange={(e) => handleAddressInputChange('district', e.target.value)}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
+            <div className={styles.modalBody}>
+              <div className={styles.form}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="addrName">ชื่อที่อยู่ *</label>
+                  <input
+                    id="addrName"
+                    type="text"
+                    className={styles.input}
+                    value={addressForm.name}
+                    onChange={(e) => handleAddressInputChange('name', e.target.value)}
+                    placeholder="เช่น บ้าน, ที่ทำงาน"
                   />
                 </div>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>เขต/อำเภอ</label>
-                  <input 
-                    type="text" 
-                    value={addressForm.city}
-                    onChange={(e) => handleAddressInputChange('city', e.target.value)}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
-                  />
-                </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>จังหวัด</label>
-                  <input 
-                    type="text" 
-                    value={addressForm.province}
-                    onChange={(e) => handleAddressInputChange('province', e.target.value)}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="addrAddress">ที่อยู่ *</label>
+                  <textarea
+                    id="addrAddress"
+                    className={styles.input}
+                    value={addressForm.address}
+                    onChange={(e) => handleAddressInputChange('address', e.target.value)}
+                    placeholder="เลขที่, ถนน, หมู่บ้าน"
+                    rows={3}
+                    style={{ resize: 'vertical' }}
                   />
                 </div>
-                <div>
-                  <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>รหัสไปรษณีย์</label>
-                  <input 
-                    type="text" 
-                    value={addressForm.postalCode}
-                    onChange={(e) => handleAddressInputChange('postalCode', e.target.value)}
-                    maxLength={5}
-                    style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.95rem', display: 'block', marginBottom: '0.5rem' }}>เบอร์โทรศัพท์</label>
-                <input 
-                  type="tel" 
-                  value={addressForm.phone}
-                  onChange={(e) => handleAddressInputChange('phone', e.target.value)}
-                  placeholder="098-765-4321"
-                  style={{ width: '100%', padding: '0.85rem 1rem', border: '2px solid #E2E8F0', borderRadius: 8, fontSize: '0.95rem' }}
-                />
+                <div className={styles.formGrid}>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="addrDistrict">แขวง/ตำบล</label>
+                    <input
+                      id="addrDistrict"
+                      type="text"
+                      className={styles.input}
+                      value={addressForm.district}
+                      onChange={(e) => handleAddressInputChange('district', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="addrCity">เขต/อำเภอ</label>
+                    <input
+                      id="addrCity"
+                      type="text"
+                      className={styles.input}
+                      value={addressForm.city}
+                      onChange={(e) => handleAddressInputChange('city', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGrid}>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="addrProvince">จังหวัด</label>
+                    <input
+                      id="addrProvince"
+                      type="text"
+                      className={styles.input}
+                      value={addressForm.province}
+                      onChange={(e) => handleAddressInputChange('province', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="addrPostal">รหัสไปรษณีย์</label>
+                    <input
+                      id="addrPostal"
+                      type="text"
+                      className={styles.input}
+                      value={addressForm.postalCode}
+                      onChange={(e) => handleAddressInputChange('postalCode', e.target.value)}
+                      maxLength={5}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="addrPhone">เบอร์โทรศัพท์</label>
+                  <input
+                    id="addrPhone"
+                    type="tel"
+                    className={styles.input}
+                    value={addressForm.phone}
+                    onChange={(e) => handleAddressInputChange('phone', e.target.value)}
+                    placeholder="098-765-4321"
+                  />
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button 
+            <div className={styles.modalFooter}>
+              <button
+                type="button"
                 onClick={() => setShowAddressModal(false)}
                 disabled={saving}
-                style={{ flex: 1, padding: '1rem', background: '#fff', border: '2px solid #E2E8F0', borderRadius: 12, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', color: '#475569' }}
+                className={`${styles.button} ${styles.buttonSecondary}`}
               >
                 ❌ ยกเลิก
               </button>
-              <button 
+              <button
+                type="button"
                 onClick={handleSaveAddress}
                 disabled={saving}
-                style={{ flex: 1, padding: '1rem', background: saving ? '#9ca3af' : 'linear-gradient(135deg, #2563EB, #1D4ED8)', border: 'none', borderRadius: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', color: '#fff', boxShadow: saving ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' }}
+                className={`${styles.button} ${styles.buttonPrimary} ${saving ? styles.buttonDisabled : ''}`}
               >
                 {saving ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>

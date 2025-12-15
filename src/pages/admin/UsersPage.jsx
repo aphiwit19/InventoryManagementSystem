@@ -303,7 +303,7 @@ export default function UsersPage() {
                                 <option value="staff">Staff</option>
                               </select>
                             ) : (
-                              <span className={styles.noEditBadge}>{t('user.cannot_edit')}</span>
+                              <span className={styles.noEditBadge}>admin</span>
                             )}
                           </div>
                         </td>

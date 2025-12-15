@@ -420,7 +420,7 @@ export default function AdminBankAccountPage() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
-                {editingIndex >= 0 ? t('payment.edit_account') : t('payment.add_account')}
+                {editingIndex >= 0 ? t('Payment Edit') : t('payment.add_account')}
               </h2>
               <button className={styles.modalCloseButton} onClick={() => setShowModal(false)}>
                 <span className="material-symbols-outlined">close</span>
@@ -476,14 +476,16 @@ export default function AdminBankAccountPage() {
 
               <div className={styles.qrUploadSection}>
                 <label className={styles.formLabel}>{t('payment.qr_code_for_payment')}</label>
-                {qrUrl && (
-                  <img src={qrUrl} alt="QR Code" className={styles.qrPreview} />
-                )}
-                <label className={styles.uploadButton}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>upload</span>
-                  {t('payment.upload_qr_code')}
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
-                </label>
+                <div className={styles.qrUploadContent}>
+                  {qrUrl && (
+                    <img src={qrUrl} alt="QR Code" className={styles.qrPreview} />
+                  )}
+                  <label className={styles.uploadButton}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>upload</span>
+                    {t('payment.upload_qr_code')}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+                  </label>
+                </div>
               </div>
 
               <div className={styles.checkboxWrapper}>

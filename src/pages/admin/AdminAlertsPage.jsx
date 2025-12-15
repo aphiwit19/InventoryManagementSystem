@@ -115,7 +115,7 @@ export default function AdminAlertsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('product.search_product')}
+              placeholder={t('search product')}
               className={styles.searchInput}
             />
           </div>

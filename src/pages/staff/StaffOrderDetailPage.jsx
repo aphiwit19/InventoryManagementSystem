@@ -33,7 +33,7 @@ export default function StaffOrderDetailPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#F1F5F9',
+        background: '#f8f9fc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -49,7 +49,7 @@ export default function StaffOrderDetailPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#F1F5F9',
+        background: '#f8f9fc',
         padding: '32px 24px'
       }}>
         <div style={{
@@ -96,7 +96,7 @@ export default function StaffOrderDetailPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#F1F5F9',
+      background: '#f8f9fc',
       padding: '32px 24px'
     }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -475,7 +475,7 @@ export default function StaffOrderDetailPage() {
               onClick={() => navigate('/staff/orders')}
               style={{
                 padding: '14px 40px',
-                background: '#64748B',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                 color: '#FFFFFF',
                 border: 'none',
                 borderRadius: 12,
@@ -483,15 +483,15 @@ export default function StaffOrderDetailPage() {
                 fontWeight: 600,
                 cursor: 'pointer',
                 fontFamily: 'Kanit, sans-serif',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = '#475569';
+                e.target.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
                 e.target.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = '#64748B';
+                e.target.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
                 e.target.style.transform = 'translateY(0)';
               }}
             >
