@@ -3,22 +3,25 @@ import { db, storage } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
+import styles from './AdminBankAccountPage.module.css';
 
-// Admin page for managing bank account info + QR code
-// Uses a single Firestore document: settings/paymentAccount
 export default function AdminBankAccountPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [accounts, setAccounts] = useState([]); // all accounts in settings/paymentAccount.accounts
-  const [selectedIndex, setSelectedIndex] = useState(0); // which account is being edited
+  const [accounts, setAccounts] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(-1);
+  
+  // Form state
   const [bankName, setBankName] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [note, setNote] = useState('');
   const [qrUrl, setQrUrl] = useState('');
   const [qrFile, setQrFile] = useState(null);
-  const [isPrimary, setIsPrimary] = useState(true);
+  const [isPrimary, setIsPrimary] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -30,36 +33,19 @@ export default function AdminBankAccountPage() {
         const snap = await getDoc(doc(db, 'settings', 'paymentAccount'));
         if (snap.exists()) {
           const data = snap.data() || {};
-
           const loadedAccounts = Array.isArray(data.accounts) && data.accounts.length > 0
             ? data.accounts
-            : [
-                {
-                  id: 'primary',
-                  bankName: data.bankName || '',
-                  accountName: data.accountName || '',
-                  accountNumber: data.accountNumber || '',
-                  note: data.note || '',
-                  qrUrl: data.qrUrl || '',
-                  isPrimary: true,
-                },
-              ];
-
+            : [{
+                id: 'primary',
+                bankName: data.bankName || '',
+                accountName: data.accountName || '',
+                accountNumber: data.accountNumber || '',
+                note: data.note || '',
+                qrUrl: data.qrUrl || '',
+                isPrimary: true,
+                isActive: true,
+              }];
           setAccounts(loadedAccounts);
-
-          const primary =
-            loadedAccounts.find((a) => a.isPrimary) || loadedAccounts[0];
-          const primaryIndex = loadedAccounts.findIndex(
-            (a) => a.id === primary.id
-          );
-          setSelectedIndex(primaryIndex >= 0 ? primaryIndex : 0);
-
-          setBankName(primary.bankName || '');
-          setAccountName(primary.accountName || '');
-          setAccountNumber(primary.accountNumber || '');
-          setNote(primary.note || '');
-          setQrUrl(primary.qrUrl || '');
-          setIsPrimary(primary.isPrimary !== false);
         } else {
           setAccounts([]);
         }
@@ -71,8 +57,7 @@ export default function AdminBankAccountPage() {
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [t]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -92,6 +77,37 @@ export default function AdminBankAccountPage() {
     reader.readAsDataURL(file);
   };
 
+  const openAddModal = () => {
+    setEditingIndex(-1);
+    setBankName('');
+    setAccountName('');
+    setAccountNumber('');
+    setNote('');
+    setQrUrl('');
+    setQrFile(null);
+    setIsPrimary(accounts.length === 0);
+    setIsActive(true);
+    setError('');
+    setSuccess('');
+    setShowModal(true);
+  };
+
+  const openEditModal = (index) => {
+    const acc = accounts[index];
+    setEditingIndex(index);
+    setBankName(acc.bankName || '');
+    setAccountName(acc.accountName || '');
+    setAccountNumber(acc.accountNumber || '');
+    setNote(acc.note || '');
+    setQrUrl(acc.qrUrl || '');
+    setQrFile(null);
+    setIsPrimary(acc.isPrimary || false);
+    setIsActive(acc.isActive !== false);
+    setError('');
+    setSuccess('');
+    setShowModal(true);
+  };
+
   const handleSave = async () => {
     setError('');
     setSuccess('');
@@ -109,16 +125,10 @@ export default function AdminBankAccountPage() {
         const docRef = doc(db, 'settings', 'paymentAccount');
         const existing = await getDoc(docRef);
         const existingData = existing.exists() ? existing.data() || {} : {};
-        const existingAccounts = Array.isArray(existingData.accounts)
-          ? existingData.accounts
-          : [];
+        const existingAccounts = Array.isArray(existingData.accounts) ? existingData.accounts : [];
 
-        // ลองลบ QR เดิมของบัญชีนี้ (ถ้าเก็บ url ไว้)
-        const currentAccountExisting = existingAccounts[selectedIndex];
-        const existingUrl =
-          (currentAccountExisting && currentAccountExisting.qrUrl) ||
-          existingData.qrUrl ||
-          null;
+        const currentAccountExisting = existingAccounts[editingIndex];
+        const existingUrl = (currentAccountExisting && currentAccountExisting.qrUrl) || existingData.qrUrl || null;
 
         if (existingUrl && existingUrl.startsWith('https://')) {
           try {
@@ -137,54 +147,47 @@ export default function AdminBankAccountPage() {
         uploadedUrl = await getDownloadURL(storageRef);
       }
 
-      // อัปเดต accounts ใน state
       const updatedAccounts = [...accounts];
       const baseAccount = {
-        id:
-          updatedAccounts[selectedIndex]?.id ||
-          `acc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: updatedAccounts[editingIndex]?.id || `acc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         bankName: bankName.trim(),
         accountName: accountName.trim(),
         accountNumber: accountNumber.trim(),
         note: note.trim() || null,
         qrUrl: uploadedUrl || null,
         isPrimary,
+        isActive,
       };
 
-      if (updatedAccounts[selectedIndex]) {
-        updatedAccounts[selectedIndex] = baseAccount;
+      if (editingIndex >= 0 && updatedAccounts[editingIndex]) {
+        updatedAccounts[editingIndex] = baseAccount;
       } else {
         updatedAccounts.push(baseAccount);
-        setSelectedIndex(updatedAccounts.length - 1);
       }
 
-      // ให้มี primary อย่างน้อย 1 บัญชี
       let nextAccounts = updatedAccounts;
       if (!nextAccounts.some((a) => a.isPrimary)) {
         nextAccounts = nextAccounts.map((a, idx) => ({
           ...a,
-          isPrimary: idx === selectedIndex,
+          isPrimary: idx === (editingIndex >= 0 ? editingIndex : nextAccounts.length - 1),
         }));
       } else if (isPrimary) {
         nextAccounts = nextAccounts.map((a, idx) => ({
           ...a,
-          isPrimary: idx === selectedIndex,
+          isPrimary: idx === (editingIndex >= 0 ? editingIndex : nextAccounts.length - 1),
         }));
       }
 
-      const primary =
-        nextAccounts.find((a) => a.isPrimary) || nextAccounts[0];
+      const primary = nextAccounts.find((a) => a.isPrimary) || nextAccounts[0];
 
       await setDoc(
         doc(db, 'settings', 'paymentAccount'),
         {
-          // mirror primary account สำหรับฝั่งลูกค้า
           bankName: primary.bankName,
           accountName: primary.accountName,
           accountNumber: primary.accountNumber,
           note: primary.note || null,
           qrUrl: primary.qrUrl || null,
-          // เก็บทุกบัญชี
           accounts: nextAccounts,
           updatedAt: new Date().toISOString(),
         },
@@ -194,6 +197,7 @@ export default function AdminBankAccountPage() {
       setAccounts(nextAccounts);
       setSuccess(t('payment.account_saved_success'));
       setQrFile(null);
+      setShowModal(false);
     } catch (e) {
       console.error('save paymentAccount failed:', e);
       setError(t('payment.save_account_failed'));
@@ -202,331 +206,311 @@ export default function AdminBankAccountPage() {
     }
   };
 
+  const toggleAccountActive = async (index) => {
+    const updatedAccounts = [...accounts];
+    updatedAccounts[index] = {
+      ...updatedAccounts[index],
+      isActive: !updatedAccounts[index].isActive,
+    };
+
+    try {
+      const primary = updatedAccounts.find((a) => a.isPrimary) || updatedAccounts[0];
+      await setDoc(
+        doc(db, 'settings', 'paymentAccount'),
+        {
+          bankName: primary.bankName,
+          accountName: primary.accountName,
+          accountNumber: primary.accountNumber,
+          note: primary.note || null,
+          qrUrl: primary.qrUrl || null,
+          accounts: updatedAccounts,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      setAccounts(updatedAccounts);
+    } catch (e) {
+      console.error('toggle active failed:', e);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const getBankColor = (bankName) => {
+    const name = (bankName || '').toLowerCase();
+    if (name.includes('kasikorn') || name.includes('kbank') || name.includes('กสิกร')) return '#138f2d';
+    if (name.includes('scb') || name.includes('ไทยพาณิชย์') || name.includes('siam')) return '#4e2583';
+    if (name.includes('bangkok') || name.includes('bbl') || name.includes('กรุงเทพ')) return '#1e4598';
+    if (name.includes('krungsri') || name.includes('กรุงศรี')) return '#ffc423';
+    if (name.includes('ttb') || name.includes('ทหารไทย')) return '#0066b3';
+    if (name.includes('krungthai') || name.includes('กรุงไทย') || name.includes('ktb')) return '#1ba5e0';
+    return '#64748b';
+  };
+
+  const getBankShortName = (bankName) => {
+    const name = (bankName || '').toLowerCase();
+    if (name.includes('kasikorn') || name.includes('kbank') || name.includes('กสิกร')) return 'KBank';
+    if (name.includes('scb') || name.includes('ไทยพาณิชย์') || name.includes('siam')) return 'SCB';
+    if (name.includes('bangkok') || name.includes('bbl') || name.includes('กรุงเทพ')) return 'BBL';
+    if (name.includes('krungsri') || name.includes('กรุงศรี')) return 'BAY';
+    if (name.includes('ttb') || name.includes('ทหารไทย')) return 'TTB';
+    if (name.includes('krungthai') || name.includes('กรุงไทย') || name.includes('ktb')) return 'KTB';
+    return bankName?.slice(0, 3)?.toUpperCase() || 'BANK';
+  };
+
+  // Stats
+  const totalAccounts = accounts.length;
+  const activeAccounts = accounts.filter(a => a.isActive !== false).length;
+  const inactiveAccounts = totalAccounts - activeAccounts;
+
+  if (loading) {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.loadingState}>{t('common.loading')}</div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ padding: '28px 20px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
-      <div style={{ maxWidth: 880, margin: '0 auto' }}>
-        <div style={{ background: '#fff', borderRadius: 18, padding: '24px 26px', boxShadow: '0 10px 40px rgba(15,23,42,0.12)' }}>
-          <div style={{ marginBottom: 20 }}>
-            <h1 style={{ margin: 0, fontSize: 24, color: '#1e40af', fontWeight: 700 }}>{t('payment.manage_payment_account')}</h1>
-            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#64748b' }}>
-              {t('payment.manage_payment_account_desc')}
-            </p>
+    <div className={styles.pageContainer}>
+      <div className={styles.contentWrapper}>
+        {/* Page Header */}
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>{t('payment.manage_payment_account')}</h1>
+            <p className={styles.pageSubtitle}>{t('payment.manage_payment_account_desc')}</p>
           </div>
+          <button className={styles.addButton} onClick={openAddModal}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>add</span>
+            {t('payment.add_account')}
+          </button>
+        </div>
 
-          {/* Account selector pills */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-            {accounts.map((acc, idx) => (
-              <button
-                key={acc.id || idx}
-                type="button"
-                onClick={() => {
-                  setSelectedIndex(idx);
-                  setBankName(acc.bankName || '');
-                  setAccountName(acc.accountName || '');
-                  setAccountNumber(acc.accountNumber || '');
-                  setNote(acc.note || '');
-                  setQrUrl(acc.qrUrl || '');
-                  setQrFile(null);
-                  setIsPrimary(acc.isPrimary !== false);
-                }}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 999,
-                  border: selectedIndex === idx ? 'none' : '1px solid #e5e7eb',
-                  background:
-                    selectedIndex === idx
-                      ? 'linear-gradient(135deg,#3b82f6,#2563eb)'
-                      : '#f9fafb',
-                  color: selectedIndex === idx ? '#fff' : '#1f2937',
-                  fontSize: 13,
-                  fontWeight: selectedIndex === idx ? 600 : 500,
-                  cursor: 'pointer',
-                }}
-              >
-                {acc.bankName || acc.accountName || `${t('payment.account')} ${idx + 1}`}
-                {acc.isPrimary && (
-                  <span style={{ marginLeft: 6, fontSize: 11 }}>({t('payment.primary')})</span>
-                )}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                const nextIndex = accounts.length;
-                const newAcc = {
-                  id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                  bankName: '',
-                  accountName: '',
-                  accountNumber: '',
-                  note: '',
-                  qrUrl: '',
-                  isPrimary: accounts.length === 0,
-                };
-                const nextAccounts = [...accounts, newAcc];
-                setAccounts(nextAccounts);
-                setSelectedIndex(nextIndex);
-                setBankName('');
-                setAccountName('');
-                setAccountNumber('');
-                setNote('');
-                setQrUrl('');
-                setQrFile(null);
-                setIsPrimary(newAcc.isPrimary);
-              }}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 999,
-                border: '1px dashed #3b82f6',
-                background: '#eff6ff',
-                color: '#1d4ed8',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              + {t('payment.add_account')}
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '320px 1fr',
-              gap: 24,
-              alignItems: 'flex-start',
-            }}
-          >
-            {/* Left: QR preview + upload */}
-            <div
-              style={{
-                background: 'linear-gradient(145deg,#EFF6FF,#DBEAFE)',
-                borderRadius: 20,
-                padding: 18,
-                boxShadow: '0 10px 24px rgba(37,99,235,0.18)',
-                border: '1px solid #bfdbfe',
-              }}
-            >
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8', marginBottom: 10 }}>
-              {t('payment.qr_code_for_payment')}
+        {/* Stats Cards */}
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statContent}>
+              <p className={styles.statLabel}>Total Accounts</p>
+              <p className={styles.statValue}>{totalAccounts}</p>
             </div>
-            <div
-              style={{
-                borderRadius: 16,
-                background: '#f8fafc',
-                border: '1px dashed #cbd5e1',
-                padding: 16,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 12,
-                minHeight: 220,
-              }}
-            >
-              {qrUrl ? (
-                <img
-                  src={qrUrl}
-                  alt="QR Code"
-                  style={{ maxWidth: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 12 }}
-                />
-              ) : (
-                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-                  <div style={{ fontSize: 40, marginBottom: 4 }}>📷</div>
-                  <div>{t('payment.no_qr_uploaded')}</div>
+            <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
+              <span className="material-symbols-outlined">account_balance_wallet</span>
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statContent}>
+              <p className={styles.statLabel}>Active</p>
+              <p className={`${styles.statValue} ${styles.statValueGreen}`}>{activeAccounts}</p>
+            </div>
+            <div className={`${styles.statIcon} ${styles.statIconGreen}`}>
+              <span className="material-symbols-outlined">check_circle</span>
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statContent}>
+              <p className={styles.statLabel}>Inactive</p>
+              <p className={`${styles.statValue} ${styles.statValueGray}`}>{inactiveAccounts}</p>
+            </div>
+            <div className={`${styles.statIcon} ${styles.statIconGray}`}>
+              <span className="material-symbols-outlined">pause_circle</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Success/Error Messages */}
+        {success && <div className={styles.alertSuccess}>{success}</div>}
+        {error && <div className={styles.alertError}>{error}</div>}
+
+        {/* Cards Grid */}
+        <div className={styles.cardsGrid}>
+          {accounts.map((acc, idx) => {
+            const isActiveAccount = acc.isActive !== false;
+            const bankColor = getBankColor(acc.bankName);
+            
+            return (
+              <div 
+                key={acc.id || idx} 
+                className={`${styles.bankCard} ${!isActiveAccount ? styles.bankCardInactive : ''}`}
+              >
+                <span className={`material-symbols-outlined ${styles.bankCardWatermark}`}>account_balance</span>
+                
+                <div className={styles.bankCardContent}>
+                  <div className={styles.bankCardHeader}>
+                    <div className={styles.bankCardInfo}>
+                      <div className={`${styles.bankLogo} ${!isActiveAccount ? styles.bankLogoGrayscale : ''}`}>
+                        <div 
+                          className={styles.bankLogoInner}
+                          style={{ backgroundColor: bankColor }}
+                        >
+                          {getBankShortName(acc.bankName)}
+                        </div>
+                      </div>
+                      <div className={styles.bankDetails}>
+                        <h3 className={styles.bankName}>{acc.bankName || t('payment.bank_name')}</h3>
+                        <span className={`${styles.bankTypeBadge} ${
+                          acc.isPrimary ? styles.bankTypeBadgeGreen : 
+                          isActiveAccount ? styles.bankTypeBadgePurple : styles.bankTypeBadgeGray
+                        }`}>
+                          {acc.isPrimary ? t('payment.primary') : isActiveAccount ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    <button className={styles.moreButton}>
+                      <span className="material-symbols-outlined">more_vert</span>
+                    </button>
+                  </div>
+
+                  <div className={styles.bankCardField}>
+                    <p className={styles.fieldLabel}>{t('payment.account_name')}</p>
+                    <p className={styles.fieldValue}>{acc.accountName || '-'}</p>
+                  </div>
+
+                  <div className={styles.bankCardField}>
+                    <p className={styles.fieldLabel}>{t('payment.account_number')}</p>
+                    <div className={styles.accountNumberWrapper}>
+                      <p className={`${styles.accountNumber} ${!isActiveAccount ? styles.accountNumberInactive : ''}`}>
+                        {acc.accountNumber || '-'}
+                      </p>
+                      <button 
+                        className={styles.copyButton} 
+                        onClick={() => copyToClipboard(acc.accountNumber)}
+                        title="Copy"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>content_copy</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '10px 18px',
-                borderRadius: 999,
-                cursor: 'pointer',
-                border: 'none',
-                background: 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)',
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 600,
-                boxShadow: '0 6px 16px rgba(37,99,235,0.4)',
-              }}
-            >
-              <span>{t('payment.upload_qr_code')}</span>
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
-            </label>
-            <div style={{ marginTop: 6, fontSize: 11, color: '#64748b' }}>
-              {t('payment.file_hint')}
-            </div>
-            </div>
 
-            {/* Right: bank account form */}
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: 20,
-                padding: 20,
-                boxShadow: '0 6px 20px rgba(15,23,42,0.08)',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>{t('payment.bank_account_info')}</h2>
-              {loading && (
-                <span style={{ fontSize: 12, color: '#6b7280' }}>{t('common.loading')}</span>
-              )}
-            </div>
-
-            {error && (
-              <div
-                style={{
-                  marginBottom: 10,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  color: '#b91c1c',
-                  fontSize: 13,
-                }}
-              >
-                {error}
+                <div className={styles.bankCardFooter}>
+                  <div className={styles.toggleWrapper}>
+                    <div 
+                      className={`${styles.toggle} ${isActiveAccount ? styles.toggleActive : ''}`}
+                      onClick={() => toggleAccountActive(idx)}
+                    >
+                      <div className={styles.toggleKnob}></div>
+                    </div>
+                    <span className={styles.toggleLabel}>Active</span>
+                  </div>
+                  <button className={styles.editButton} onClick={() => openEditModal(idx)}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>edit</span>
+                    Edit Details
+                  </button>
+                </div>
               </div>
-            )}
-            {success && (
-              <div
-                style={{
-                  marginBottom: 10,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                  background: '#ecfdf3',
-                  border: '1px solid #bbf7d0',
-                  color: '#15803d',
-                  fontSize: 13,
-                }}
-              >
-                {success}
-              </div>
-            )}
+            );
+          })}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  {t('payment.bank_name')}
-                </label>
+          {/* Add New Card */}
+          <button className={styles.addNewCard} onClick={openAddModal}>
+            <div className={styles.addNewCardIcon}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.875rem', color: '#94a3b8' }}>add</span>
+            </div>
+            <p className={styles.addNewCardTitle}>{t('payment.add_account')}</p>
+            <p className={styles.addNewCardSubtitle}>Supports all major Thai banks</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                {editingIndex >= 0 ? t('payment.edit_account') : t('payment.add_account')}
+              </h2>
+              <button className={styles.modalCloseButton} onClick={() => setShowModal(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {error && <div className={styles.alertError}>{error}</div>}
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>{t('payment.bank_name')}</label>
                 <input
                   type="text"
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
                   placeholder={t('payment.bank_name_placeholder')}
-                  style={{
-                    width: 'calc(100% - 50px)',
-                    margin: '0 auto',
-                    padding: '9px 12px',
-                    borderRadius: 10,
-                    border: '1px solid #d1d5db',
-                    fontSize: 14,
-                  }}
+                  className={styles.formInput}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  {t('payment.account_name')}
-                </label>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>{t('payment.account_name')}</label>
                 <input
                   type="text"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   placeholder={t('payment.account_name_placeholder')}
-                  style={{
-                    width: 'calc(100% - 50px)',
-                    margin: '0 auto',
-                    padding: '9px 12px',
-                    borderRadius: 10,
-                    border: '1px solid #d1d5db',
-                    fontSize: 14,
-                  }}
+                  className={styles.formInput}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  {t('payment.account_number')}
-                </label>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>{t('payment.account_number')}</label>
                 <input
                   type="text"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   placeholder={t('payment.account_number_placeholder')}
-                  style={{
-                    width: 'calc(100% - 50px)',
-                    margin: '0 auto',
-                    padding: '9px 12px',
-                    borderRadius: 10,
-                    border: '1px solid #d1d5db',
-                    fontSize: 14,
-                  }}
+                  className={styles.formInput}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, marginBottom: 4, color: '#4b5563' }}>
-                  {t('payment.payment_note')} ({t('common.optional')})
-                </label>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>{t('payment.payment_note')} ({t('common.optional')})</label>
                 <textarea
                   rows={3}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder={t('payment.note_placeholder')}
-                  style={{
-                    width: 'calc(100% - 50px)',
-                    margin: '0 auto',
-                    padding: '9px 12px',
-                    borderRadius: 16,
-                    border: '1px solid #d1d5db',
-                    fontSize: 14,
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                  }}
+                  className={styles.formTextarea}
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+
+              <div className={styles.qrUploadSection}>
+                <label className={styles.formLabel}>{t('payment.qr_code_for_payment')}</label>
+                {qrUrl && (
+                  <img src={qrUrl} alt="QR Code" className={styles.qrPreview} />
+                )}
+                <label className={styles.uploadButton}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>upload</span>
+                  {t('payment.upload_qr_code')}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+                </label>
+              </div>
+
+              <div className={styles.checkboxWrapper}>
                 <input
-                  id="primary-account-checkbox"
+                  id="primary-checkbox"
                   type="checkbox"
                   checked={isPrimary}
                   onChange={(e) => setIsPrimary(e.target.checked)}
+                  className={styles.checkbox}
                 />
-                <label htmlFor="primary-account-checkbox" style={{ fontSize: 13, color: '#374151' }}>
+                <label htmlFor="primary-checkbox" className={styles.checkboxLabel}>
                   {t('payment.set_as_primary')}
                 </label>
               </div>
             </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                style={{
-                  minWidth: 160,
-                  padding: '10px 18px',
-                  borderRadius: 999,
-                  border: 'none',
-                  background: saving
-                    ? '#9ca3af'
-                    : 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)',
-                  color: '#fff',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  boxShadow: saving ? 'none' : '0 6px 16px rgba(37,99,235,0.4)',
-                }}
-              >
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelButton} onClick={() => setShowModal(false)}>
+                {t('common.cancel')}
+              </button>
+              <button className={styles.saveButton} onClick={handleSave} disabled={saving}>
                 {saving ? t('message.saving') : t('common.save_changes')}
               </button>
             </div>
-            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

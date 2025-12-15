@@ -31,7 +31,6 @@ const AdminLayout = () => {
     { path: '/admin/products', icon: 'inventory_2', labelKey: 'admin.products' },
     { path: '/admin/orders?source=customer', icon: 'shopping_cart', labelKey: 'order.customer_orders', isOrderSource: 'customer' },
     { path: '/admin/orders?source=staff', icon: 'point_of_sale', labelKey: 'order.staff_orders', isOrderSource: 'staff' },
-    { path: '/admin/coupons', icon: 'confirmation_number', labelKey: 'admin.coupons' },
     { path: '/admin/inventory_history', icon: 'history', labelKey: 'admin.inventory_history' },
     { path: '/admin/payment-account', icon: 'account_balance', labelKey: 'admin.payment_settings' },
     { path: '/admin/alerts', icon: 'warning', labelKey: 'admin.low_stock_alert' },

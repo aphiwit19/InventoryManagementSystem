@@ -1,0 +1,721 @@
+/* AdminBankAccountPage.module.css */
+
+/* ===== Page Container ===== */
+.pageContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background-color: #f8f9fc;
+  min-height: 100vh;
+}
+
+@media (min-width: 768px) {
+  .pageContainer {
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pageContainer {
+    padding: 2.5rem;
+  }
+}
+
+.contentWrapper {
+  max-width: 72rem;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ===== Page Header ===== */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .pageHeader {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.pageTitle {
+  font-size: 1.875rem;
+  font-weight: 900;
+  color: #0d121b;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .pageTitle {
+    font-size: 2.25rem;
+  }
+}
+
+.pageSubtitle {
+  color: #4c669a;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  max-width: 42rem;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 1.25rem;
+  background: linear-gradient(to right, #135bec, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.addButton:hover {
+  background: linear-gradient(to right, #0f4bc0, #2563eb);
+}
+
+.addButton:active {
+  transform: scale(0.95);
+}
+
+/* ===== Stats Cards ===== */
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.statCard {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4c669a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin-top: 0.25rem;
+}
+
+.statValueGreen {
+  color: #16a34a;
+}
+
+.statValueGray {
+  color: #64748b;
+}
+
+.statIcon {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.statIconBlue {
+  background-color: #eff6ff;
+  color: #135bec;
+}
+
+.statIconGreen {
+  background-color: #f0fdf4;
+  color: #16a34a;
+}
+
+.statIconGray {
+  background-color: #f8fafc;
+  color: #64748b;
+}
+
+/* ===== Cards Grid ===== */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .cardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== Bank Card ===== */
+.bankCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(to bottom right, white, #eff6ff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.bankCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bankCardInactive {
+  background: #f8fafc;
+  opacity: 0.85;
+}
+
+.bankCardInactive:hover {
+  opacity: 1;
+}
+
+.bankCardWatermark {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 1rem;
+  opacity: 0.05;
+  pointer-events: none;
+  font-size: 9rem;
+}
+
+.bankCardContent {
+  padding: 1.5rem;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+}
+
+.bankCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.bankCardInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bankLogo {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.75rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+}
+
+.bankLogoInner {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.bankLogoGrayscale {
+  filter: grayscale(1);
+}
+
+.bankDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.bankName {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+}
+
+.bankTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.bankTypeBadgeGreen {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.bankTypeBadgePurple {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+}
+
+.bankTypeBadgeGray {
+  background-color: #e2e8f0;
+  color: #475569;
+}
+
+.moreButton {
+  padding: 0.5rem;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.moreButton:hover {
+  color: #135bec;
+  background-color: #f1f5f9;
+}
+
+.bankCardField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fieldLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4c669a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fieldValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0d121b;
+}
+
+.accountNumberWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accountNumber {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  color: #135bec;
+  letter-spacing: 0.05em;
+}
+
+@media (min-width: 768px) {
+  .accountNumber {
+    font-size: 1.5rem;
+  }
+}
+
+.accountNumberInactive {
+  color: #64748b;
+}
+
+.copyButton {
+  padding: 0.25rem;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.copyButton:hover {
+  color: #135bec;
+}
+
+/* Bank Card Footer */
+.bankCardFooter {
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle {
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.toggleActive {
+  background-color: #135bec;
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1rem;
+  height: 1rem;
+  background-color: white;
+  border-radius: 9999px;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggleActive .toggleKnob {
+  transform: translateX(1rem);
+}
+
+.toggleLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d121b;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4c669a;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.editButton:hover {
+  color: #135bec;
+}
+
+/* ===== Add New Card ===== */
+.addNewCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  border-radius: 1rem;
+  border: 2px dashed #cbd5e1;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addNewCard:hover {
+  border-color: #135bec;
+  background-color: #f8fafc;
+}
+
+.addNewCardIcon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.addNewCard:hover .addNewCardIcon {
+  transform: scale(1.1);
+}
+
+.addNewCardTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d121b;
+}
+
+.addNewCardSubtitle {
+  font-size: 0.875rem;
+  color: #4c669a;
+  margin-top: 0.25rem;
+}
+
+/* ===== Modal ===== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0d121b;
+  margin: 0;
+}
+
+.modalCloseButton {
+  padding: 0.5rem;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCloseButton:hover {
+  color: #0d121b;
+  background-color: #f1f5f9;
+}
+
+.modalBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.formLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4c669a;
+}
+
+.formInput {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #0d121b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.formInput:focus {
+  border-color: #135bec;
+  box-shadow: 0 0 0 3px rgba(19, 91, 236, 0.1);
+}
+
+.formTextarea {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #0d121b;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.formTextarea:focus {
+  border-color: #135bec;
+  box-shadow: 0 0 0 3px rgba(19, 91, 236, 0.1);
+}
+
+.checkboxWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #135bec;
+}
+
+.checkboxLabel {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.qrUploadSection {
+  padding: 1rem;
+  border: 1px dashed #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+  text-align: center;
+}
+
+.qrPreview {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 0 auto 1rem;
+  border-radius: 0.5rem;
+}
+
+.uploadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(to right, #135bec, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.uploadButton:hover {
+  background: linear-gradient(to right, #0f4bc0, #2563eb);
+}
+
+.modalFooter {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.cancelButton {
+  padding: 0.625rem 1rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4c669a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background-color: #f8fafc;
+}
+
+.saveButton {
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(to right, #135bec, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saveButton:hover {
+  background: linear-gradient(to right, #0f4bc0, #2563eb);
+}
+
+.saveButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ===== Alert Messages ===== */
+.alertError {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.alertSuccess {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 0.875rem;
+}
+
+/* ===== Loading State ===== */
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: #64748b;
+}

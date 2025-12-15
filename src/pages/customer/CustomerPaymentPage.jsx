@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { db, storage } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart, validateAndUseCoupon, incrementCouponUsage } from '../../services';
+import { createWithdrawal, getCart, clearCart, migrateLocalStorageCart } from '../../services';
 import { useTranslation } from 'react-i18next';
 import styles from './CustomerPaymentPage.module.css';
 
@@ -33,13 +33,6 @@ export default function CustomerPaymentPage() {
   // Payment method tab
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   
-  // Coupon states
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [couponError, setCouponError] = useState('');
-  const [couponSuccess, setCouponSuccess] = useState('');
-  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const total = useMemo(
     () =>
@@ -52,8 +45,8 @@ export default function CustomerPaymentPage() {
 
   const shippingFromCart = location.state && location.state.shipping ? location.state.shipping : null;
   const shippingFee = 150; // Fixed shipping fee
-  const vat = Math.round((total - couponDiscount) * 0.07);
-  const finalTotal = total - couponDiscount + shippingFee + vat;
+  const vat = Math.round(total * 0.07);
+  const finalTotal = total + shippingFee + vat;
   const totalItems = items.reduce((sum, it) => sum + (it.quantity || 0), 0);
 
   // Load cart items
@@ -155,39 +148,6 @@ export default function CustomerPaymentPage() {
     }
   }, [shippingFromCart]);
 
-  // Apply coupon
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponError('Please enter a coupon code');
-      return;
-    }
-
-    setApplyingCoupon(true);
-    setCouponError('');
-    setCouponSuccess('');
-
-    try {
-      const result = await validateAndUseCoupon(couponCode, total);
-      setAppliedCoupon(result.coupon);
-      setCouponDiscount(result.discountAmount);
-      setCouponSuccess(`Coupon applied! -฿${result.discountAmount.toLocaleString()}`);
-    } catch (err) {
-      setCouponError(err.message || 'Invalid coupon');
-      setAppliedCoupon(null);
-      setCouponDiscount(0);
-    } finally {
-      setApplyingCoupon(false);
-    }
-  };
-
-  // Remove coupon
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponDiscount(0);
-    setCouponCode('');
-    setCouponError('');
-    setCouponSuccess('');
-  };
 
   const handleConfirm = async () => {
     setFormError('');
@@ -242,9 +202,7 @@ export default function CustomerPaymentPage() {
         withdrawDate,
         total: finalTotal,
         subtotal: total,
-        discount: couponDiscount,
-        couponCode: appliedCoupon ? appliedCoupon.code : null,
-        couponId: appliedCoupon ? appliedCoupon.id : null,
+        discount: 0,
         paymentMethod: 'bank_transfer_qr',
         paymentAccount: {
           bankName: paymentAccount.bankName,
@@ -258,10 +216,6 @@ export default function CustomerPaymentPage() {
         createdByEmail: user.email || null,
         createdSource: 'customer'
       });
-
-      if (appliedCoupon) {
-        await incrementCouponUsage(appliedCoupon.id);
-      }
 
       await clearCart(user.uid, 'customer');
       setItems([]);
@@ -507,42 +461,6 @@ export default function CustomerPaymentPage() {
                 })}
               </div>
 
-              {/* Discount Code */}
-              <div className={styles.discountSection}>
-                {!appliedCoupon ? (
-                  <>
-                    <div className={styles.discountInputWrapper}>
-                      <input
-                        type="text"
-                        className={styles.discountInput}
-                        placeholder="Discount Code"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      />
-                      <button 
-                        className={styles.discountButton}
-                        onClick={handleApplyCoupon}
-                        disabled={applyingCoupon}
-                      >
-                        {applyingCoupon ? '...' : 'Apply'}
-                      </button>
-                    </div>
-                    {couponError && <p className={styles.discountError}>{couponError}</p>}
-                    {couponSuccess && <p className={styles.discountSuccess}>{couponSuccess}</p>}
-                  </>
-                ) : (
-                  <div className={styles.discountInputWrapper}>
-                    <span className={styles.discountSuccess}>🎫 {appliedCoupon.code} applied!</span>
-                    <button 
-                      className={styles.discountButton}
-                      onClick={handleRemoveCoupon}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {/* Calculations */}
               <div className={styles.calculations}>
                 <div className={styles.calcRow}>
@@ -553,12 +471,6 @@ export default function CustomerPaymentPage() {
                   <span>Shipping</span>
                   <span className={styles.calcValue}>฿{shippingFee.toLocaleString()}</span>
                 </div>
-                {couponDiscount > 0 && (
-                  <div className={`${styles.calcRow} ${styles.calcRowDiscount}`}>
-                    <span>Discount ({appliedCoupon?.code})</span>
-                    <span className={styles.calcValue}>-฿{couponDiscount.toLocaleString()}</span>
-                  </div>
-                )}
                 <div className={styles.calcRow}>
                   <span>VAT (7%)</span>
                   <span className={styles.calcValue}>฿{vat.toLocaleString()}</span>
