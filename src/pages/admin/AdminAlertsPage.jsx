@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllProducts, isLowStock, getLowStockVariants } from '../../services';
 import { useTranslation } from 'react-i18next';
+import styles from './AdminAlertsPage.module.css';
 
 export default function AdminAlertsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
+  const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const load = async () => {
@@ -26,307 +28,215 @@ export default function AdminAlertsPage() {
 
   const lowStock = (products || []).filter(isLowStock);
 
-   const totalPages = Math.ceil(lowStock.length / itemsPerPage) || 1;
-   const startIndex = (currentPage - 1) * itemsPerPage;
-   const endIndex = startIndex + itemsPerPage;
-   const currentItems = lowStock.slice(startIndex, endIndex);
+  // Filter by search
+  const filteredLowStock = lowStock.filter(p => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (p.productName || '').toLowerCase().includes(q) ||
+           (p.category || '').toLowerCase().includes(q);
+  });
 
-   const handlePageChange = (page) => {
-     if (page < 1 || page > totalPages) return;
-     setCurrentPage(page);
-     window.scrollTo({ top: 0, behavior: 'smooth' });
-   };
+  // Stats
+  const criticalCount = lowStock.filter(p => (p.quantity || 0) === 0).length;
+  const totalAlerts = lowStock.length;
 
-   const buildPageRange = () => {
-     if (totalPages <= 5) {
-       return Array.from({ length: totalPages }, (_, i) => i + 1);
-     }
+  const totalPages = Math.ceil(filteredLowStock.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredLowStock.slice(startIndex, endIndex);
 
-     const pages = [];
-     let start = currentPage - 2;
-     let end = currentPage + 2;
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-     if (start < 1) {
-       start = 1;
-       end = 5;
-     }
+  // Reset page when search changes
+  useEffect(() => { setCurrentPage(1); }, [search]);
 
-     if (end > totalPages) {
-       end = totalPages;
-       start = totalPages - 4;
-     }
-
-     for (let i = start; i <= end; i += 1) {
-       pages.push(i);
-     }
-
-     return pages;
-   };
+  const getStockStatus = (quantity, threshold = 10) => {
+    if (quantity === 0) return { status: 'critical', label: 'Critical', percent: 0 };
+    const percent = Math.min((quantity / threshold) * 100, 100);
+    if (quantity <= threshold * 0.3) return { status: 'critical', label: 'Critical', percent };
+    return { status: 'warning', label: 'Low Stock', percent };
+  };
 
   return (
-    <div
-      style={{
-        padding: '32px 24px',
-        background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)',
-        minHeight: '100vh',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 700,
-              color: '#1e40af',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {t('admin.low_stock_alert')}
-          </h1>
-          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>
-            {t('product.low_stock_products')}
+    <div className={styles.pageContainer}>
+      <div className={styles.contentWrapper}>
+        {/* Page Header */}
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>{t('admin.low_stock_alert')}</h1>
+            <p className={styles.pageSubtitle}>{t('product.low_stock_products')}</p>
           </div>
         </div>
 
+        {/* Stats Cards */}
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={`${styles.statCardDecor} ${styles.statCardDecorBlue}`}></div>
+            <div className={styles.statCardContent}>
+              <span className={styles.statLabel}>Total Alerts</span>
+              <div className={styles.statValue}>
+                <span className={styles.statNumber}>{totalAlerts}</span>
+              </div>
+            </div>
+          </div>
+          <div className={`${styles.statCard} ${styles.statCardCritical}`}>
+            <div className={`${styles.statCardDecor} ${styles.statCardDecorRed}`}></div>
+            <div className={styles.statCardContent}>
+              <span className={styles.statLabel}>Critical Items (0 Stock)</span>
+              <div className={styles.statValue}>
+                <span className={styles.statNumber}>{criticalCount}</span>
+                {criticalCount > 0 && (
+                  <span className={`${styles.statBadge} ${styles.statBadgeRed}`}>Urgent</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={`${styles.statCardDecor} ${styles.statCardDecorIndigo}`}></div>
+            <div className={styles.statCardContent}>
+              <span className={styles.statLabel}>Low Stock Items</span>
+              <div className={styles.statValue}>
+                <span className={styles.statNumber}>{totalAlerts - criticalCount}</span>
+                <span className={styles.statSubtext}>Need attention</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        {/* Toolbar */}
+        <div className={styles.toolbar}>
+          <div className={styles.searchWrapper}>
+            <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('product.search_product')}
+              className={styles.searchInput}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
         {loading ? (
-          <div
-            style={{
-              background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-              padding: 40,
-              borderRadius: 18,
-              textAlign: 'center',
-              color: '#64748b',
-              boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
-            }}
-          >
+          <div className={styles.loadingState}>
             {t('common.loading')}
           </div>
-        ) : lowStock.length === 0 ? (
-          <div
-            style={{
-              background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-              padding: 40,
-              borderRadius: 18,
-              textAlign: 'center',
-              color: '#64748b',
-              boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
-            }}
-          >
-            ✅ {t('common.no_data')}
+        ) : filteredLowStock.length === 0 ? (
+          <div className={styles.emptyState}>
+            <span className={`material-symbols-outlined ${styles.emptyIcon}`}>check_circle</span>
+            {search ? t('common.no_data') : `✅ ${t('common.no_data')}`}
           </div>
         ) : (
-          <div
-            style={{
-              background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-              borderRadius: 18,
-              boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
-              border: '1px solid rgba(255,255,255,0.9)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '2.5fr 2fr 1.2fr 1fr',
-                padding: '14px 20px',
-                background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#1e40af',
-              }}
-            >
-              <div>{t('product.products')}</div>
-              <div>{t('product.low_stock')}</div>
-              <div style={{ textAlign: 'right' }}>{t('common.quantity')}</div>
-              <div style={{ textAlign: 'right' }}>{t('common.action')}</div>
+          <div className={styles.tableContainer}>
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead className={styles.tableHead}>
+                  <tr>
+                    <th className={styles.tableHeadCell}>{t('product.product')}</th>
+                    <th className={styles.tableHeadCell}>{t('product.category')}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellStock}`}>{t('product.stock_level')}</th>
+                    <th className={styles.tableHeadCell}>Status</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.action')}</th>
+                  </tr>
+                </thead>
+                <tbody className={styles.tableBody}>
+                  {currentItems.map((p) => {
+                    const lowVariants = getLowStockVariants(p);
+                    const quantity = p.quantity || 0;
+                    const threshold = p.lowStockThreshold || 10;
+                    const stockStatus = getStockStatus(quantity, threshold);
+                    const isCritical = stockStatus.status === 'critical';
+
+                    return (
+                      <tr key={p.id} className={`${styles.tableRow} ${isCritical ? styles.tableRowCritical : ''}`}>
+                        <td className={styles.tableCell}>
+                          <div className={styles.productCell}>
+                            <div className={styles.productImage}>
+                              {p.image ? (
+                                <img src={p.image} alt={p.productName || ''} />
+                              ) : (
+                                <span className="material-symbols-outlined" style={{ color: '#cbd5e1', fontSize: '1.25rem' }}>inventory_2</span>
+                              )}
+                            </div>
+                            <div className={styles.productInfo}>
+                              <span className={styles.productName}>{p.productName || t('product.no_name')}</span>
+                              <span className={styles.productSku}>{p.id?.slice(0, 8) || '-'}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className={styles.tableCell}>
+                          <span className={styles.categoryText}>{p.category || '-'}</span>
+                        </td>
+                        <td className={styles.tableCell}>
+                          <div className={styles.stockLevelWrapper}>
+                            <div className={styles.stockLevelInfo}>
+                              <span className={isCritical ? styles.stockLevelCurrent : styles.stockLevelCurrentWarning}>
+                                {quantity} {p.unit || t('common.piece')}
+                              </span>
+                              <span className={styles.stockLevelThreshold}>Threshold: {threshold}</span>
+                            </div>
+                            <div className={styles.stockLevelBar}>
+                              <div 
+                                className={`${styles.stockLevelFill} ${isCritical ? styles.stockLevelFillCritical : styles.stockLevelFillWarning}`}
+                                style={{ width: `${stockStatus.percent}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className={styles.tableCell}>
+                          <span className={`${styles.statusBadge} ${isCritical ? styles.statusBadgeCritical : styles.statusBadgeWarning}`}>
+                            {stockStatus.label}
+                          </span>
+                        </td>
+                        <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
+                          <div className={styles.actionButtons}>
+                            <button
+                              className={styles.restockButton}
+                              onClick={() => navigate(`/admin/products?focus=${p.id}`)}
+                            >
+                              {t('product.add_stock')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            {currentItems.map((p) => {
-              const lowVariants = getLowStockVariants(p);
-              const unit = p.unit || t('common.piece');
-              
-              return (
-                <div
-                  key={p.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '2.5fr 2fr 1.2fr 1fr',
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #f1f5f9',
-                    fontSize: 14,
-                    alignItems: 'center',
-                    background: (p.quantity || 0) === 0 ? '#fef2f2' : '#fff',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 56, height: 56, borderRadius: 10, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
-                      {p.image ? (
-                        <img
-                          src={p.image}
-                          alt={p.productName || ''}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 20 }}>📦</div>
-                      )}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 15 }}>{p.productName || t('product.no_name')}</div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                        {p.category && <span style={{ background: '#eff6ff', color: '#1e40af', padding: '2px 8px', borderRadius: 4, marginRight: 6 }}>{p.category}</span>}
-                        {p.hasVariants && <span style={{ color: '#6b7280' }}>{p.variants?.length || 0} variants</span>}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    {lowVariants.length > 0 ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {lowVariants.map((v, idx) => (
-                          <span 
-                            key={idx}
-                            style={{ 
-                              background: v.available === 0 ? '#dc2626' : v.available <= 5 ? '#f59e0b' : '#fef3c7',
-                              color: v.available <= 5 ? '#fff' : '#92400e',
-                              padding: '4px 10px', 
-                              borderRadius: 6, 
-                              fontSize: 12, 
-                              fontWeight: 500,
-                            }}
-                          >
-                            {v.size}/{v.color}: {v.available}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span style={{ 
-                        background: '#dc2626', 
-                        color: '#fff', 
-                        padding: '4px 10px', 
-                        borderRadius: 6, 
-                        fontSize: 12, 
-                        fontWeight: 500 
-                      }}>
-                        {t('alerts.total_stock_low')}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: (p.quantity || 0) === 0 ? '#dc2626' : '#f59e0b' }}>
-                      {(p.quantity ?? 0).toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{unit}</div>
-                  </div>
-                  
-                  <div style={{ textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/admin/products?focus=${p.id}`)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
-                      }}
-                    >
-                      {t('product.add_stock')}
-                    </button>
-                  </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <span className={styles.paginationInfo}>
+                  Showing <span className={styles.paginationInfoHighlight}>{startIndex + 1}-{Math.min(endIndex, filteredLowStock.length)}</span> of <span className={styles.paginationInfoHighlight}>{filteredLowStock.length}</span> alerts
+                </span>
+                <div className={styles.paginationButtons}>
+                  <button
+                    className={styles.paginationButton}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    {t('common.previous')}
+                  </button>
+                  <button
+                    className={styles.paginationButton}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    {t('common.next')}
+                  </button>
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
         )}
       </div>
-      {/* Pagination */}
-      {lowStock.length > 0 && totalPages > 1 && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 8,
-            padding: '18px 22px',
-            marginTop: 16,
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-            borderRadius: 18,
-            boxShadow: '0 8px 32px rgba(15,23,42,0.12), 0 4px 12px rgba(37,99,235,0.08)',
-            border: '1px solid rgba(255,255,255,0.9)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 10,
-              border: '2px solid #e2e8f0',
-              background: currentPage === 1 ? '#f1f5f9' : '#ffffff',
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              color: currentPage === 1 ? '#94a3b8' : '#1e40af',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {t('common.previous')}
-          </button>
-          {buildPageRange().map((page) => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => handlePageChange(page)}
-              style={{
-                padding: '8px 14px',
-                borderRadius: 10,
-                border: currentPage === page ? 'none' : '2px solid #e2e8f0',
-                background:
-                  currentPage === page
-                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                    : '#ffffff',
-                color: currentPage === page ? '#ffffff' : '#374151',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontWeight: 600,
-                boxShadow:
-                  currentPage === page
-                    ? '0 2px 8px rgba(37,99,235,0.4)'
-                    : 'none',
-                minWidth: 40,
-              }}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 10,
-              border: '2px solid #e2e8f0',
-              background: currentPage === totalPages ? '#f1f5f9' : '#ffffff',
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              color: currentPage === totalPages ? '#94a3b8' : '#1e40af',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {t('common.next')}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
