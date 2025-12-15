@@ -281,7 +281,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding-left: 1rem;
+  margin-left: auto;
 }
 
 .notificationButton {

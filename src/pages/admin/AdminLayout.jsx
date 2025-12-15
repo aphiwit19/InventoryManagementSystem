@@ -111,20 +111,6 @@ const AdminLayout = () => {
             <h2 className={styles.mobileTitle}>Dashboard</h2>
           </div>
 
-          {/* Desktop Search */}
-          <div className={styles.searchContainer}>
-            <div className={styles.searchWrapper}>
-              <div className={styles.searchIcon}>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>search</span>
-              </div>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder={t('common.search') || 'Search orders, products, or customers...'}
-              />
-            </div>
-          </div>
-
           {/* Header Actions */}
           <div className={styles.headerActions}>
             <LanguageSwitcher />
