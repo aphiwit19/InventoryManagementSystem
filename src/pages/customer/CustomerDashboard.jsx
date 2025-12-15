@@ -273,7 +273,7 @@ export default function CustomerDashboard() {
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none',
                 fontSize: '1.25rem',
-                color: '#4c669a'
+                color: 'white'
               }}
             >
               keyboard_arrow_down
@@ -297,12 +297,6 @@ export default function CustomerDashboard() {
             >
               close
             </span>
-          </button>
-          <button 
-            className={styles.clearFiltersButton}
-            onClick={() => setCategoryFilter('')}
-          >
-            {t('common.clear_all') || 'Clear all'}
           </button>
         </div>
       )}

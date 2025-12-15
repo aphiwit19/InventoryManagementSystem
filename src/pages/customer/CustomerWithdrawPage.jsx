@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCart, updateCartItem, removeFromCart } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
+import styles from './CustomerWithdrawPage.module.css';
 
 export default function CustomerWithdrawPage() {
   const { t } = useTranslation();
@@ -11,11 +12,18 @@ export default function CustomerWithdrawPage() {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState('shipping');
 
   // Form data
   const [formData, setFormData] = useState({
     recipientName: '',
-    recipientAddress: '',
+    phone: '',
+    email: '',
+    address: '',
+    province: '',
+    district: '',
+    subdistrict: '',
+    zipCode: '',
   });
 
   useEffect(() => {
@@ -38,7 +46,9 @@ export default function CustomerWithdrawPage() {
       setFormData(prev => ({
         ...prev,
         recipientName: profile.displayName || profile.email || '',
-        recipientAddress: profile.address || prev.recipientAddress || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
       }));
     }
   }, [profile]);
@@ -71,25 +81,45 @@ export default function CustomerWithdrawPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm('ต้องการลบสินค้าทั้งหมดออกจากตะกร้าหรือไม่?')) return;
+    try {
+      for (const item of cart) {
+        await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor);
+      }
+      setCart([]);
+      window.dispatchEvent(new Event('customer-cart-updated'));
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) {
       alert('ไม่มีสินค้าในตะกร้า');
       return;
     }
-    if (!formData.recipientName || !formData.recipientAddress) {
+    if (!formData.recipientName || !formData.address) {
       alert('กรุณากรอกข้อมูลผู้รับให้ครบถ้วน');
       return;
     }
 
     setSubmitting(true);
     try {
-      // ส่งต่อข้อมูลฟอร์มไปยังหน้าชำระเงิน โดยยังไม่สร้างคำสั่งซื้อทันที
       navigate('/customer/payment', {
         state: {
           shipping: {
             recipientName: formData.recipientName,
-            recipientAddress: formData.recipientAddress,
+            phone: formData.phone,
+            email: formData.email,
+            address: formData.address,
+            province: formData.province,
+            district: formData.district,
+            subdistrict: formData.subdistrict,
+            zipCode: formData.zipCode,
+            deliveryMethod: deliveryMethod,
           },
         },
       });
@@ -101,300 +131,117 @@ export default function CustomerWithdrawPage() {
     }
   };
 
-  const totalAmount = cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0);
+  const shippingFee = deliveryMethod === 'pickup' ? 0 : 50;
+  const tax = Math.round(subtotal * 0.07);
+  const totalAmount = subtotal + shippingFee + tax;
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#F1F5F9',
-        }}
-      >
-        <p style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</p>
+      <div className={styles.loadingState}>
+        <p className={styles.loadingText}>{t('common.loading')}</p>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F1F5F9',
-        padding: '24px 24px 32px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        {/* Page Header */}
-        <section
-          style={{
-            background: '#FFFFFF',
-            borderRadius: 16,
-            padding: '24px 28px',
-            marginBottom: 24,
-            boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-            border: '1px solid #E2E8F0',
-          }}
-        >
-          <h1
-            style={{
-              margin: 0,
-              fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-              fontSize: 24,
-              fontWeight: 700,
-              color: '#2563EB',
-            }}
-          >
-            {t('cart.my_cart')}
-          </h1>
-        </section>
+    <div className={styles.container}>
+      {/* Breadcrumbs */}
+      <div className={styles.breadcrumbs}>
+        <a href="/customer" className={styles.breadcrumbLink}>Inventory</a>
+        <span className={styles.breadcrumbSeparator}>/</span>
+        <span className={styles.breadcrumbCurrent}>{t('cart.cart') || 'Withdraw Cart'}</span>
+      </div>
 
-        {cart.length === 0 ? (
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 16,
-              padding: '48px 24px',
-              textAlign: 'center',
-              boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-            }}
+      {cart.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyStateIcon}>🛒</div>
+          <h2 className={styles.emptyStateTitle}>{t('cart.cart_empty') || 'Your cart is empty'}</h2>
+          <p className={styles.emptyStateDesc}>
+            {t('cart.cart_empty_hint') || 'Start adding items to your cart from the inventory.'}
+          </p>
+          <button
+            onClick={() => navigate('/customer')}
+            className={styles.emptyStateButton}
           >
-            <div style={{ fontSize: 64, marginBottom: 12 }}>🛒</div>
-            <h2
-              style={{
-                margin: '0 0 8px',
-                fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                fontSize: 22,
-                fontWeight: 700,
-                color: '#0F172A',
-              }}
-            >
-              {t('cart.cart_empty')}
-            </h2>
-            <p style={{ color: '#64748B', fontSize: 14, marginBottom: 20 }}>
-              {t('cart.cart_empty_hint') || 'ยังไม่มีสินค้าในตะกร้า เลือกสินค้าที่ต้องการได้จากหน้า Dashboard'}
-            </p>
-            <button
-              onClick={() => navigate('/customer')}
-              style={{
-                padding: '12px 26px',
-                borderRadius: 12,
-                border: 'none',
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                color: '#FFFFFF',
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 6px 18px rgba(30,64,175,0.5)',
-              }}
-            >
-              {t('cart.go_shopping')}
-            </button>
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) 360px',
-              gap: 24,
-              alignItems: 'flex-start',
-            }}
-          >
-            {/* Left: Cart Items */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {t('cart.go_shopping') || 'Browse Inventory'}
+          </button>
+        </div>
+      ) : (
+        <div className={styles.mainGrid}>
+          {/* Left Column: Cart & Details */}
+          <div className={styles.leftColumn}>
+            {/* Page Header */}
+            <div className={styles.pageHeader}>
+              <h1 className={styles.pageTitle}>Withdraw Items</h1>
+              <p className={styles.pageSubtitle}>Review your selected items and choose a delivery method.</p>
+            </div>
+
+            {/* Cart Items List */}
+            <div className={styles.cartItemsList}>
+              <div className={styles.cartHeader}>
+                <h2 className={styles.cartTitle}>Selected Items ({totalItems})</h2>
+                <button className={styles.clearAllButton} onClick={handleClearAll}>
+                  <strong>Clear All</strong>
+                </button>
+              </div>
+
               {cart.map((item, idx) => (
                 <div
                   key={`${item.productId}-${item.variantSize}-${item.variantColor}-${idx}`}
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: 16,
-                    padding: '18px 18px',
-                    display: 'flex',
-                    gap: 18,
-                    alignItems: 'center',
-                    boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-                    border: '1px solid #E2E8F0',
-                  }}
+                  className={styles.cartItem}
                 >
-                  {/* Image */}
                   <div
-                    style={{
-                      width: 110,
-                      height: 110,
-                      borderRadius: 12,
-                      background: '#F8FAFC',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.productName}
-                        style={{ maxWidth: '92%', maxHeight: '92%', objectFit: 'contain' }}
-                      />
-                    ) : (
-                      <span style={{ fontSize: 32, color: '#9CA3AF' }}>📦</span>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3
-                      style={{
-                        margin: '0 0 6px',
-                        fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: '#0F172A',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {item.productName}
-                    </h3>
-                    {(item.variantSize || item.variantColor) && (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        {item.variantSize && (
-                          <span
-                            style={{
-                              background: 'rgba(37,99,235,0.08)',
-                              color: '#1D4ED8',
-                              padding: '2px 8px',
-                              borderRadius: 999,
-                              fontSize: 11,
-                              fontWeight: 500,
-                            }}
-                          >
-                            {t('product.size')}: {item.variantSize}
-                          </span>
-                        )}
-                        {item.variantColor && (
-                          <span
-                            style={{
-                              background: 'rgba(59,130,246,0.06)',
-                              color: '#1D4ED8',
-                              padding: '2px 8px',
-                              borderRadius: 999,
-                              fontSize: 11,
-                              fontWeight: 500,
-                            }}
-                          >
-                            {t('product.color')}: {item.variantColor}
-                          </span>
-                        )}
+                    className={styles.cartItemImage}
+                    style={{ backgroundImage: item.image ? `url('${item.image}')` : 'none' }}
+                  />
+                  <div className={styles.cartItemContent}>
+                    <div className={styles.cartItemHeader}>
+                      <div className={styles.cartItemInfo}>
+                        <h3 className={styles.cartItemName}>{item.productName}</h3>
+                        <p className={styles.cartItemSku}>
+                          {item.variantSize && `${t('product.size')}: ${item.variantSize}`}
+                          {item.variantSize && item.variantColor && ' | '}
+                          {item.variantColor && `${t('product.color')}: ${item.variantColor}`}
+                        </p>
                       </div>
-                    )}
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>
-                      {t('common.unit')}: {item.unit || t('common.piece')}
+                      <p className={styles.cartItemPrice}>฿{item.sellPrice.toLocaleString()}</p>
                     </div>
-
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                      }}
-                    >
-                      {/* Quantity */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          background: '#F1F5F9',
-                          borderRadius: 999,
-                          padding: '4px 8px',
-                        }}
-                      >
-                        <button
-                          onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 8,
-                            border: 'none',
-                            background: item.quantity <= 1 ? '#E5E7EB' : '#FFFFFF',
-                            cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer',
-                            fontSize: 16,
-                            fontWeight: 700,
-                            color: '#0F172A',
-                          }}
-                        >
-                          −
-                        </button>
-                        <span
-                          style={{
-                            minWidth: 32,
-                            textAlign: 'center',
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: '#0F172A',
-                          }}
-                        >
-                          {item.quantity}
+                    <div className={styles.cartItemFooter}>
+                      <div className={styles.cartItemVariants}>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {t('common.unit')}: {item.unit || t('common.piece')}
                         </span>
-                        <button
-                          onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 8,
-                            border: 'none',
-                            background: '#FFFFFF',
-                            cursor: 'pointer',
-                            fontSize: 16,
-                            fontWeight: 700,
-                            color: '#0F172A',
-                          }}
-                        >
-                          +
-                        </button>
                       </div>
-
-                      {/* Price + remove */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'flex-end',
-                          gap: 6,
-                        }}
-                      >
-                        <button
-                          onClick={() => handleRemoveItem(item)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#EF4444',
-                            cursor: 'pointer',
-                            fontSize: 20,
-                            lineHeight: 1,
-                          }}
-                        >
-                          ×
-                        </button>
-                        <div
-                          style={{
-                            fontFamily:
-                              'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                            fontSize: 18,
-                            fontWeight: 700,
-                            color: '#111827',
-                          }}
-                        >
-                          ฿{(item.sellPrice * item.quantity).toLocaleString()}
+                      <div className={styles.cartItemActions}>
+                        <div className={styles.quantityControl}>
+                          <button
+                            className={styles.quantityButton}
+                            onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>remove</span>
+                          </button>
+                          <input
+                            type="text"
+                            readOnly
+                            value={item.quantity}
+                            className={styles.quantityInput}
+                          />
+                          <button
+                            className={styles.quantityButton}
+                            onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>add</span>
+                          </button>
                         </div>
+                        <button
+                          className={styles.deleteButton}
+                          onClick={() => handleRemoveItem(item)}
+                        >
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -402,204 +249,254 @@ export default function CustomerWithdrawPage() {
               ))}
             </div>
 
-            {/* Right: Summary + Shipping Form */}
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: 16,
-                padding: '22px 20px 24px',
-                boxShadow: '0 2px 10px rgba(15,23,42,0.08)',
-                border: '1px solid #E2E8F0',
-                position: 'sticky',
-                top: 96,
-              }}
-            >
-              <h2
-                style={{
-                  margin: '0 0 16px',
-                  fontFamily: 'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: '#0F172A',
-                }}
-              >
-                {t('order.shipping_info')}
-              </h2>
+            {/* Delivery Method Section */}
+            <div className={styles.deliverySection}>
+              <h2 className={styles.deliverySectionTitle}>Delivery Method</h2>
+              <div className={styles.deliveryOptions}>
+                {/* Option 1: Pickup */}
+                <label className={styles.deliveryOption}>
+                  <input
+                    type="radio"
+                    name="delivery"
+                    value="pickup"
+                    checked={deliveryMethod === 'pickup'}
+                    onChange={(e) => setDeliveryMethod(e.target.value)}
+                    className={styles.deliveryOptionInput}
+                  />
+                  <div className={styles.deliveryOptionCard}>
+                    <div className={styles.deliveryOptionHeader}>
+                      <div className={styles.deliveryOptionIcon}>
+                        <span className="material-symbols-outlined">storefront</span>
+                      </div>
+                      <div className={styles.deliveryOptionRadio}>
+                        <div className={styles.deliveryOptionRadioDot} />
+                      </div>
+                    </div>
+                    <div className={styles.deliveryOptionContent}>
+                      <p className={styles.deliveryOptionTitle}>Self Pickup</p>
+                      <p className={styles.deliveryOptionDesc}>Collect from Warehouse</p>
+                      <p className={`${styles.deliveryOptionPrice} ${styles.deliveryOptionPriceFree}`}>
+                        FREE
+                      </p>
+                    </div>
+                  </div>
+                </label>
 
-              <form
-                onSubmit={handleSubmit}
-                style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: 6,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: '#374151',
-                    }}
-                  >
-                    {t('order.recipient_name')} *
-                  </label>
+                {/* Option 2: Shipping */}
+                <label className={styles.deliveryOption}>
+                  <input
+                    type="radio"
+                    name="delivery"
+                    value="shipping"
+                    checked={deliveryMethod === 'shipping'}
+                    onChange={(e) => setDeliveryMethod(e.target.value)}
+                    className={styles.deliveryOptionInput}
+                  />
+                  <div className={styles.deliveryOptionCard}>
+                    <div className={styles.deliveryOptionHeader}>
+                      <div className={styles.deliveryOptionIcon}>
+                        <span className="material-symbols-outlined">local_shipping</span>
+                      </div>
+                      <div className={styles.deliveryOptionRadio}>
+                        <div className={styles.deliveryOptionRadioDot} />
+                      </div>
+                    </div>
+                    <div className={styles.deliveryOptionContent}>
+                      <p className={styles.deliveryOptionTitle}>Standard Shipping</p>
+                      <p className={styles.deliveryOptionDesc}>Delivery within 3-5 business days</p>
+                      <p className={`${styles.deliveryOptionPrice} ${styles.deliveryOptionPricePaid}`}>
+                        ฿{shippingFee.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Shipping Address Form */}
+            <form className={styles.shippingForm} onSubmit={handleSubmit}>
+              <div className={styles.shippingFormHeader}>
+                <span className={`material-symbols-outlined ${styles.shippingFormIcon}`}>location_on</span>
+                <h2 className={styles.shippingFormTitle}>Shipping Address</h2>
+              </div>
+
+              <div className={styles.formGrid}>
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>Full Name / Company Name</label>
                   <input
                     type="text"
+                    className={styles.formInput}
+                    placeholder="e.g. Somchai Jai-dee"
                     value={formData.recipientName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        recipientName: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      fontSize: 14,
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 999,
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: 6,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: '#374151',
-                    }}
-                  >
-                    {t('order.shipping_address')} *
-                  </label>
-                  <textarea
-                    value={formData.recipientAddress}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        recipientAddress: e.target.value,
-                      }))
-                    }
-                    required
-                    rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      fontSize: 14,
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 14,
-                      boxSizing: 'border-box',
-                      resize: 'vertical',
-                      fontFamily: 'inherit',
-                    }}
                   />
                 </div>
 
-                {/* Summary */}
-                <div
-                  style={{
-                    marginTop: 6,
-                    padding: '12px 12px 14px',
-                    borderRadius: 12,
-                    background: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '6px 0',
-                      fontSize: 14,
-                      borderBottom: '1px solid #E5E7EB',
-                    }}
-                  >
-                    <span style={{ color: '#64748B' }}>{t('common.items')}:</span>
-                    <span style={{ fontWeight: 600, color: '#0F172A' }}>
-                      {cart.length} {t('common.items')}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '8px 0 2px',
-                      fontSize: 15,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily:
-                          'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                        fontWeight: 700,
-                        color: '#0F172A',
-                      }}
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Phone Number</label>
+                  <input
+                    type="tel"
+                    className={styles.formInput}
+                    placeholder="08x-xxx-xxxx"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
+                  <label className={styles.formLabel}>Email Address (Optional)</label>
+                  <input
+                    type="email"
+                    className={styles.formInput}
+                    placeholder="name@company.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>Address Details</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    placeholder="Building, Floor, Room, Street"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Province</label>
+                  <div className={styles.selectWrapper}>
+                    <select
+                      className={styles.formSelect}
+                      value={formData.province}
+                      onChange={(e) => setFormData(prev => ({ ...prev, province: e.target.value }))}
                     >
-                      {t('common.total')}:
-                    </span>
-                    <span
-                      style={{
-                        fontFamily:
-                          'Kanit, system-ui, -apple-system, BlinkMacSystemFont',
-                        fontSize: 20,
-                        fontWeight: 800,
-                        color: '#2563EB',
-                      }}
-                    >
-                      ฿{totalAmount.toLocaleString()}
-                    </span>
+                      <option value="">{t('common.select') || 'Select Province'}</option>
+                      <option value="Bangkok">Bangkok</option>
+                      <option value="Chiang Mai">Chiang Mai</option>
+                      <option value="Phuket">Phuket</option>
+                    </select>
+                    <span className={`material-symbols-outlined ${styles.selectIcon}`}>expand_more</span>
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{
-                    marginTop: 10,
-                    padding: '12px 16px',
-                    borderRadius: 12,
-                    border: 'none',
-                    background: submitting
-                      ? '#9CA3AF'
-                      : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                    color: '#FFFFFF',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    boxShadow: submitting
-                      ? 'none'
-                      : '0 8px 22px rgba(30,64,175,0.55)',
-                  }}
-                >
-                  {submitting
-                    ? t('message.processing')
-                    : t('order.confirm_order')}
-                </button>
+                <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
+                  <label className={styles.formLabel}>District</label>
+                  <div className={styles.selectWrapper}>
+                    <select
+                      className={styles.formSelect}
+                      value={formData.district}
+                      onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
+                    >
+                      <option value="">{t('common.select') || 'Select District'}</option>
+                      <option value="Pathum Wan">Pathum Wan</option>
+                      <option value="Bang Rak">Bang Rak</option>
+                    </select>
+                    <span className={`material-symbols-outlined ${styles.selectIcon}`}>expand_more</span>
+                  </div>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => navigate('/customer')}
-                  style={{
-                    marginTop: 8,
-                    padding: '10px 16px',
-                    borderRadius: 12,
-                    border: '2px solid #2563EB',
-                    background: '#FFFFFF',
-                    color: '#2563EB',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  ← {t('cart.go_shopping')}
-                </button>
-              </form>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Sub-district</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.subdistrict}
+                    onChange={(e) => setFormData(prev => ({ ...prev, subdistrict: e.target.value }))}
+                  />
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
+                  <label className={styles.formLabel}>Zip Code</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.zipCode}
+                    onChange={(e) => setFormData(prev => ({ ...prev, zipCode: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Right Column: Order Summary */}
+          <div className={styles.rightColumn}>
+            <div className={styles.summarySticky}>
+              {/* Summary Card */}
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryHeader}>
+                  <h2 className={styles.summaryTitle}>Order Summary</h2>
+                </div>
+                <div className={styles.summaryBody}>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>
+                      {t('cart.subtotal') || 'Subtotal'} ({totalItems} {t('common.items') || 'items'})
+                    </span>
+                    <span className={styles.summaryValue}>฿{subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>Shipping Estimate</span>
+                    <span className={styles.summaryValue}>
+                      {shippingFee === 0 ? (t('common.free') || 'FREE') : `฿${shippingFee.toLocaleString()}`}
+                    </span>
+                  </div>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>Tax (7%)</span>
+                    <span className={styles.summaryValue}>฿{tax.toLocaleString()}</span>
+                  </div>
+
+                  {/* Promo Code */}
+                  <div className={styles.promoSection}>
+                    <div className={styles.promoInputWrapper}>
+                      <input
+                        type="text"
+                        className={styles.promoInput}
+                        placeholder="Promo code"
+                      />
+                      <button type="button" className={styles.promoButton}>
+                        {t('common.apply') || 'Apply'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.summaryDivider} />
+
+                  <div className={styles.summaryTotal}>
+                    <span className={styles.summaryTotalLabel}>{t('common.total') || 'Total'}</span>
+                    <div className={styles.summaryTotalValue}>
+                      <span className={styles.summaryTotalAmount}>฿{totalAmount.toLocaleString()}</span>
+                      <span className={styles.summaryTotalCurrency}>THB</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.summaryFooter}>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className={styles.submitButton}
+                  >
+                    {submitting ? 'Processing...' : 'Confirm Withdrawal'}
+                    <span className={`material-symbols-outlined ${styles.submitButtonIcon}`} style={{ fontSize: '1.25rem' }}>
+                      arrow_forward
+                    </span>
+                  </button>
+                  <p className={styles.secureText}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>lock</span>
+                    Secure processing
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

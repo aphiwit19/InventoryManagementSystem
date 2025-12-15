@@ -319,9 +319,10 @@
 }
 
 .navLinkActive {
-  background-color: rgba(19, 91, 236, 0.1);
-  color: #135bec;
+  background-color: #135bec;
+  color: white;
   font-weight: 500;
+  border-radius: 0.5rem;
 }
 
 .navIcon {
@@ -330,7 +331,7 @@
 }
 
 .navLinkActive .navIcon {
-  color: #135bec;
+  color: white;
 }
 
 .navLink:hover .navIcon {
