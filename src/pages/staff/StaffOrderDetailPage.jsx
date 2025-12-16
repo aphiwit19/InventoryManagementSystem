@@ -81,9 +81,6 @@ export default function StaffOrderDetailPage() {
   };
   const dateMs = toDateMs(order.withdrawDate);
   const dateStr = dateMs ? new Date(dateMs).toLocaleDateString('th-TH') : '-';
-  const timeStr = dateMs
-    ? new Date(dateMs).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
-    : '';
 
   const deliveryMethod = order.deliveryMethod || 'shipping';
   const deliveryText = deliveryMethod === 'pickup' ? (t('order.pickup') || 'รับเอง') : (t('order.shipping') || 'จัดส่ง');
@@ -92,16 +89,13 @@ export default function StaffOrderDetailPage() {
     <div className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
-          <a
-            href="#"
+          <button
+            type="button"
             className={styles.breadcrumbLink}
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/staff/orders');
-            }}
+            onClick={() => navigate('/staff/orders')}
           >
             {t('order.orders') || 'Orders'}
-          </a>
+          </button>
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
           <span className={styles.breadcrumbMid}>{t('withdraw.withdraw_history') || 'Withdrawals'}</span>
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>

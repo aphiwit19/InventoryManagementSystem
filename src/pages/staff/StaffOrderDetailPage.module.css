@@ -29,6 +29,11 @@
 .breadcrumbLink {
   color: #64748b;
   text-decoration: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
   transition: color 0.2s ease;
 }
 

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import { getAllProducts, addToCart, getCart, DEFAULT_CATEGORIES } from '../../services';
+import { useOutletContext } from 'react-router-dom';
+import { getAllProducts, addToCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
 import styles from './StaffDashboard.module.css';
 
 export default function StaffDashboard() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const outletCtx = useOutletContext();
   const searchQuery = outletCtx?.searchQuery || '';
@@ -24,9 +23,6 @@ export default function StaffDashboard() {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
-
-  // Cart count for badge
-  const [cartCount, setCartCount] = useState(0);
 
   // Profile menu
   // eslint-disable-next-line no-unused-vars
@@ -53,28 +49,6 @@ export default function StaffDashboard() {
     };
     loadProducts();
   }, []);
-
-  // Load cart count
-  useEffect(() => {
-    if (!user?.uid) {
-      setCartCount(0);
-      return;
-    }
-    const loadCartCount = async () => {
-      try {
-        const cartItems = await getCart(user.uid, 'staff');
-        const total = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        setCartCount(total);
-      } catch (err) {
-        console.warn('load staff cart failed:', err);
-      }
-    };
-    loadCartCount();
-
-    const handler = () => loadCartCount();
-    window.addEventListener('staff-cart-updated', handler);
-    return () => window.removeEventListener('staff-cart-updated', handler);
-  }, [user?.uid]);
 
   const uniqueCategories = useMemo(() => {
     const cats = products.map(p => p.category).filter(c => c && c.trim() !== '');
@@ -202,8 +176,6 @@ export default function StaffDashboard() {
       }
 
       await addToCart(user.uid, cartItem, 'staff');
-      // Update cart count
-      setCartCount(prev => prev + quantity);
       // Dispatch event for other components
       window.dispatchEvent(new Event('staff-cart-updated'));
       closeModal();
