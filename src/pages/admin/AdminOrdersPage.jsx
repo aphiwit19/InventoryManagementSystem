@@ -50,7 +50,7 @@ export default function AdminOrdersPage() {
       o.requestedBy?.toLowerCase().includes(search.toLowerCase()) ||
       o.receivedBy?.toLowerCase().includes(search.toLowerCase())
     );
-    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'pending') === statusFilter;
+    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
     const sourceOk = sourceFilter === 'all' || (o.createdSource || '') === sourceFilter;
     const deliveryOk = deliveryFilter === 'all' || ((o.deliveryMethod || 'shipping') === deliveryFilter);
     return hit && statusOk && sourceOk && deliveryOk;
@@ -181,7 +181,7 @@ export default function AdminOrdersPage() {
                     <div>{t('common.action')}</div>
                   </div>
                   {currentOrders.map((o) => {
-                    const isProcessed = (o.shippingStatus || 'pending') !== 'pending';
+                    const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
                     return (
                       <div key={o.id} className={styles.tableRowCustomer}>
                         <div>{formatDate(o.withdrawDate)}</div>
@@ -220,7 +220,7 @@ export default function AdminOrdersPage() {
                     if (deliveryFilter === 'pickup' && (o.deliveryMethod || 'shipping') !== 'pickup') return null;
 
                     const deliveryText = (o.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping');
-                    const isProcessed = (o.shippingStatus || 'pending') !== 'pending';
+                    const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
 
                     return (
                       <div key={o.id} className={styles.tableRowStaff}>

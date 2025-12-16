@@ -58,10 +58,10 @@ const StaffLayout = () => {
 
   // Menu items with icons
   const menuItems = [
-    { path: '/staff', icon: '/cubes.png', labelKey: 'product.product_list', exact: true, isImage: true },
-    { path: '/staff/withdraw', icon: '/cash-machine.png', labelKey: 'withdraw.withdraw_request', isImage: true },
-    { path: '/staff/orders', icon: '/tracking.png', labelKey: 'order.track_status', isImage: true },
-    { path: '/staff/profile', icon: '/people.png', labelKey: 'common.profile', isImage: true },
+    { path: '/staff', icon: 'category', labelKey: 'product.product_list', exact: true },
+    { path: '/staff/withdraw', icon: 'shopping_cart', labelKey: 'withdraw.withdraw_request' },
+    { path: '/staff/orders', icon: 'local_shipping', labelKey: 'order.track_status' },
+    { path: '/staff/profile', icon: 'person', labelKey: 'common.profile' },
   ];
 
   const isActiveLink = (path, exact = false) => {
@@ -80,7 +80,7 @@ const StaffLayout = () => {
             <img src="/Inventory Hub .png" alt="Inventory Hub" width={32} height={32} />
           </div>
           <div>
-            <div className={styles.logoTitle}>Inventory Hub</div>
+            <div className={styles.logoTitle}>Inventory Pro</div>
             <div className={styles.logoSubtitle}>Staff Portal</div>
           </div>
         </div>
@@ -96,13 +96,7 @@ const StaffLayout = () => {
                   to={item.path}
                   className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
                 >
-                  <span className={styles.navIcon}>
-                    {item.isImage ? (
-                      <img src={item.icon} alt="" width={20} height={20} />
-                    ) : (
-                      <span className="material-symbols-outlined">grid_view</span>
-                    )}
-                  </span>
+                  <span className={`material-symbols-outlined ${styles.navIcon}`}>{item.icon}</span>
                   <span className={styles.navLabel}>{t(item.labelKey)}</span>
                 </Link>
               );

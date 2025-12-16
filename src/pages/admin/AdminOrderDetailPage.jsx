@@ -4,8 +4,8 @@ import { updateWithdrawalShipping } from '../../services';
 import { useTranslation } from 'react-i18next';
 
 const carriers = ['EMS', 'Thailand Post', 'Kerry', 'J&T', 'Flash'];
-const statuses = ['pending', 'processing', 'delivered'];
-const pickupStatuses = ['pending', 'picked_up'];
+const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
+const pickupStatuses = ['รอดำเนินการ', 'รับของแล้ว'];
 
 export default function AdminOrderDetailPage() {
   const { t } = useTranslation();
@@ -18,7 +18,7 @@ export default function AdminOrderDetailPage() {
   const [form, setForm] = useState({
     shippingCarrier: initialOrder?.shippingCarrier || '',
     trackingNumber: initialOrder?.trackingNumber || '',
-    shippingStatus: initialOrder?.shippingStatus || 'pending',
+    shippingStatus: initialOrder?.shippingStatus || 'รอดำเนินการ',
   });
   const [paymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
   const [saving, setSaving] = useState(false);
