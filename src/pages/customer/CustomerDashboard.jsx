@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { getAllProducts, addToCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -8,10 +9,13 @@ import styles from './CustomerDashboard.module.css';
 export default function CustomerDashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const outletCtx = useOutletContext();
+  const searchQuery = outletCtx?.searchQuery || '';
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -71,21 +75,46 @@ export default function CustomerDashboard() {
 
   const uniqueCategories = useMemo(() => {
     const cats = products.map(p => p.category).filter(c => c && c.trim() !== '');
-    return [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
+    const sorted = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
+
+    const otherLabel = 'อื่นๆ';
+    const idx = sorted.findIndex((c) => String(c).trim() === otherLabel);
+    if (idx >= 0) {
+      const [other] = sorted.splice(idx, 1);
+      sorted.push(other);
+    }
+
+    return sorted;
   }, [products]);
+
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const onDown = (e) => {
+      if (!categoryRef.current) return;
+      if (!categoryRef.current.contains(e.target)) {
+        setCategoryOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', onDown);
+    return () => window.removeEventListener('mousedown', onDown);
+  }, [categoryOpen]);
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
-    if (searchTerm.trim() !== '') {
+    if (searchQuery.trim() !== '') {
       filtered = filtered.filter(product =>
-        product.productName?.toLowerCase().includes(searchTerm.toLowerCase())
+        product.productName?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     if (categoryFilter) {
       filtered = filtered.filter(product => product.category === categoryFilter);
     }
     return filtered;
-  }, [products, searchTerm, categoryFilter]);
+  }, [products, searchQuery, categoryFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -247,37 +276,51 @@ export default function CustomerDashboard() {
             <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>filter_list</span>
             {t('common.filters') || 'Filters'}
           </button>
-          <div style={{ position: 'relative' }}>
-            <select
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className={styles.sortButton}
-              style={{ appearance: 'none', paddingRight: '2rem' }}
+          <div className={styles.categoryDropdown} ref={categoryRef}>
+            <button
+              type="button"
+              className={styles.categoryButton}
+              onClick={() => setCategoryOpen((v) => !v)}
+              aria-haspopup="listbox"
+              aria-expanded={categoryOpen}
             >
-              <option value="">{t('common.all_categories') || 'All Categories'}</option>
-              {uniqueCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {t(`categories.${cat}`, cat)}
-                </option>
-              ))}
-            </select>
-            <span 
-              className="material-symbols-outlined" 
-              style={{ 
-                position: 'absolute', 
-                right: '0.75rem', 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                pointerEvents: 'none',
-                fontSize: '1.25rem',
-                color: 'white'
-              }}
-            >
-              keyboard_arrow_down
-            </span>
+              <span>
+                {categoryFilter
+                  ? t(`categories.${categoryFilter}`, categoryFilter)
+                  : (t('common.all_categories') || 'All Categories')}
+              </span>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>keyboard_arrow_down</span>
+            </button>
+
+            {categoryOpen && (
+              <div className={styles.categoryMenu} role="listbox">
+                <button
+                  type="button"
+                  className={styles.categoryMenuItem}
+                  onClick={() => {
+                    setCategoryFilter('');
+                    setCurrentPage(1);
+                    setCategoryOpen(false);
+                  }}
+                >
+                  {t('common.all_categories') || 'All Categories'}
+                </button>
+                {uniqueCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={styles.categoryMenuItem}
+                    onClick={() => {
+                      setCategoryFilter(cat);
+                      setCurrentPage(1);
+                      setCategoryOpen(false);
+                    }}
+                  >
+                    {t(`categories.${cat}`, cat)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -309,7 +352,7 @@ export default function CustomerDashboard() {
       ) : currentProducts.length === 0 ? (
         <div className={styles.emptyState}>
           <p className={styles.emptyText}>
-            {searchTerm ? t('product.no_products_found') : t('product.no_products')}
+            {searchQuery ? t('product.no_products_found') : t('product.no_products')}
           </p>
         </div>
       ) : (
@@ -327,7 +370,16 @@ export default function CustomerDashboard() {
             return (
               <div
                 key={product.id}
-                className={`${styles.productCard} ${isOutOfStock ? styles.productCardOutOfStock : ''}`}
+                className={`${styles.productCard} ${styles.productCardClickable} ${isOutOfStock ? styles.productCardOutOfStock : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => openProductModal(product)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openProductModal(product);
+                  }
+                }}
               >
                 {/* Image */}
                 <div className={styles.productImageWrapper}>
@@ -350,12 +402,6 @@ export default function CustomerDashboard() {
                       backgroundColor: !product.image ? '#f3f4f6' : undefined
                     }}
                   />
-                  
-                  {!isOutOfStock && (
-                    <button className={styles.favoriteButton}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>favorite</span>
-                    </button>
-                  )}
                 </div>
 
                 {/* Info */}
@@ -412,7 +458,10 @@ export default function CustomerDashboard() {
                   ) : (
                     <button 
                       className={styles.addToCartButton}
-                      onClick={() => openProductModal(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openProductModal(product);
+                      }}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>add_shopping_cart</span>
                       {t('cart.add_to_cart') || 'Add to Cart'}
@@ -471,6 +520,33 @@ export default function CustomerDashboard() {
                   </span>
                 )}
               </div>
+
+              {selectedProduct.description && (
+                <div
+                  style={{
+                    marginBottom: '1.25rem',
+                    padding: '0.875rem 1rem',
+                    background: '#ffffff',
+                    borderRadius: '0.75rem',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#111827', marginBottom: '0.375rem' }}>
+                    {t('common.description') || 'คำอธิบายสินค้า'}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '0.8125rem',
+                      color: '#374151',
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {selectedProduct.description}
+                  </div>
+                </div>
+              )}
 
               {/* Variant Selection */}
               {selectedProduct.hasVariants && Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0 ? (

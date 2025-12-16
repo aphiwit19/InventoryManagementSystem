@@ -15,10 +15,17 @@ const StaffLayout = () => {
   const { user, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
   // eslint-disable-next-line no-unused-vars
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const isStaffDashboard = location.pathname === '/staff';
+
+  useEffect(() => {
+    if (!isStaffDashboard) setSearchQuery('');
+  }, [isStaffDashboard]);
 
   // Load staff cart count and listen for updates
   useEffect(() => {
@@ -129,18 +136,20 @@ const StaffLayout = () => {
             <span className="material-symbols-outlined">menu</span>
           </button>
 
-          <div className={styles.searchWrap}>
-            <div className={styles.searchBox}>
-              <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('common.search_placeholder') || 'Search SKU, Name, or Category (ค้นหาสินค้า)...'}
-                className={styles.searchInput}
-              />
+          {isStaffDashboard && (
+            <div className={styles.searchWrap}>
+              <div className={styles.searchBox}>
+                <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('ค้นหา') || 'Search SKU, Name, or Category (ค้นหาสินค้า)...'}
+                  className={styles.searchInput}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className={styles.rightActions}>
             <LanguageSwitcher />

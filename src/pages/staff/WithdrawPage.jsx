@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCart, updateCartItem, removeFromCart, clearCart, createWithdrawal } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
+import styles from './WithdrawPage.module.css';
 
 export default function WithdrawPage() {
   const { t } = useTranslation();
@@ -48,7 +49,6 @@ export default function WithdrawPage() {
       setFormData(prev => ({
         ...prev,
         requesterName: profile.displayName || profile.email || '',
-        recipientAddress: profile.address || '',
       }));
     }
   }, [profile]);
@@ -101,9 +101,14 @@ export default function WithdrawPage() {
       alert('กรุณากรอกข้อมูลผู้เบิกและผู้รับให้ครบถ้วน');
       return;
     }
+    if (formData.deliveryMethod === 'shipping' && !formData.recipientAddress) {
+      alert('กรุณากรอกที่อยู่จัดส่งให้ครบถ้วน');
+      return;
+    }
 
     setSubmitting(true);
     try {
+      const addressForOrder = formData.deliveryMethod === 'shipping' ? formData.recipientAddress : '';
       const orderData = {
         createdByUid: user.uid,
         createdByEmail: user.email,
@@ -118,9 +123,9 @@ export default function WithdrawPage() {
           variantColor: item.variantColor || null,
         })),
         requestedBy: formData.requesterName,
-        requestedAddress: formData.recipientAddress,
+        requestedAddress: addressForOrder,
         receivedBy: formData.recipientName,
-        receivedAddress: formData.recipientAddress,
+        receivedAddress: addressForOrder,
         withdrawDate: formData.withdrawDate,
         note: formData.notes,
         total: cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0),
@@ -143,270 +148,301 @@ export default function WithdrawPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <p style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</p>
+      <div className={styles.page} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <p className={styles.emptyText}>{t('common.loading')}</p>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '32px 24px', minHeight: '100vh', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', boxSizing: 'border-box' }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        {/* Header - match All Products bar style */}
-        <div
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(148,163,184,0.25)',
-            padding: '22px 28px',
-            borderRadius: 18,
-            marginBottom: 24,
-            boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-          }}
-        >
-          <h1
-            style={{
-              margin: 0,
-              color: '#1e40af',
-              fontSize: 22,
-              fontWeight: 700,
-            }}
-          >
-            {t('withdraw.withdraw_request')}
-          </h1>
-          <div
-            style={{
-              fontSize: 14,
-              color: '#3b82f6',
-              marginTop: 6,
-            }}
-          >
-            {t('withdraw.withdraw_cart')}
-          </div>
-        </div>
-
-        {/* Action Bar */}
-        <div style={{ background: '#fff', padding: '16px 24px', borderRadius: 12, marginBottom: 20, boxShadow: '0 4px 16px rgba(15,23,42,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 14, color: '#374151' }}>
-            <span style={{ fontWeight: 600 }}>{cart.length}</span> {t('common.items')}
-          </div>
-          {cart.length > 0 && (
-            <button onClick={handleClearCart} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t('cart.clear_cart')}</button>
-          )}
-        </div>
-
+    <div className={styles.page}>
+      <div className={styles.container}>
         {cart.length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: 18, padding: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-            <div style={{ fontSize: 60, marginBottom: 16 }}>🛒</div>
-            <p style={{ color: '#64748b', fontSize: 16 }}>{t('cart.cart_empty')}</p>
-            <button onClick={() => navigate('/staff')} style={{ marginTop: 16, padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)' }}>{t('cart.go_shopping')}</button>
+          <div className={styles.emptyCard}>
+            <div className={styles.emptyIcon}>🛒</div>
+            <p className={styles.emptyText}>{t('cart.cart_empty')}</p>
+            <button type="button" className={styles.backBtn} onClick={() => navigate('/staff')}>
+              {t('cart.go_shopping')}
+            </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 20 }}>
-            {/* Cart Items */}
-            <div style={{ background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-              <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600, color: '#111827' }}>{t('order.order_items')}</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {cart.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item, idx) => (
-                  <div key={`${item.productId}-${item.variantSize}-${item.variantColor}-${idx}`} style={{ display: 'flex', gap: 16, padding: 16, background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe' }}>
-                    {/* Image */}
-                    <div style={{ width: 80, height: 80, borderRadius: 10, background: '#dbeafe', overflow: 'hidden', flexShrink: 0 }}>
-                      {item.image ? <img src={item.image} alt={item.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', fontSize: 24 }}>📦</div>}
-                    </div>
-                    {/* Info */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#111827', fontSize: 15, marginBottom: 4 }}>{item.productName}</div>
-                      {/* Variant Info */}
-                      {(item.variantSize || item.variantColor) && (
-                        <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                          {item.variantSize && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{t('product.size')}: {item.variantSize}</span>}
-                          {item.variantColor && <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{t('product.color')}: {item.variantColor}</span>}
+          <form onSubmit={handleSubmit}>
+            <div className={styles.grid}>
+              <div className={styles.leftCol}>
+                <div className={styles.pageHeader}>
+                  <h1 className={styles.pageTitle}>{t('withdraw.withdraw_request') || 'Withdraw Items'}</h1>
+                  <p className={styles.pageSubtitle}>
+                    {t('withdraw.withdraw_cart') || 'Review your selected items and choose a delivery method.'}
+                  </p>
+                </div>
+
+                <div>
+                  <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>
+                      {(t('order.order_items') || 'Selected Items')} ({cart.length})
+                    </h2>
+                    <button type="button" className={styles.clearAllBtn} onClick={handleClearCart}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete_sweep</span>
+                      {t('cart.clear_cart') || 'Clear All'}
+                    </button>
+                  </div>
+
+                  <div className={styles.itemList}>
+                    {cart.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item, idx) => {
+                      const key = `${item.productId}-${item.variantSize}-${item.variantColor}-${idx}`;
+                      const imageStyle = item.image ? { backgroundImage: `url('${item.image}')` } : undefined;
+                      const skuText = item.sku || item.productId;
+
+                      return (
+                        <div key={key} className={styles.itemCard}>
+                          <div className={styles.itemImage} style={imageStyle} />
+
+                          <div className={styles.itemBody}>
+                            <div className={styles.itemTop}>
+                              <div>
+                                <h3 className={styles.itemName}>{item.productName}</h3>
+                                <div className={styles.itemSku}>SKU: {skuText}</div>
+                              </div>
+                              <div className={styles.itemPrice}>
+                                ฿{(item.sellPrice * item.quantity).toLocaleString()}
+                              </div>
+                            </div>
+
+                            {(item.variantSize || item.variantColor) && (
+                              <div className={styles.variantRow}>
+                                {item.variantSize && (
+                                  <div className={styles.variantGroup}>
+                                    <div className={styles.variantLabel}>{t('product.size') || 'Size'}</div>
+                                    <div className={styles.variantValue}>{item.variantSize}</div>
+                                  </div>
+                                )}
+                                {item.variantColor && (
+                                  <div className={styles.variantGroup}>
+                                    <div className={styles.variantLabel}>{t('product.color') || 'Color'}</div>
+                                    <div className={styles.variantValue}>{item.variantColor}</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className={styles.itemBottom}>
+                              <div className={styles.qtyControl}>
+                                <button
+                                  type="button"
+                                  className={styles.qtyBtn}
+                                  onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>remove</span>
+                                </button>
+                                <div className={styles.qtyValue}>{item.quantity}</div>
+                                <button
+                                  type="button"
+                                  className={styles.qtyBtn}
+                                  onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+                                </button>
+                              </div>
+
+                              <button type="button" className={styles.removeBtn} onClick={() => handleRemoveItem(item)}>
+                                <span className="material-symbols-outlined">delete</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>{t('common.unit')}: {item.unit || t('common.piece')}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <button onClick={() => handleQuantityChange(item, item.quantity - 1)} disabled={item.quantity <= 1} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #bfdbfe', background: '#fff', cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer', fontSize: 14 }}>-</button>
-                        <span style={{ fontWeight: 600, minWidth: 30, textAlign: 'center' }}>{item.quantity}</span>
-                        <button onClick={() => handleQuantityChange(item, item.quantity + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #bfdbfe', background: '#fff', cursor: 'pointer', fontSize: 14 }}>+</button>
-                      </div>
+                      );
+                    })}
+                  </div>
+
+                  {cart.length > itemsPerPage && (
+                    <div className={styles.paginationWrap}>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className={styles.paginationBtn}
+                      >
+                        {t('common.previous')}
+                      </button>
+                      {Array.from({ length: Math.ceil(cart.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() => setCurrentPage(page)}
+                          className={`${styles.paginationBtn} ${currentPage === page ? styles.paginationBtnActive : ''}`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.min(Math.ceil(cart.length / itemsPerPage), p + 1))}
+                        disabled={currentPage === Math.ceil(cart.length / itemsPerPage)}
+                        className={styles.paginationBtn}
+                      >
+                        {t('common.next')}
+                      </button>
                     </div>
-                    {/* Price & Remove */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                      <button onClick={() => handleRemoveItem(item)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
-                      <div style={{ fontWeight: 700, color: '#111827', fontSize: 16 }}>฿{(item.sellPrice * item.quantity).toLocaleString()}</div>
+                  )}
+                </div>
+
+                <div className={styles.deliverySection}>
+                  <h2 className={styles.deliveryTitle}>{t('order.delivery_method') || 'Delivery Method'}</h2>
+                  <div className={styles.deliveryGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.deliveryOption} ${formData.deliveryMethod === 'pickup' ? styles.deliveryOptionActive : ''}`}
+                      onClick={() => setFormData((p) => ({ ...p, deliveryMethod: 'pickup', recipientAddress: '' }))}
+                    >
+                      <div className={styles.deliveryOptionTop}>
+                        <div className={`${styles.deliveryIcon} ${formData.deliveryMethod === 'pickup' ? styles.deliveryIconActive : ''}`}>
+                          <span className="material-symbols-outlined">storefront</span>
+                        </div>
+                        <div className={`${styles.radioDot} ${formData.deliveryMethod === 'pickup' ? styles.radioDotActive : ''}`}>
+                          {formData.deliveryMethod === 'pickup' && <div className={styles.radioDotInner} />}
+                        </div>
+                      </div>
+                      <div>
+                        <p className={styles.deliveryName}>{t('order.pickup') || 'Self Pickup'}</p>
+                        <p className={styles.deliveryDesc}>{t('withdraw.pickup_hint') || 'Collect from Warehouse A (Bangkok)'}</p>
+                        <div className={`${styles.deliveryTag} ${styles.deliveryTagFree}`}>Free</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${styles.deliveryOption} ${formData.deliveryMethod === 'shipping' ? styles.deliveryOptionActive : ''}`}
+                      onClick={() => setFormData((p) => ({ ...p, deliveryMethod: 'shipping', recipientAddress: '' }))}
+                    >
+                      <div className={styles.deliveryOptionTop}>
+                        <div className={`${styles.deliveryIcon} ${formData.deliveryMethod === 'shipping' ? styles.deliveryIconActive : ''}`}>
+                          <span className="material-symbols-outlined">local_shipping</span>
+                        </div>
+                        <div className={`${styles.radioDot} ${formData.deliveryMethod === 'shipping' ? styles.radioDotActive : ''}`}>
+                          {formData.deliveryMethod === 'shipping' && <div className={styles.radioDotInner} />}
+                        </div>
+                      </div>
+                      <div>
+                        <p className={styles.deliveryName}>{t('order.shipping') || 'Standard Shipping'}</p>
+                        <p className={styles.deliveryDesc}>{t('withdraw.shipping_hint') || 'Delivery within 3-5 business days'}</p>
+                        <div className={styles.deliveryTag}>{t('withdraw.shipping_calc') || 'Calculated at checkout'}</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.addressCard}>
+                  <div className={styles.addressHeader}>
+                    <span className="material-symbols-outlined" style={{ color: '#135bec' }}>assignment</span>
+                    <h2 className={styles.addressTitle}>{t('withdraw.withdraw_request') || 'Withdrawal Details'}</h2>
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={`${styles.field} ${styles.formSpan2}`}>
+                      <label className={styles.label}>{t('withdraw.requested_by') || 'Full Name / Company Name'} *</label>
+                      <input
+                        className={styles.input}
+                        type="text"
+                        value={formData.requesterName}
+                        onChange={(e) => setFormData((p) => ({ ...p, requesterName: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>{t('order.recipient_phone') || 'Phone Number'}</label>
+                      <input
+                        className={styles.input}
+                        type="tel"
+                        value={formData.recipientPhone}
+                        onChange={(e) => setFormData((p) => ({ ...p, recipientPhone: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>{t('order.recipient_name') || 'Recipient Name'} *</label>
+                      <input
+                        className={styles.input}
+                        type="text"
+                        value={formData.recipientName}
+                        onChange={(e) => setFormData((p) => ({ ...p, recipientName: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    {formData.deliveryMethod === 'shipping' && (
+                      <div className={`${styles.field} ${styles.formSpan2}`}>
+                        <label className={styles.label}>{t('order.shipping_address') || 'Shipping Address'} *</label>
+                        <textarea
+                          className={styles.textarea}
+                          value={formData.recipientAddress}
+                          onChange={(e) => setFormData((p) => ({ ...p, recipientAddress: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    )}
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>{t('withdraw.withdraw_date') || 'Withdraw Date'} *</label>
+                      <input
+                        className={styles.input}
+                        type="date"
+                        value={formData.withdrawDate}
+                        onChange={(e) => setFormData((p) => ({ ...p, withdrawDate: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className={`${styles.field} ${styles.formSpan2}`}>
+                      <label className={styles.label}>{t('order.order_note') || 'Internal Notes (Optional)'}</label>
+                      <textarea
+                        className={styles.textarea}
+                        value={formData.notes}
+                        onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
+                      />
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
 
-              {/* Pagination */}
-              {cart.length > itemsPerPage && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
-                  <button 
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
-                    disabled={currentPage === 1}
-                    style={{ 
-                      padding: '8px 16px', 
-                      borderRadius: 8, 
-                      border: '1px solid #e2e8f0', 
-                      background: currentPage === 1 ? '#f1f5f9' : '#fff', 
-                      color: currentPage === 1 ? '#94a3b8' : '#374151', 
-                      fontSize: 14, 
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer' 
-                    }}
-                  >
-                    {t('common.previous')}
-                  </button>
-                  {Array.from({ length: Math.ceil(cart.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 8,
-                        border: currentPage === page ? 'none' : '1px solid #e2e8f0',
-                        background: currentPage === page ? '#1e40af' : '#fff',
-                        color: currentPage === page ? '#fff' : '#374151',
-                        fontSize: 14,
-                        fontWeight: currentPage === page ? 600 : 400,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  <button 
-                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(cart.length / itemsPerPage), prev + 1))} 
-                    disabled={currentPage === Math.ceil(cart.length / itemsPerPage)}
-                    style={{ 
-                      padding: '8px 16px', 
-                      borderRadius: 8, 
-                      border: '1px solid #e2e8f0', 
-                      background: currentPage === Math.ceil(cart.length / itemsPerPage) ? '#f1f5f9' : '#fff', 
-                      color: currentPage === Math.ceil(cart.length / itemsPerPage) ? '#94a3b8' : '#374151', 
-                      fontSize: 14, 
-                      cursor: currentPage === Math.ceil(cart.length / itemsPerPage) ? 'not-allowed' : 'pointer' 
-                    }}
-                  >
-                    {t('common.next')}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Withdraw Form */}
-            <div style={{ background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 8px 32px rgba(15,23,42,0.12)', height: 'fit-content' }}>
-              <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600, color: '#111827' }}>{t('withdraw.withdraw_request')}</h2>
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('withdraw.requested_by')} *</label>
-                  <input type="text" value={formData.requesterName} onChange={(e) => setFormData(prev => ({ ...prev, requesterName: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('order.recipient_name')} *</label>
-                  <input type="text" value={formData.recipientName} onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
-                </div>
-                
-                {/* วิธีการรับสินค้า */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('order.delivery_method')} *</label>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <label 
-                      style={{ 
-                        flex: 1, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 10, 
-                        padding: '14px 16px', 
-                        borderRadius: 10, 
-                        border: formData.deliveryMethod === 'pickup' ? '2px solid #3b82f6' : '2px solid #e2e8f0',
-                        background: formData.deliveryMethod === 'pickup' ? '#eff6ff' : '#fff',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <input 
-                        type="radio" 
-                        name="deliveryMethod" 
-                        value="pickup" 
-                        checked={formData.deliveryMethod === 'pickup'} 
-                        onChange={(e) => setFormData(prev => ({ ...prev, deliveryMethod: e.target.value }))}
-                        style={{ display: 'none' }}
-                      />
-                      <span style={{ fontSize: 20 }}>🏪</span>
-                      <div>
-                        <div style={{ fontWeight: 600, color: formData.deliveryMethod === 'pickup' ? '#1e40af' : '#374151', fontSize: 14 }}>{t('order.pickup')}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280' }}>{t('order.pickup')}</div>
+              <div className={styles.rightCol}>
+                <div className={styles.sticky}>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryHeader}>
+                      <h2 className={styles.summaryHeaderTitle}>{t('common.summary') || 'Order Summary'}</h2>
+                    </div>
+                    <div className={styles.summaryBody}>
+                      <div className={styles.summaryRow}>
+                        <span>{t('common.items') || 'Items'} ({cart.length})</span>
+                        <span className={styles.summaryValue}>฿{totalAmount.toLocaleString()}</span>
                       </div>
-                    </label>
-                    <label 
-                      style={{ 
-                        flex: 1, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 10, 
-                        padding: '14px 16px', 
-                        borderRadius: 10, 
-                        border: formData.deliveryMethod === 'shipping' ? '2px solid #3b82f6' : '2px solid #e2e8f0',
-                        background: formData.deliveryMethod === 'shipping' ? '#eff6ff' : '#fff',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <input 
-                        type="radio" 
-                        name="deliveryMethod" 
-                        value="shipping" 
-                        checked={formData.deliveryMethod === 'shipping'} 
-                        onChange={(e) => setFormData(prev => ({ ...prev, deliveryMethod: e.target.value }))}
-                        style={{ display: 'none' }}
-                      />
-                      <span style={{ fontSize: 20 }}>📦</span>
-                      <div>
-                        <div style={{ fontWeight: 600, color: formData.deliveryMethod === 'shipping' ? '#1e40af' : '#374151', fontSize: 14 }}>{t('order.shipping')}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280' }}>{t('order.shipping')}</div>
+                      <div className={styles.summaryDivider}></div>
+                      <div className={styles.totalRow}>
+                        <span className={styles.totalLabel}>{t('common.total') || 'Total'}</span>
+                        <span className={styles.totalAmount}>฿{totalAmount.toLocaleString()}</span>
                       </div>
-                    </label>
-                  </div>
-                </div>
 
-                {/* ที่อยู่จัดส่ง - แสดงเฉพาะเมื่อเลือกจัดส่ง */}
-                {formData.deliveryMethod === 'shipping' && (
-                  <div>
-                    <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('order.shipping_address')} *</label>
-                    <textarea value={formData.recipientAddress} onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))} rows={2} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+                      <button type="submit" className={styles.confirmBtn} disabled={submitting}>
+                        {submitting ? (t('message.processing') || 'Processing...') : (t('withdraw.confirm_withdraw') || 'Confirm Withdrawal')}
+                        <span className="material-symbols-outlined">arrow_forward</span>
+                      </button>
+                    </div>
                   </div>
-                )}
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('withdraw.withdraw_date')} *</label>
-                  <input type="date" value={formData.withdrawDate} onChange={(e) => setFormData(prev => ({ ...prev, withdrawDate: e.target.value }))} required style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>{t('order.order_note')}</label>
-                  <textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} style={{ width: '100%', padding: '12px', fontSize: 14, border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
-                </div>
 
-                {/* Summary */}
-                <div style={{ background: '#eff6ff', padding: 16, borderRadius: 10, border: '1px solid #bfdbfe' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ color: '#374151' }}>{t('common.items')}:</span>
-                    <span style={{ fontWeight: 600 }}>{cart.length} {t('common.items')}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#374151' }}>{t('common.total')}:</span>
-                    <span style={{ fontWeight: 700, fontSize: 20, color: '#111827' }}>฿{totalAmount.toLocaleString()}</span>
+                  <div className={styles.helpBox}>
+                    <span className="material-symbols-outlined" style={{ color: '#135bec' }}>support_agent</span>
+                    <div>
+                      <h4 className={styles.helpTitle}>{t('common.help') || 'Need Help?'}</h4>
+                      <p className={styles.helpText}>
+                        {t('withdraw.support_hint') || 'Contact inventory support if you have questions about stock availability or shipping restrictions.'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: 10, border: 'none', background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: submitting ? 'none' : '0 6px 20px rgba(37, 99, 235, 0.4)' }}>
-                  {submitting ? t('message.processing') : t('withdraw.confirm_withdraw')}
-                </button>
-              </form>
+              </div>
             </div>
-          </div>
+          </form>
         )}
       </div>
     </div>

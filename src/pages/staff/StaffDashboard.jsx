@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getAllProducts, addToCart, getCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
@@ -14,10 +14,10 @@ export default function StaffDashboard() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-
-  const [sortBy, setSortBy] = useState('popularity');
 
   // Variant selection modal
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -78,8 +78,29 @@ export default function StaffDashboard() {
 
   const uniqueCategories = useMemo(() => {
     const cats = products.map(p => p.category).filter(c => c && c.trim() !== '');
-    return [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
+    const sorted = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
+
+    const otherLabel = 'อื่นๆ';
+    const idx = sorted.findIndex((c) => String(c).trim() === otherLabel);
+    if (idx >= 0) {
+      const [other] = sorted.splice(idx, 1);
+      sorted.push(other);
+    }
+
+    return sorted;
   }, [products]);
+
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const onDown = (e) => {
+      if (!categoryRef.current) return;
+      if (!categoryRef.current.contains(e.target)) {
+        setCategoryOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', onDown);
+    return () => window.removeEventListener('mousedown', onDown);
+  }, [categoryOpen]);
 
   const skuText = (product) => {
     if (product?.sku) return String(product.sku);
@@ -110,23 +131,12 @@ export default function StaffDashboard() {
     if (categoryFilter) {
       filtered = filtered.filter((product) => product.category === categoryFilter);
     }
-
-    const sorted = [...filtered];
-    if (sortBy === 'stock_asc') {
-      sorted.sort((a, b) => {
-        const aAvail = Math.max(0, (parseInt(a.quantity || 0) - parseInt(a.reserved || 0) - parseInt(a.staffReserved || 0)));
-        const bAvail = Math.max(0, (parseInt(b.quantity || 0) - parseInt(b.reserved || 0) - parseInt(b.staffReserved || 0)));
-        return aAvail - bAvail;
-      });
-    } else if (sortBy === 'name_asc') {
-      sorted.sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
-    }
-    return sorted;
-  }, [products, searchQuery, categoryFilter, sortBy]);
+    return filtered;
+  }, [products, searchQuery, categoryFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, categoryFilter, sortBy]);
+  }, [searchQuery, categoryFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -248,41 +258,52 @@ export default function StaffDashboard() {
 
         <div className={styles.filters}>
           <div className={styles.filtersHeader}>
-            <div className={styles.filtersTitle}>Browse Categories</div>
-            <div className={styles.sortWrap}>
-              <span className={styles.sortLabel}>Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className={styles.sortSelect}
-              >
-                <option value="popularity">Popularity</option>
-                <option value="stock_asc">Stock: Low to High</option>
-                <option value="name_asc">Name: A-Z</option>
-              </select>
+            <div className={styles.filtersTitleRow}>
+              <div className={styles.filtersTitle}>{t('product.all_products') || 'สินค้าทั้งหมด'}</div>
             </div>
-          </div>
 
-          <div className={styles.categoriesRow}>
-            <button
-              type="button"
-              className={`${styles.chip} ${categoryFilter === '' ? styles.chipActive : ''}`}
-              onClick={() => setCategoryFilter('')}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>apps</span>
-              <span>All Items</span>
-            </button>
-            {uniqueCategories.map((cat) => (
+            <div className={styles.categoryDropdown} ref={categoryRef}>
               <button
-                key={cat}
                 type="button"
-                className={`${styles.chip} ${categoryFilter === cat ? styles.chipActive : ''}`}
-                onClick={() => setCategoryFilter(cat)}
+                className={styles.categoryButton}
+                onClick={() => setCategoryOpen((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={categoryOpen}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>grid_view</span>
-                <span>{t(`categories.${cat}`, cat)}</span>
+                <span>{categoryFilter ? t(`categories.${categoryFilter}`, categoryFilter) : (t('common.all_categories') || 'ทุกประเภท')}</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>keyboard_arrow_down</span>
               </button>
-            ))}
+
+              {categoryOpen && (
+                <div className={styles.categoryMenu} role="listbox">
+                  <button
+                    type="button"
+                    className={styles.categoryMenuItem}
+                    onClick={() => {
+                      setCategoryFilter('');
+                      setCurrentPage(1);
+                      setCategoryOpen(false);
+                    }}
+                  >
+                    {t('common.all_categories') || 'ทุกประเภท'}
+                  </button>
+                  {uniqueCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className={styles.categoryMenuItem}
+                      onClick={() => {
+                        setCategoryFilter(cat);
+                        setCurrentPage(1);
+                        setCategoryOpen(false);
+                      }}
+                    >
+                      {t(`categories.${cat}`, cat)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -299,7 +320,19 @@ export default function StaffDashboard() {
               const stockClass = getStockBadgeClass(available);
               const canAdd = available > 0;
               return (
-                <div key={product.id} className={styles.card}>
+                <div
+                  key={product.id}
+                  className={`${styles.card} ${styles.cardClickable}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openProductModal(product)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openProductModal(product);
+                    }
+                  }}
+                >
                   <div className={styles.cardImageWrap}>
                     <div className={styles.skuBadge}>SKU: {skuText(product)}</div>
                     {product.image ? (
@@ -313,6 +346,12 @@ export default function StaffDashboard() {
                       {product.productName}
                     </h4>
                     <div className={styles.cardMeta}>{product.category || '-'}</div>
+
+                    {product.description && (
+                      <div className={styles.cardDescription} title={product.description}>
+                        {product.description}
+                      </div>
+                    )}
 
                     <div className={styles.cardFooter}>
                       <div className={`${styles.stockBadge} ${stockClass}`}>
@@ -329,7 +368,10 @@ export default function StaffDashboard() {
                       <button
                         type="button"
                         className={`${styles.addButton} ${!canAdd ? styles.addButtonDisabled : ''}`}
-                        onClick={() => canAdd && openProductModal(product)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (canAdd) openProductModal(product);
+                        }}
                         disabled={!canAdd}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 20 }}>add</span>
@@ -394,6 +436,17 @@ export default function StaffDashboard() {
               <div style={{ height: 200, background: '#f3f4f6', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 {selectedProduct.image ? <img src={selectedProduct.image} alt={selectedProduct.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9ca3af', fontSize: 60 }}>📦</span>}
               </div>
+
+              {selectedProduct.description && (
+                <div style={{ marginBottom: 20, padding: '14px 16px', background: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
+                    {t('common.description') || 'คำอธิบายสินค้า'}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {selectedProduct.description}
+                  </div>
+                </div>
+              )}
 
               {/* Variant Selection - Button Grid */}
               {selectedProduct.hasVariants && Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0 ? (

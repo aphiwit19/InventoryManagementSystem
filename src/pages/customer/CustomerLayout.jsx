@@ -13,7 +13,10 @@ const CustomerLayout = () => {
   const location = useLocation();
   const { user, profile } = useAuth();
   const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  const isCustomerDashboard = location.pathname === '/customer';
 
   useEffect(() => {
     if (!user?.uid) {
@@ -79,20 +82,23 @@ const CustomerLayout = () => {
             />
             <h2 className={styles.logoText}>InventoryPro</h2>
           </Link>
-          
-          {/* Search */}
-          <div className={styles.searchContainer}>
-            <div className={styles.searchWrapper}>
-              <div className={styles.searchIcon}>
-                <span className="material-symbols-outlined">search</span>
+
+          {isCustomerDashboard && (
+            <div className={styles.searchContainer}>
+              <div className={styles.searchWrapper}>
+                <div className={styles.searchIcon}>
+                  <span className="material-symbols-outlined">search</span>
+                </div>
+                <input
+                  className={styles.searchInput}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('search') || 'Search product name...'}
+                />
               </div>
-              <input
-                className={styles.searchInput}
-                type="text"
-                placeholder={t('search') || 'Search by SKU, Name or Category...'}
-              />
             </div>
-          </div>
+          )}
         </div>
 
         <div className={styles.headerRight}>
@@ -178,7 +184,7 @@ const CustomerLayout = () => {
         {/* Main Content */}
         <main className={styles.mainContent}>
           <div className={styles.contentWrapper}>
-            <Outlet />
+            <Outlet context={{ searchQuery }} />
           </div>
         </main>
       </div>
