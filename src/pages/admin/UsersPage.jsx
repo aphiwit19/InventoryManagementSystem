@@ -260,7 +260,6 @@ export default function UsersPage() {
                   currentUsers.map((user) => {
                     const currentRole = user.role || 'customer';
                     const canChangeRole = currentRole !== 'admin';
-                    const isActive = user.lastLogin || true;
 
                     return (
                       <tr key={user.id} className={styles.tableRow}>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProducts, isLowStock, getLowStockVariants } from '../../services';
+import { getAllProducts, isLowStock } from '../../services';
 import { useTranslation } from 'react-i18next';
 import styles from './AdminAlertsPage.module.css';
 
@@ -146,7 +146,6 @@ export default function AdminAlertsPage() {
                 </thead>
                 <tbody className={styles.tableBody}>
                   {currentItems.map((p) => {
-                    const lowVariants = getLowStockVariants(p);
                     const quantity = p.quantity || 0;
                     const threshold = p.lowStockThreshold || 10;
                     const stockStatus = getStockStatus(quantity, threshold);

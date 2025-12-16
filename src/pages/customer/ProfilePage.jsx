@@ -5,8 +5,6 @@ import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDef
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getAllProducts, addToCart, getCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
@@ -109,7 +109,7 @@ export default function StaffDashboard() {
     return product?.id ? String(product.id).slice(0, 8).toUpperCase() : '-';
   };
 
-  const productMatchesQuery = (product, query) => {
+  const productMatchesQuery = useCallback((product, query) => {
     if (!query) return true;
     const q = query.toLowerCase();
     const haystack = [
@@ -121,7 +121,7 @@ export default function StaffDashboard() {
       .filter(Boolean)
       .map((v) => String(v).toLowerCase());
     return haystack.some((v) => v.includes(q));
-  };
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
@@ -132,7 +132,7 @@ export default function StaffDashboard() {
       filtered = filtered.filter((product) => product.category === categoryFilter);
     }
     return filtered;
-  }, [products, searchQuery, categoryFilter]);
+  }, [products, searchQuery, categoryFilter, productMatchesQuery]);
 
   useEffect(() => {
     setCurrentPage(1);

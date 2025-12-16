@@ -144,13 +144,6 @@ export default function InventoryHistoryIndex() {
     return pages;
   };
 
-  const handleClearFilters = () => {
-    setSearch('');
-    setFromDate(null);
-    setToDate(null);
-    setTypeFilter('all');
-  };
-
   const getTypeBadge = (type) => {
     if (type === 'out') {
       return { class: styles.typeBadgeOut, icon: 'arrow_upward', label: t('inventory.stock_out') };
@@ -271,7 +264,7 @@ export default function InventoryHistoryIndex() {
                     {pageItems.map((h) => {
                       const isOut = (h.type || 'in') === 'out';
                       const typeInfo = getTypeBadge(h.type || 'in');
-                      const { date, time } = formatDate(h.date);
+                      const { date } = formatDate(h.date);
                       const unitCost = (h.costPrice === null || h.costPrice === undefined) ? null : parseFloat(h.costPrice || 0);
 
                       return (

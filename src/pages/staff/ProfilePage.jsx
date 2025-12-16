@@ -6,8 +6,6 @@ import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDef
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
 import styles from '../customer/ProfilePage.module.css';
 
 export default function ProfilePage() {
@@ -396,6 +394,17 @@ export default function ProfilePage() {
             </div>
             <h3 className={styles.profileName}>{fullName || profile?.displayName || 'Staff'}</h3>
             <p className={styles.profileEmail}>{profile?.email || user?.email || ''}</p>
+
+            {photoURL ? (
+              <button
+                type="button"
+                className={styles.removePhotoButton}
+                onClick={handleRemovePhoto}
+                disabled={uploadingPhoto}
+              >
+                Remove Photo
+              </button>
+            ) : null}
           </div>
 
           <div className={styles.navMenu}>
