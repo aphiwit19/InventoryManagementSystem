@@ -27,12 +27,12 @@ export default function CustomerOrderDetailPage() {
         return;
       }
 
-      if (!id) {
+      if (!id || !user?.uid) {
         setLoading(false);
         return;
       }
       try {
-        const docRef = doc(db, 'withdrawals', id);
+        const docRef = doc(db, 'users', user.uid, 'orders', id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setOrder({ id: docSnap.id, ...docSnap.data() });
@@ -44,7 +44,7 @@ export default function CustomerOrderDetailPage() {
       }
     };
     loadOrder();
-  }, [id, orderFromState]);
+  }, [id, orderFromState, user?.uid]);
 
   const formatDate = (dateValue) => {
     if (!dateValue) return '-';
@@ -232,7 +232,7 @@ export default function CustomerOrderDetailPage() {
         {/* Left Column */}
         <div className={styles.leftColumn}>
           {/* Order Items */}
-          <div className={styles.card}>
+          <div className={`${styles.card} ${styles.orderItemsCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>
                 {t('orderItems') || 'Order Items'}

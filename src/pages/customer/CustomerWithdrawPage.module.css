@@ -316,6 +316,7 @@
   flex-direction: column;
   gap: 1rem;
   margin-top: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .deliverySectionTitle {
@@ -332,14 +333,8 @@
   gap: 1rem;
 }
 
-@media (min-width: 640px) {
-  .deliveryOptions {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .deliveryOption {
-  cursor: pointer;
+  cursor: default;
   position: relative;
 }
 
@@ -365,11 +360,12 @@
   flex-direction: column;
   gap: 0.75rem;
   height: 100%;
+  cursor: default;
 }
 
 .deliveryOptionInput:checked + .deliveryOptionCard {
-  border-color: #135bec;
-  background-color: rgba(19, 91, 236, 0.05);
+  border-color: #e7ebf3;
+  background-color: #ffffff;
 }
 
 .deliveryOptionHeader {
@@ -390,13 +386,7 @@
 }
 
 .deliveryOptionRadio {
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 9999px;
-  border: 1px solid #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: none;
 }
 
 .deliveryOptionInput:checked + .deliveryOptionCard .deliveryOptionRadio {

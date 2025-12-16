@@ -274,6 +274,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
+  align-items: stretch;
 }
 
 @media (min-width: 1024px) {
@@ -288,6 +289,15 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.orderItemsCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ===== Card ===== */
@@ -297,6 +307,7 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  width: 100%;
 }
 
 .cardHeader {
@@ -324,10 +335,13 @@
 /* ===== Items Table ===== */
 .tableWrapper {
   overflow-x: auto;
+  width: 100%;
+  flex: 1;
 }
 
 .table {
   width: 100%;
+  min-width: 100%;
   text-align: left;
   border-collapse: collapse;
 }

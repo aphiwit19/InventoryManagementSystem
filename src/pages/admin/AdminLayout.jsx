@@ -81,8 +81,8 @@ const AdminLayout = () => {
           <div className={styles.navDivider}></div>
           
           <Link to="/admin/profile" className={`${styles.navItem} ${isActiveLink('/admin/profile') ? styles.navItemActive : ''}`}>
-            <span className={`material-symbols-outlined ${styles.navItemIcon}`}>settings</span>
-            <span>{t('common.settings')}</span>
+            <span className={`material-symbols-outlined ${styles.navItemIcon}`}>person</span>
+            <span>{t('common.profile')}</span>
           </Link>
         </nav>
 

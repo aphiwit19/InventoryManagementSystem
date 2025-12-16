@@ -130,6 +130,11 @@
     "reset_email_sent": "Password reset link has been sent to your email",
     "reset_failed": "Failed to send password reset link",
     "back_to_login": "Back to login"
+    ,
+    "agree_terms_prefix": "I agree to the",
+    "terms": "Terms of Service",
+    "and": "and",
+    "privacy": "Privacy Policy"
   },
   "product": {
     "products": "Products",

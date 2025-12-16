@@ -4,14 +4,14 @@
 .pageContainer {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
-  background-color: #f8f9fc;
-  min-height: 100vh;
+  padding: 0;
+  background-color: transparent;
+  min-height: 0;
 }
 
 @media (min-width: 768px) {
   .pageContainer {
-    padding: 2rem;
+    padding: 0;
   }
 }
 

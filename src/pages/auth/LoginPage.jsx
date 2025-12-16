@@ -162,8 +162,13 @@ export default function LoginPage() {
                   {t('auth.remember_me')}
                 </label>
               </div>
-              <button type="button" className={styles.forgotPassword} onClick={handleForgotPassword}>
-                {t('auth.forgot_password') || 'Forgot Password?'}
+              <button
+                type="button"
+                className={styles.forgotPassword}
+                onClick={handleForgotPassword}
+                aria-label={t('auth.forgot_password') || 'Forgot Password?'}
+              >
+                <span>{t('auth.forgot_password') || 'Forgot Password?'}</span>
               </button>
             </div>
 

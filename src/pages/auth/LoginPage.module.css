@@ -350,6 +350,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .rememberMe {
@@ -381,15 +382,29 @@
 }
 
 .forgotPassword {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: #135bec;
   text-decoration: none;
-  transition: color 0.2s ease;
+  cursor: pointer;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
 .forgotPassword:hover {
   color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.forgotPassword:focus {
+  outline: none;
+}
+
+.forgotPassword:focus-visible {
   text-decoration: underline;
 }
 

@@ -77,6 +77,12 @@
   overflow: hidden;
 }
 
+.sectionStack{
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 .cardBody{padding: 1.5rem;}
 
 .cardHeader{

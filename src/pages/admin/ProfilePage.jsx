@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDefaultAddress } from '../../services';
+import { ensureUserProfile, updateUserProfile } from '../../services';
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -16,20 +16,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoURL, setPhotoURL] = useState('');
-  
-  // Address management
-  const [addresses, setAddresses] = useState([]);
-  const [showAddressModal, setShowAddressModal] = useState(false);
-  const [, setEditingAddress] = useState(null);
-  const [addressForm, setAddressForm] = useState({
-    name: '',
-    address: '',
-    district: '',
-    city: '',
-    province: '',
-    postalCode: '',
-    phone: '',
-  });
 
   // Password management
   const [passwordForm, setPasswordForm] = useState({
@@ -77,10 +63,7 @@ export default function ProfilePage() {
         
         // โหลดรูปโปรไฟล์
         setPhotoURL(userData.photoURL || profile?.photoURL || user.photoURL || '');
-        
-        // โหลดที่อยู่
-        setAddresses(userData.addresses || []);
-        
+
         // โหลดการตั้งค่า
         setSettings({
           emailNotifications: userData.settings?.emailNotifications ?? true,
@@ -170,74 +153,6 @@ export default function ProfilePage() {
       console.error('Error saving profile:', error);
     } finally {
       setSaving(false);
-    }
-  };
-
-  // Address functions
-  const handleAddressInputChange = (field, value) => {
-    setAddressForm(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const openAddAddressModal = () => {
-    setEditingAddress(null);
-    setAddressForm({
-      name: '',
-      address: '',
-      district: '',
-      city: '',
-      province: '',
-      postalCode: '',
-      phone: '',
-    });
-    setShowAddressModal(true);
-  };
-
-  const handleSaveAddress = async () => {
-    if (!user?.uid) return;
-    
-    // Validate
-    if (!addressForm.name || !addressForm.address) {
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const newAddress = await addAddress(user.uid, addressForm);
-      setAddresses(prev => [...prev, newAddress]);
-      setShowAddressModal(false);
-    } catch (error) {
-      console.error('Error saving address:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteAddress = async (addressId) => {
-    if (!user?.uid) return;
-    if (!window.confirm('คุณต้องการลบที่อยู่นี้หรือไม่?')) return;
-
-    try {
-      await deleteAddress(user.uid, addressId);
-      setAddresses(prev => prev.filter(addr => addr.id !== addressId));
-    } catch (error) {
-      console.error('Error deleting address:', error);
-    }
-  };
-
-  const handleSetDefaultAddress = async (addressId) => {
-    if (!user?.uid) return;
-
-    try {
-      await setDefaultAddress(user.uid, addressId);
-      setAddresses(prev => prev.map(addr => ({
-        ...addr,
-        isDefault: addr.id === addressId,
-      })));
-    } catch (error) {
-      console.error('Error setting default address:', error);
     }
   };
 
@@ -387,7 +302,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Right: Profile Details */}
-        <div>
+        <div className={styles.sectionStack}>
           {/* Personal Information */}
           <div className={styles.card}>
             <div className={styles.cardHeader}>
@@ -507,81 +422,7 @@ export default function ProfilePage() {
                 </div>
               </form>
             </div>
-          </div>
-
-          {/* Shipping Addresses */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Shipping Addresses</h3>
-              <span className={styles.cardMeta}>{t('common.address') || 'Address'}</span>
-            </div>
-
-            <div className={styles.cardBody}>
-
-            {addresses.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94A3B8' }}>
-                {t('common.no_data') || 'ยังไม่มีที่อยู่ กดปุ่มด้านล่างเพื่อเพิ่มที่อยู่'}
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {addresses.map((addr) => (
-                  <div 
-                    key={addr.id} 
-                    style={{ 
-                      padding: '1.5rem', 
-                      border: addr.isDefault ? '2px solid #10B981' : '2px solid #E2E8F0', 
-                      borderRadius: 12, 
-                      background: addr.isDefault ? 'rgba(16,185,129,0.03)' : '#fff',
-                      position: 'relative',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {addr.isDefault && (
-                      <span style={{ position: 'absolute', top: '1rem', right: '1rem', padding: '0.3rem 0.8rem', background: '#10B981', color: '#fff', fontSize: '0.75rem', fontWeight: 700, borderRadius: 6 }}>
-                        ค่าเริ่มต้น
-                      </span>
-                    )}
-                    <div style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '1.05rem' }}>{addr.name}</div>
-                    <div style={{ color: '#475569', lineHeight: 1.8, marginBottom: '1rem' }}>
-                      {addr.address}<br />
-                      {addr.district && `${addr.district} `}
-                      {addr.city && `${addr.city}`}<br />
-                      {addr.province && `${addr.province} `}
-                      {addr.postalCode && addr.postalCode}<br />
-                      {addr.phone && `โทร: ${addr.phone}`}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                      {!addr.isDefault && (
-                        <button 
-                          onClick={() => handleSetDefaultAddress(addr.id)}
-                          style={{ padding: '0.5rem 1rem', border: '2px solid #E2E8F0', background: '#fff', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
-                        >
-                          ตั้งเป็นค่าเริ่มต้น
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => handleDeleteAddress(addr.id)}
-                        style={{ padding: '0.5rem 1rem', border: '2px solid #E2E8F0', background: '#fff', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
-                      >
-                        ลบ
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button 
-              onClick={openAddAddressModal}
-              type="button"
-              className={`${styles.button} ${styles.buttonSecondary}`}
-              style={{ width: '100%', marginTop: '1rem' }}
-            >
-              ➕ เพิ่มที่อยู่ใหม่
-            </button>
-          </div>
-
-          </div>
+        </div>
 
           {/* Change Password */}
           <div className={styles.card}>
@@ -697,132 +538,6 @@ export default function ProfilePage() {
                 onClick={() => setShowDeleteAccountModal(false)}
               >
                 {t('common.ok') || 'OK'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Address Modal */}
-      {showAddressModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>➕ เพิ่มที่อยู่ใหม่</h2>
-              <button
-                type="button"
-                className={`${styles.button} ${styles.buttonDanger}`}
-                onClick={() => setShowAddressModal(false)}
-                style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <div className={styles.form}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="addrName">ชื่อที่อยู่ *</label>
-                  <input
-                    id="addrName"
-                    type="text"
-                    className={styles.input}
-                    value={addressForm.name}
-                    onChange={(e) => handleAddressInputChange('name', e.target.value)}
-                    placeholder="เช่น บ้าน, ที่ทำงาน"
-                  />
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="addrAddress">ที่อยู่ *</label>
-                  <textarea
-                    id="addrAddress"
-                    className={styles.input}
-                    value={addressForm.address}
-                    onChange={(e) => handleAddressInputChange('address', e.target.value)}
-                    placeholder="เลขที่, ถนน, หมู่บ้าน"
-                    rows={3}
-                    style={{ resize: 'vertical' }}
-                  />
-                </div>
-
-                <div className={styles.formGrid}>
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="addrDistrict">แขวง/ตำบล</label>
-                    <input
-                      id="addrDistrict"
-                      type="text"
-                      className={styles.input}
-                      value={addressForm.district}
-                      onChange={(e) => handleAddressInputChange('district', e.target.value)}
-                    />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="addrCity">เขต/อำเภอ</label>
-                    <input
-                      id="addrCity"
-                      type="text"
-                      className={styles.input}
-                      value={addressForm.city}
-                      onChange={(e) => handleAddressInputChange('city', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formGrid}>
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="addrProvince">จังหวัด</label>
-                    <input
-                      id="addrProvince"
-                      type="text"
-                      className={styles.input}
-                      value={addressForm.province}
-                      onChange={(e) => handleAddressInputChange('province', e.target.value)}
-                    />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="addrPostal">รหัสไปรษณีย์</label>
-                    <input
-                      id="addrPostal"
-                      type="text"
-                      className={styles.input}
-                      value={addressForm.postalCode}
-                      onChange={(e) => handleAddressInputChange('postalCode', e.target.value)}
-                      maxLength={5}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="addrPhone">เบอร์โทรศัพท์</label>
-                  <input
-                    id="addrPhone"
-                    type="tel"
-                    className={styles.input}
-                    value={addressForm.phone}
-                    onChange={(e) => handleAddressInputChange('phone', e.target.value)}
-                    placeholder="098-765-4321"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button
-                type="button"
-                onClick={() => setShowAddressModal(false)}
-                disabled={saving}
-                className={`${styles.button} ${styles.buttonSecondary}`}
-              >
-                ❌ ยกเลิก
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveAddress}
-                disabled={saving}
-                className={`${styles.button} ${styles.buttonPrimary} ${saving ? styles.buttonDisabled : ''}`}
-              >
-                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>
             </div>
           </div>

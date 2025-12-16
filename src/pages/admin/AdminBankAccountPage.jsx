@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { db, storage } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -12,6 +12,8 @@ export default function AdminBankAccountPage() {
   const [accounts, setAccounts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
+  const [menuOpenIndex, setMenuOpenIndex] = useState(-1);
+  const menuWrapRef = useRef(null);
   
   // Form state
   const [bankName, setBankName] = useState('');
@@ -59,6 +61,18 @@ export default function AdminBankAccountPage() {
     load();
   }, [t]);
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (!menuWrapRef.current) return;
+      if (!menuWrapRef.current.contains(e.target)) {
+        setMenuOpenIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,6 +104,72 @@ export default function AdminBankAccountPage() {
     setError('');
     setSuccess('');
     setShowModal(true);
+  };
+
+  const normalizePrimary = (nextAccounts) => {
+    if (!Array.isArray(nextAccounts) || nextAccounts.length === 0) return [];
+    if (nextAccounts.some((a) => a.isPrimary)) return nextAccounts;
+    return nextAccounts.map((a, idx) => ({ ...a, isPrimary: idx === 0 }));
+  };
+
+  const deleteAccount = async (index) => {
+    if (saving) return;
+    const target = accounts[index];
+    if (!target) return;
+
+    const ok = window.confirm(t('payment.confirm_delete_account') || 'ต้องการลบบัญชีนี้หรือไม่?');
+    if (!ok) return;
+
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    setMenuOpenIndex(-1);
+
+    try {
+      // delete qr image if possible
+      const existingUrl = target.qrUrl || null;
+      if (existingUrl && typeof existingUrl === 'string' && existingUrl.startsWith('https://')) {
+        try {
+          const path = existingUrl.split('/o/')[1]?.split('?')[0];
+          if (path) {
+            const decodedPath = decodeURIComponent(path);
+            await deleteObject(ref(storage, decodedPath));
+          }
+        } catch (e) {
+          console.warn('cannot delete qr image:', e);
+        }
+      }
+
+      let nextAccounts = accounts.filter((_, i) => i !== index);
+      if (target.isPrimary && nextAccounts.length > 0) {
+        nextAccounts = nextAccounts.map((a, idx) => ({ ...a, isPrimary: idx === 0 }));
+      }
+      nextAccounts = normalizePrimary(nextAccounts);
+
+      const primary = nextAccounts.find((a) => a.isPrimary) || nextAccounts[0] || null;
+
+      await setDoc(
+        doc(db, 'settings', 'paymentAccount'),
+        {
+          bankName: primary?.bankName || '',
+          accountName: primary?.accountName || '',
+          accountNumber: primary?.accountNumber || '',
+          note: primary?.note || null,
+          qrUrl: primary?.qrUrl || null,
+          accounts: nextAccounts,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      setAccounts(nextAccounts);
+      setSuccess(t('payment.account_deleted_success') || 'ลบบัญชีสำเร็จ');
+    } catch (e) {
+      console.error('delete account failed:', e);
+      setError(t('payment.delete_account_failed') || 'ลบบัญชีไม่สำเร็จ');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openEditModal = (index) => {
@@ -357,9 +437,39 @@ export default function AdminBankAccountPage() {
                         </span>
                       </div>
                     </div>
-                    <button className={styles.moreButton}>
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
+                    <div className={styles.menuWrap} ref={idx === menuOpenIndex ? menuWrapRef : null}>
+                      <button
+                        type="button"
+                        className={styles.moreButton}
+                        onClick={() => setMenuOpenIndex((v) => (v === idx ? -1 : idx))}
+                        aria-label={t('common.action') || 'Actions'}
+                      >
+                        <span className="material-symbols-outlined">more_vert</span>
+                      </button>
+                      {menuOpenIndex === idx && (
+                        <div className={styles.menuDropdown} role="menu">
+                          <button
+                            type="button"
+                            className={styles.menuItem}
+                            onClick={() => {
+                              setMenuOpenIndex(-1);
+                              openEditModal(idx);
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                            {t('common.edit') || 'Edit'}
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                            onClick={() => deleteAccount(idx)}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                            {t('common.delete') || 'Delete'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className={styles.bankCardField}>

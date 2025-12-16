@@ -418,10 +418,23 @@
 .termsLink {
   color: #135bec;
   font-weight: 500;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
   text-decoration: none;
 }
 
 .termsLink:hover {
+  text-decoration: underline;
+}
+
+.termsLink:focus {
+  outline: none;
+}
+
+.termsLink:focus-visible {
   text-decoration: underline;
 }
 
