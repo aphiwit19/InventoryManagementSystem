@@ -5,6 +5,8 @@ import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDef
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
 
@@ -45,10 +47,10 @@ export default function ProfilePage() {
   // Form data
   const [formData, setFormData] = useState({
     firstName: '',
-    lastName: '',
     phone: '',
-    birthDate: '',
   });
+
+  const fullName = (formData.firstName || '').trim();
 
   // Order count
   // eslint-disable-next-line no-unused-vars
@@ -64,12 +66,12 @@ export default function ProfilePage() {
       
       try {
         const userData = await ensureUserProfile(user.uid, profile?.email || user.email, profile?.displayName);
+
+        const fallbackDisplayName = (userData.displayName || profile?.displayName || '').trim();
         
         setFormData({
-          firstName: userData.firstName || '',
-          lastName: userData.lastName || '',
+          firstName: userData.firstName || fallbackDisplayName,
           phone: userData.phone || '',
-          birthDate: userData.birthDate || '',
         });
         
         setPhotoURL(userData.photoURL || profile?.photoURL || user.photoURL || '');
@@ -79,9 +81,7 @@ export default function ProfilePage() {
         console.error('Error loading user data:', error);
         setFormData({
           firstName: '',
-          lastName: '',
           phone: '',
-          birthDate: '',
         });
       } finally {
         setLoading(false);
@@ -130,10 +130,9 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       await updateUserProfile(user.uid, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        firstName: (formData.firstName || '').trim(),
+        lastName: '',
         phone: formData.phone,
-        birthDate: formData.birthDate,
       });
       setEditingPersonal(false);
     } catch (error) {
@@ -283,7 +282,7 @@ export default function ProfilePage() {
                 />
               </label>
             </div>
-            <h3 className={styles.profileName}>{profile?.displayName || 'User'}</h3>
+            <h3 className={styles.profileName}>{fullName || profile?.displayName || 'User'}</h3>
             <p className={styles.profileEmail}>{profile?.email || user?.email || ''}</p>
           </div>
 
@@ -319,10 +318,6 @@ export default function ProfilePage() {
                 Security
               </button>
               <div className={styles.navMenuDivider}></div>
-              <button className={`${styles.navMenuItem} ${styles.navMenuItemDanger}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>logout</span>
-                Sign Out
-              </button>
             </nav>
           </div>
         </aside>
@@ -363,9 +358,8 @@ export default function ProfilePage() {
 
               <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }}>
                 <div className={styles.formGrid}>
-                  {/* First Name */}
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>First Name</label>
+                  <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                    <label className={styles.formLabel}>Full Name</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
@@ -375,23 +369,6 @@ export default function ProfilePage() {
                         className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
-                        disabled={!editingPersonal}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Last Name */}
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Last Name</label>
-                    <div className={styles.inputWrapper}>
-                      <div className={styles.inputIcon}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
-                      </div>
-                      <input
-                        type="text"
-                        className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange('lastName', e.target.value)}
                         disabled={!editingPersonal}
                       />
                     </div>
@@ -415,7 +392,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Phone Number */}
-                  <div className={styles.formGroup}>
+                  <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
                     <label className={styles.formLabel}>Phone Number</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
@@ -426,23 +403,6 @@ export default function ProfilePage() {
                         className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
-                        disabled={!editingPersonal}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Date of Birth */}
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Date of Birth</label>
-                    <div className={styles.inputWrapper}>
-                      <div className={styles.inputIcon}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>calendar_month</span>
-                      </div>
-                      <input
-                        type="date"
-                        className={`${styles.formInput} ${!editingPersonal ? styles.formInputDisabled : ''}`}
-                        value={formData.birthDate}
-                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
                         disabled={!editingPersonal}
                       />
                     </div>
@@ -531,7 +491,7 @@ export default function ProfilePage() {
                         {addr.isDefault && <span className={styles.addressBadge}>Default</span>}
                       </div>
 
-                      <p className={styles.addressName}>{formData.firstName} {formData.lastName}</p>
+                      <p className={styles.addressName}>{fullName || profile?.displayName || 'User'}</p>
                       <p className={styles.addressText}>
                         {addr.address}<br />
                         {addr.district && `${addr.district}, `}
