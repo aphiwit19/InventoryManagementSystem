@@ -78,7 +78,10 @@
     "optional": "ถ้ามี",
     "save_changes": "บันทึกการเปลี่ยนแปลง",
     "from_date": "จากวันที่",
-    "to_date": "ถึงวันที่"
+    "to_date": "ถึงวันที่",
+    "to": "ถึง",
+    "showing": "แสดง",
+    "clear_filters": "ล้างตัวกรอง"
   },
   "auth": {
     "login": "เข้าสู่ระบบ",
@@ -270,6 +273,7 @@
     "order_history": "ประวัติคำสั่งซื้อ",
     "order_detail": "รายละเอียดคำสั่งซื้อ",
     "order_id": "รหัสคำสั่งซื้อ",
+    "customer": "ผู้ขอเบิก",
     "order_date": "วันที่สั่งซื้อ",
     "order_status": "สถานะคำสั่งซื้อ",
     "order_total": "ยอดรวม",
@@ -341,6 +345,8 @@
     "carrier": "ขนส่ง",
     "select_carrier": "เลือกผู้ให้บริการ",
     "tracking_number": "เลข Tracking",
+    "tracking": "เลข Tracking",
+    "fulfillment": "สถานะ",
     "tracking_placeholder": "เช่น EX123456789TH",
     "save_shipping": "บันทึกการจัดส่ง",
     "processing": "กำลังดำเนินการ",
@@ -349,8 +355,9 @@
   },
   "withdraw": {
     "withdraw": "เบิกสินค้า",
-    "withdraw_request": "คำขอเบิกสินค้า",
+    "withdraw_request": "ตระกร้า",
     "withdraw_history": "ประวัติการเบิก",
+    "withdraw_id": "รหัสการเบิก",
     "withdraw_cart": "รายการเบิก",
     "withdraw_date": "วันที่เบิก",
     "requested_by": "ผู้ขอเบิก",

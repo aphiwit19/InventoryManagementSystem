@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { updateWithdrawalShipping } from '../../services';
 import { useTranslation } from 'react-i18next';
+import styles from './AdminOrderDetailPage.module.css';
 
 const carriers = ['EMS', 'Thailand Post', 'Kerry', 'J&T', 'Flash'];
 const statuses = ['รอดำเนินการ', 'กำลังดำเนินการส่ง', 'ส่งสำเร็จ'];
@@ -23,6 +24,7 @@ export default function AdminOrderDetailPage() {
   const [paymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
   const [saving, setSaving] = useState(false);
 
+  const isStaffOrder = (initialOrder?.createdSource || '') === 'staff';
   const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';
   const statusOptions = isPickup ? pickupStatuses : statuses;
 
@@ -75,25 +77,14 @@ export default function AdminOrderDetailPage() {
 
   if (!order) {
     return (
-      <div style={{ padding: 24, background: '#f8f9fc', minHeight: '100vh', boxSizing: 'border-box' }}>
-        <div style={{ background: '#fff', borderRadius: 8, padding: 24 }}>
-          <p>{t('order.no_orders_found')}</p>
-          <button
-            type="button"
-            onClick={handleBack}
-            style={{
-              padding: '10px 16px',
-              borderRadius: 10,
-              border: 'none',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 700,
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
-            }}
-          >
-            {t('order.back_to_orders')}
-          </button>
+      <div className={styles.pageContainer}>
+        <div className={styles.contentWrapper}>
+          <div className={styles.state}>
+            <p>{t('order.no_orders_found')}</p>
+            <button type="button" className={styles.backBtn} onClick={handleBack}>
+              {t('order.back_to_orders')}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -109,118 +100,82 @@ export default function AdminOrderDetailPage() {
       : order.withdrawDate
   ).toLocaleDateString('th-TH');
 
+  const headerLabel = isStaffOrder
+    ? (t('order.staff_orders') || 'คำสั่งเบิกพนักงาน')
+    : (t('order.customer_orders') || (t('order.orders') || 'คำสั่งซื้อ'));
+
+  const requestedByLabel = isStaffOrder
+    ? (t('withdraw.requested_by') || 'ผู้ขอเบิก')
+    : (t('order.customer_info') || 'ข้อมูลผู้สั่งซื้อ');
+
   return (
-    <div style={{ padding: '32px 24px', background: '#f8f9fc', minHeight: '100vh', boxSizing: 'border-box' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className={styles.pageContainer}>
+      <div className={styles.contentWrapper}>
         {/* Header Card */}
-        <div
-          style={{
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-            borderRadius: 18,
-            padding: '16px 20px',
-            marginBottom: 8,
-            boxShadow: '0 10px 40px rgba(15,23,42,0.12), 0 4px 16px rgba(37,99,235,0.08)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            border: '1px solid rgba(255,255,255,0.9)',
-          }}
-        >
+        <div className={styles.headerCard}>
           <div>
-            <div style={{ fontSize: 12, color: '#3b82f6', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 6 }}>ORDER DETAIL</div>
-            <h1 style={{ margin: '0 0 6px', fontSize: 24, color: '#1e40af', fontWeight: 700 }}>{t('order.order_id')} #{id}</h1>
-            <div style={{ fontSize: 14, color: '#64748b' }}>{t('order.order_date')}: {dateText}</div>
+            <div className={styles.headerKicker}>
+              {isStaffOrder ? (t('withdraw.withdraw_history') || 'ประวัติการเบิก') : 'ORDER DETAIL'}
+            </div>
+            <h1 className={styles.headerTitle}>
+              {isStaffOrder ? (t('withdraw.withdraw_id') || 'รหัสการเบิก') : t('order.order_id')} #{id}
+            </h1>
+            <div className={styles.headerMeta}>
+              {(t('withdraw.withdraw_date') || t('order.order_date') || t('common.date'))}: {dateText}
+            </div>
+            <div className={styles.headerSub}>{headerLabel}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>{t('common.total')}</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#1e40af' }}>฿{totalText}</div>
+          <div className={styles.totalWrap}>
+            <div className={styles.totalLabel}>{t('common.total')}</div>
+            <div className={styles.totalValue}>฿{totalText}</div>
           </div>
         </div>
 
-        {/* Two Cards Row: ข้อมูลผู้สั่งซื้อ + สินค้าในคำสั่งซื้อ */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
-          {/* ข้อมูลผู้สั่งซื้อ */}
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 14,
-              padding: '14px 18px',
-              boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 16,
-                }}
-              >
-                👤
+        {/* Two Cards Row: ข้อมูลผู้ขอเบิก/ผู้สั่งซื้อ + สินค้าในคำสั่งซื้อ */}
+        <div className={styles.gridTwo}>
+          {/* ข้อมูลผู้ขอเบิก/ผู้สั่งซื้อ */}
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>person</span>
               </div>
-              <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>{t('order.customer_info')}</h2>
+              <h2 className={styles.cardTitle}>{requestedByLabel}</h2>
             </div>
-            <div style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>{order.requestedBy || '-'}</div>
-            {order.requestedAddress && (
-              <div style={{ marginTop: 8, fontSize: 14, color: '#6b7280', whiteSpace: 'pre-wrap' }}>
-                {order.requestedAddress}
+            <div className={styles.kvList}>
+              <div className={styles.kvRow}>
+                <span className={styles.kvKey}>{isStaffOrder ? (t('withdraw.requested_by') || 'ผู้ขอเบิก') : (t('common.name') || 'ชื่อ')}</span>
+                <span className={styles.kvValue}>{order.requestedBy || '-'}</span>
               </div>
-            )}
+              {order.requestedAddress && (
+                <div className={styles.kvRow}>
+                  <span className={styles.kvKey}>{t('common.address') || 'ที่อยู่'}</span>
+                  <span className={styles.kvValue} style={{ whiteSpace: 'pre-wrap', textAlign: 'right' }}>{order.requestedAddress}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* สินค้าในคำสั่งซื้อ */}
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 14,
-              padding: '14px 18px',
-              boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 16,
-                }}
-              >
-                📦
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>inventory_2</span>
               </div>
-              <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>{t('order.order_items')}</h2>
+              <h2 className={styles.cardTitle}>{t('order.order_items')}</h2>
             </div>
             {items.length === 0 ? (
               <div style={{ fontSize: 14, color: '#9ca3af' }}>{t('order.no_items')}</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className={styles.itemsList}>
                 {items.map((it, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
+                  <div key={idx} className={styles.itemRow}>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 500, color: '#111827' }}>{it.productName || '-'}</div>
-                      <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('common.quantity')} {it.quantity || 0} {t('common.piece')}</div>
+                      <div className={styles.itemName}>{it.productName || '-'}</div>
+                      <div className={styles.itemSub}>{t('common.quantity')} {it.quantity || 0} {t('common.piece')}</div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#0ea5e9' }}>฿{(it.subtotal || 0).toLocaleString()}</div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>฿{(it.price || 0).toLocaleString()} / {t('common.piece')}</div>
+                    <div className={styles.itemPrice}>
+                      <div className={styles.itemTotal}>฿{(it.subtotal || 0).toLocaleString()}</div>
+                      <div className={styles.itemUnit}>฿{(it.price || 0).toLocaleString()} / {t('common.piece')}</div>
                     </div>
                   </div>
                 ))}
@@ -229,173 +184,141 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
 
-        {/* ข้อมูลการจัดส่ง Card */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: 16,
-            padding: '12px 18px',
-            boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
-            marginBottom: 8,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: 16,
-              }}
-            >
-              🚚
+        {/* ข้อมูลการจัดส่ง/รับเอง Card */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardIcon}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>local_shipping</span>
             </div>
-            <h2 style={{ margin: 0, fontSize: 16, color: '#1e40af', fontWeight: 600 }}>{t('order.shipping_info')}</h2>
+            <h2 className={styles.cardTitle}>
+              {isStaffOrder ? (t('order.shipping_info') || 'ข้อมูลการจัดส่ง') : t('order.shipping_info')}
+            </h2>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <span style={{ fontSize: 14, color: '#6b7280' }}>{t('order.delivery_method')}:</span>
-              <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{(order.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping')}</span>
+          <div className={styles.kvList}>
+            <div className={styles.kvRow}>
+              <span className={styles.kvKey}>{t('order.delivery_method') || 'วิธีรับสินค้า'}:</span>
+              <span className={styles.kvValue}>{(order.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping')}</span>
             </div>
             {order.receivedBy && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: 14, color: '#6b7280' }}>{t('order.receiver')}:</span>
-                <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{order.receivedBy}</span>
+              <div className={styles.kvRow}>
+                <span className={styles.kvKey}>{t('order.receiver')}:</span>
+                <span className={styles.kvValue}>{order.receivedBy}</span>
               </div>
             )}
             {order.note && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-                <span style={{ fontSize: 14, color: '#6b7280' }}>{t('order.order_note')}:</span>
-                <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{order.note}</span>
+              <div className={styles.kvRow}>
+                <span className={styles.kvKey}>{t('order.order_note')}:</span>
+                <span className={styles.kvValue}>{order.note}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* การตรวจสอบการชำระเงิน Card */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: 16,
-            padding: '20px 24px',
-            boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
-            marginBottom: 10,
-          }}
-        >
-          <h3 style={{ margin: '0 0 10px', fontSize: 15, color: '#374151', fontWeight: 600 }}>{t('payment.payment')}</h3>
-
-          {/* Payment info + slip */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 16, marginBottom: 14 }}>
-            <div
-              style={{
-                background: 'linear-gradient(135deg,#eff6ff,#e0f2fe)',
-                borderRadius: 14,
-                padding: 14,
-                border: '1px solid #bfdbfe',
-                boxShadow: '0 4px 14px rgba(59,130,246,0.15)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a8a' }}>{t('payment.customer_transfer_account')}</div>
-                {order.paymentAccount?.bankName && (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      background: 'rgba(59,130,246,0.12)',
-                      color: '#1d4ed8',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {order.paymentAccount.bankName}
-                  </span>
-                )}
+        {/* ซ่อนการชำระเงินสำหรับใบเบิกพนักงาน */}
+        {!isStaffOrder && (
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>
               </div>
-              {order.paymentAccount ? (
-                <>
-                  <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 600 }}>{order.paymentAccount.accountName || '-'}</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', marginTop: 4 }}>{t('payment.account_number')}: {order.paymentAccount.accountNumber || '-'}</div>
-                  {order.paymentAccount.note && (
-                    <div
+              <h2 className={styles.cardTitle}>{t('payment.payment')}</h2>
+            </div>
+
+            {/* Payment info + slip */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 16, marginBottom: 14 }}>
+              <div
+                style={{
+                  background: 'linear-gradient(135deg,#eff6ff,#e0f2fe)',
+                  borderRadius: 14,
+                  padding: 14,
+                  border: '1px solid #bfdbfe',
+                  boxShadow: '0 4px 14px rgba(59,130,246,0.15)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a8a' }}>{t('payment.customer_transfer_account')}</div>
+                  {order.paymentAccount?.bankName && (
+                    <span
                       style={{
-                        fontSize: 12,
-                        color: '#475569',
-                        marginTop: 8,
-                        padding: '8px 10px',
-                        borderRadius: 10,
-                        background: 'rgba(255,255,255,0.8)',
+                        fontSize: 11,
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(59,130,246,0.12)',
+                        color: '#1d4ed8',
+                        fontWeight: 600,
                       }}
                     >
-                      {order.paymentAccount.note}
-                    </div>
+                      {order.paymentAccount.bankName}
+                    </span>
                   )}
-                </>
-              ) : (
-                <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('payment.no_account_info')}</div>
-              )}
+                </div>
+                {order.paymentAccount ? (
+                  <>
+                    <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 600 }}>{order.paymentAccount.accountName || '-'}</div>
+                    <div style={{ fontSize: 13, color: '#0f172a', marginTop: 4 }}>{t('payment.account_number')}: {order.paymentAccount.accountNumber || '-'}</div>
+                    {order.paymentAccount.note && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: '#475569',
+                          marginTop: 8,
+                          padding: '8px 10px',
+                          borderRadius: 10,
+                          background: 'rgba(255,255,255,0.8)',
+                        }}
+                      >
+                        {order.paymentAccount.note}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('payment.no_account_info')}</div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  background: '#f9fafb',
+                  borderRadius: 12,
+                  padding: 12,
+                  border: '1px solid #e5e7eb',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 8 }}>{t('order.payment_slip')}</div>
+                {order.paymentSlipUrl ? (
+                  <a
+                    href={order.paymentSlipUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: 'inline-block', borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}
+                  >
+                    <img
+                      src={order.paymentSlipUrl}
+                      alt="สลิปการชำระเงิน"
+                      style={{ maxWidth: 180, maxHeight: 220, objectFit: 'cover', display: 'block' }}
+                    />
+                  </a>
+                ) : (
+                  <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('payment.no_slip')}</div>
+                )}
+              </div>
             </div>
 
-            <div
-              style={{
-                background: '#f9fafb',
-                borderRadius: 12,
-                padding: 12,
-                border: '1px solid #e5e7eb',
-                textAlign: 'center',
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 8 }}>{t('order.payment_slip')}</div>
-              {order.paymentSlipUrl ? (
-                <a
-                  href={order.paymentSlipUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ display: 'inline-block', borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}
-                >
-                  <img
-                    src={order.paymentSlipUrl}
-                    alt="สลิปการชำระเงิน"
-                    style={{ maxWidth: 180, maxHeight: 220, objectFit: 'cover', display: 'block' }}
-                  />
-                </a>
-              ) : (
-                <div style={{ fontSize: 13, color: '#9ca3af' }}>{t('payment.no_slip')}</div>
-              )}
-            </div>
+            {/* Payment status controls removed as requested */}
           </div>
-
-          {/* Payment status controls removed as requested */}
-        </div>
+        )}
 
         {/* สถานะการจัดส่ง Card */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: 16,
-            padding: '20px 24px',
-            boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
-          }}
-        >
-          <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#374151', fontWeight: 600 }}>{t('order.shipping_status')}</h3>
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardIcon}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>sync_alt</span>
+            </div>
+            <h2 className={styles.cardTitle}>{t('order.shipping_status')}</h2>
+          </div>
           
-          <div
-            style={{
-              background: '#fffbeb',
-              border: '1px solid #fde68a',
-              borderRadius: 10,
-              padding: '12px 16px',
-              marginBottom: 16,
-              fontSize: 13,
-              color: '#92400e',
-            }}
-          >
+          <div className={styles.banner}>
             {isPickup
               ? t('order.pickup_instruction')
               : t('order.shipping_instruction')}
@@ -403,21 +326,13 @@ export default function AdminOrderDetailPage() {
 
           {/* แสดงช่องขนส่งและ Tracking เฉพาะเมื่อเป็นแบบจัดส่ง */}
           {!isPickup && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div className={styles.formGrid}>
               <div>
-                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>{t('order.carrier')}</label>
+                <label className={styles.fieldLabel}>{t('order.carrier')}</label>
                 <select
                   value={form.shippingCarrier}
                   onChange={(e) => setForm((f) => ({ ...f, shippingCarrier: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    border: '1px solid #e5e7eb',
-                    fontSize: 14,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
+                  className={styles.select}
                 >
                   <option value="">{t('order.select_carrier')}</option>
                   {carriers.map((c) => (
@@ -428,39 +343,22 @@ export default function AdminOrderDetailPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 500 }}>{t('order.tracking_number')}</label>
+                <label className={styles.fieldLabel}>{t('order.tracking_number')}</label>
                 <input
                   value={form.trackingNumber}
                   onChange={(e) => setForm((f) => ({ ...f, trackingNumber: e.target.value }))}
                   placeholder={t('order.tracking_placeholder')}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    border: '1px solid #e5e7eb',
-                    fontSize: 14,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
+                  className={styles.input}
                 />
               </div>
             </div>
           )}
 
-          <div style={{ marginBottom: 20 }}>
+          <div className={styles.fullWidth} style={{ marginBottom: 20 }}>
             <select
               value={form.shippingStatus}
               onChange={(e) => setForm((f) => ({ ...f, shippingStatus: e.target.value }))}
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                borderRadius: 10,
-                border: '1px solid #e5e7eb',
-                fontSize: 15,
-                outline: 'none',
-                boxSizing: 'border-box',
-                color: '#374151',
-              }}
+              className={styles.select}
             >
               {statusOptions.map((s) => (
                 <option key={s} value={s}>
@@ -474,21 +372,7 @@ export default function AdminOrderDetailPage() {
             type="button"
             onClick={handleSave}
             disabled={saving || !canSave()}
-            style={{
-              width: '100%',
-              padding: '16px 24px',
-              borderRadius: 12,
-              border: 'none',
-              background: saving || !canSave()
-                ? '#9ca3af'
-                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              color: '#fff',
-              cursor: saving || !canSave() ? 'not-allowed' : 'pointer',
-              fontSize: 16,
-              fontWeight: 600,
-              boxShadow: saving || !canSave() ? 'none' : '0 4px 14px rgba(59,130,246,0.4)',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-            }}
+            className={styles.saveBtn}
           >
             {saving ? t('message.saving') : t('order.save_shipping')}
           </button>

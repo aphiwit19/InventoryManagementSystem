@@ -1,0 +1,401 @@
+.page {
+  min-height: 100vh;
+  background: #f6f6f8;
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 32px;
+  }
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.breadcrumbLink {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumbLink:hover {
+  color: #135bec;
+}
+
+.breadcrumbCurrent {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.subTitle {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.badgeGreen {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.badgeBlue {
+  background: rgba(19, 91, 236, 0.10);
+  color: #135bec;
+  border-color: rgba(19, 91, 236, 0.20);
+}
+
+.badgeGray {
+  background: rgba(148, 163, 184, 0.16);
+  color: #475569;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btnPrimary {
+  background: #135bec;
+  border-color: #135bec;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(19, 91, 236, 0.18);
+}
+
+.btnPrimary:hover {
+  background: #0e46b9;
+  border-color: #0e46b9;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.cardHeader {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cardBody {
+  padding: 18px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.th {
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.td {
+  padding: 12px 18px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+}
+
+.tdRight {
+  text-align: right;
+}
+
+.itemCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  background-size: cover;
+  background-position: center;
+  flex: 0 0 auto;
+}
+
+.itemName {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.itemSub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.summary {
+  padding: 14px 18px;
+  border-top: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.summaryRow {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.summaryTotal {
+  font-size: 18px;
+  font-weight: 900;
+  color: #135bec;
+}
+
+.kv {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.k {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.v {
+  font-size: 14px;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.noteBox {
+  position: relative;
+}
+
+.noteArea {
+  width: 100%;
+  min-height: 96px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.9);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #334155;
+  outline: none;
+  resize: none;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 18px;
+}
+
+.timelineLine {
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timelineItem {
+  position: relative;
+  padding-left: 20px;
+  padding-bottom: 18px;
+}
+
+.timelineItem:last-child {
+  padding-bottom: 0;
+}
+
+.timelineDot {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+}
+
+.timelineDotActive {
+  background: #135bec;
+  border-color: #135bec;
+}
+
+.timelineTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.timelineSub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.stateWrap {
+  min-height: 60vh;
+  background: #f6f6f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.stateCard {
+  max-width: 560px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.stateText {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0 0 14px;
+}
