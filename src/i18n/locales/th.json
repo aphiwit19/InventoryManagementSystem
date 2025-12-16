@@ -124,7 +124,15 @@
     "please_login": "กรุณาเข้าสู่ระบบ",
     "email_required": "กรุณากรอกอีเมล",
     "password_required": "กรุณากรอกรหัสผ่าน",
-    "name_required": "กรุณากรอกชื่อ"
+    "name_required": "กรุณากรอกชื่อ",
+    "forgot_password_title": "ลืมรหัสผ่าน",
+    "forgot_password_subtitle": "กรอกอีเมลเพื่อรับลิงก์สำหรับตั้งรหัสผ่านใหม่",
+    "forgot_password_description": "เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปยังอีเมลของคุณ หากอีเมลนี้อยู่ในระบบ",
+    "send_reset_link": "ส่งลิงก์รีเซ็ตรหัสผ่าน",
+    "sending_reset": "กำลังส่งลิงก์...",
+    "reset_email_sent": "ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว",
+    "reset_failed": "ส่งลิงก์รีเซ็ตรหัสผ่านไม่สำเร็จ",
+    "back_to_login": "กลับไปหน้าเข้าสู่ระบบ"
   },
   "product": {
     "products": "สินค้า",

@@ -121,7 +121,15 @@
     "please_login": "Please login",
     "email_required": "Please enter email",
     "password_required": "Please enter password",
-    "name_required": "Please enter name"
+    "name_required": "Please enter name",
+    "forgot_password_title": "Forgot Password",
+    "forgot_password_subtitle": "Enter your email to receive a password reset link",
+    "forgot_password_description": "We will send a password reset link to your email if this address exists in our system.",
+    "send_reset_link": "Send reset link",
+    "sending_reset": "Sending link...",
+    "reset_email_sent": "Password reset link has been sent to your email",
+    "reset_failed": "Failed to send password reset link",
+    "back_to_login": "Back to login"
   },
   "product": {
     "products": "Products",

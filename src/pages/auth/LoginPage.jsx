@@ -34,6 +34,10 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = () => {
+    navigate('/forgot-password');
+  };
+
   return (
     <div className={styles.container}>
       {/* Left Panel - Visual & Branding (Hidden on mobile) */}
@@ -158,7 +162,7 @@ export default function LoginPage() {
                   {t('auth.remember_me')}
                 </label>
               </div>
-              <button type="button" className={styles.forgotPassword}>
+              <button type="button" className={styles.forgotPassword} onClick={handleForgotPassword}>
                 {t('auth.forgot_password') || 'Forgot Password?'}
               </button>
             </div>

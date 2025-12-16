@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import AddProductPage from './pages/admin/AddProductPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminBankAccountPage from './pages/admin/AdminBankAccountPage';
@@ -91,6 +92,7 @@ function App() {
 
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
