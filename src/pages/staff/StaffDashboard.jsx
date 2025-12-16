@@ -1,19 +1,23 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getAllProducts, addToCart, getCart, DEFAULT_CATEGORIES } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
+import styles from './StaffDashboard.module.css';
 
 export default function StaffDashboard() {
   const { t } = useTranslation();
-  useNavigate();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const outletCtx = useOutletContext();
+  const searchQuery = outletCtx?.searchQuery || '';
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  const [sortBy, setSortBy] = useState('popularity');
 
   // Variant selection modal
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -22,7 +26,6 @@ export default function StaffDashboard() {
   const [addingToCart, setAddingToCart] = useState(false);
 
   // Cart count for badge
-  // eslint-disable-next-line no-unused-vars
   const [cartCount, setCartCount] = useState(0);
 
   // Profile menu
@@ -78,18 +81,52 @@ export default function StaffDashboard() {
     return [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
   }, [products]);
 
+  const skuText = (product) => {
+    if (product?.sku) return String(product.sku);
+    if (product?.productCode) return String(product.productCode);
+    if (product?.barcode) return String(product.barcode);
+    return product?.id ? String(product.id).slice(0, 8).toUpperCase() : '-';
+  };
+
+  const productMatchesQuery = (product, query) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    const haystack = [
+      product?.productName,
+      product?.category,
+      product?.description,
+      skuText(product),
+    ]
+      .filter(Boolean)
+      .map((v) => String(v).toLowerCase());
+    return haystack.some((v) => v.includes(q));
+  };
+
   const filteredProducts = useMemo(() => {
     let filtered = products;
-    if (searchTerm.trim() !== '') {
-      filtered = filtered.filter(product =>
-        product.productName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter((product) => productMatchesQuery(product, searchQuery));
     }
     if (categoryFilter) {
-      filtered = filtered.filter(product => product.category === categoryFilter);
+      filtered = filtered.filter((product) => product.category === categoryFilter);
     }
-    return filtered;
-  }, [products, searchTerm, categoryFilter]);
+
+    const sorted = [...filtered];
+    if (sortBy === 'stock_asc') {
+      sorted.sort((a, b) => {
+        const aAvail = Math.max(0, (parseInt(a.quantity || 0) - parseInt(a.reserved || 0) - parseInt(a.staffReserved || 0)));
+        const bAvail = Math.max(0, (parseInt(b.quantity || 0) - parseInt(b.reserved || 0) - parseInt(b.staffReserved || 0)));
+        return aAvail - bAvail;
+      });
+    } else if (sortBy === 'name_asc') {
+      sorted.sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
+    }
+    return sorted;
+  }, [products, searchQuery, categoryFilter, sortBy]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -183,98 +220,163 @@ export default function StaffDashboard() {
     return Math.max(0, pQty - pReserved - pStaffReserved);
   };
 
-  const getDisplayPrice = (product) => {
-    const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
-    if (hasVariants) {
-      const prices = product.variants.map(v => v.sellPrice || 0);
-      const min = Math.min(...prices);
-      const max = Math.max(...prices);
-      return min === max ? `฿${min.toLocaleString()}` : `฿${min.toLocaleString()} - ฿${max.toLocaleString()}`;
-    }
-    return `฿${(product.sellPrice || product.price || 0).toLocaleString()}`;
+  const getAvailableForStaff = (product) => {
+    const qty = parseInt(product.quantity || 0);
+    const reserved = parseInt(product.reserved || 0);
+    const staffReserved = parseInt(product.staffReserved || 0);
+    return Math.max(0, qty - reserved - staffReserved);
+  };
+
+  const getStockBadgeClass = (available) => {
+    if (available <= 0) return styles.stockOut;
+    if (available <= 10) return styles.stockLow;
+    return styles.stockIn;
   };
 
   return (
-    <div style={{ padding: '32px 24px', background: 'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 40%, #e0f2fe 80%)', minHeight: '100vh', boxSizing: 'border-box' }}>
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className={styles.hero}>
+          <div className={styles.heroBg}></div>
+          <div className={styles.heroContent}>
+            <h2 className={styles.heroTitle}>Staff Withdrawal Portal</h2>
+            <p className={styles.heroSubtitle}>
+              Browse inventory, check stock levels, and request equipment withdrawals efficiently.
+            </p>
+          </div>
+        </div>
 
-      {/* Search & Filter Bar */}
-      <div style={{ background: 'transparent', border: '1px solid rgba(148,163,184,0.25)', padding: '22px 28px', borderRadius: 18, marginBottom: 24, boxShadow: '0 8px 24px rgba(15,23,42,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h2 style={{ margin: 0, color: '#1e40af', fontSize: 22, fontWeight: 700 }}>{t('product.all_products')}</h2>
-          <div style={{ fontSize: 14, color: '#3b82f6', marginTop: 6 }}>{t('product.select_to_add')}</div>
+        <div className={styles.filters}>
+          <div className={styles.filtersHeader}>
+            <div className={styles.filtersTitle}>Browse Categories</div>
+            <div className={styles.sortWrap}>
+              <span className={styles.sortLabel}>Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className={styles.sortSelect}
+              >
+                <option value="popularity">Popularity</option>
+                <option value="stock_asc">Stock: Low to High</option>
+                <option value="name_asc">Name: A-Z</option>
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.categoriesRow}>
+            <button
+              type="button"
+              className={`${styles.chip} ${categoryFilter === '' ? styles.chipActive : ''}`}
+              onClick={() => setCategoryFilter('')}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>apps</span>
+              <span>All Items</span>
+            </button>
+            {uniqueCategories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`${styles.chip} ${categoryFilter === cat ? styles.chipActive : ''}`}
+                onClick={() => setCategoryFilter(cat)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>grid_view</span>
+                <span>{t(`categories.${cat}`, cat)}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }} style={{ padding: '10px 14px', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
-            <option value="">{t('common.all_categories')}</option>
-            {uniqueCategories.map(cat => <option key={cat} value={cat}>{t(`categories.${cat}`, cat)}</option>)}
-          </select>
-        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>{t('common.loading')}</div>
+        ) : currentProducts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            {searchQuery ? t('product.no_products_found') : t('product.no_products')}
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {currentProducts.map((product) => {
+              const available = getAvailableForStaff(product);
+              const stockClass = getStockBadgeClass(available);
+              const canAdd = available > 0;
+              return (
+                <div key={product.id} className={styles.card}>
+                  <div className={styles.cardImageWrap}>
+                    <div className={styles.skuBadge}>SKU: {skuText(product)}</div>
+                    {product.image ? (
+                      <img className={styles.cardImage} src={product.image} alt={product.productName} />
+                    ) : (
+                      <div className={styles.cardImageWrap}></div>
+                    )}
+                  </div>
+                  <div className={styles.cardBody}>
+                    <h4 className={styles.cardTitle} title={product.productName}>
+                      {product.productName}
+                    </h4>
+                    <div className={styles.cardMeta}>{product.category || '-'}</div>
+
+                    <div className={styles.cardFooter}>
+                      <div className={`${styles.stockBadge} ${stockClass}`}>
+                        <span className={styles.stockDot}></span>
+                        <span>
+                          {available <= 0
+                            ? `0 Out of Stock`
+                            : available <= 10
+                              ? `${available} Low Stock`
+                              : `${available} In Stock`}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={`${styles.addButton} ${!canAdd ? styles.addButtonDisabled : ''}`}
+                        onClick={() => canAdd && openProductModal(product)}
+                        disabled={!canAdd}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>add</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className={styles.pagination}>
+            <button
+              type="button"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={styles.pageButton}
+            >
+              {t('common.previous')}
+            </button>
+            <div className={styles.pageInfo}>
+              {t('common.page')} {currentPage} / {totalPages}
+            </div>
+            <button
+              type="button"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={styles.pageButton}
+            >
+              {t('common.next')}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Products Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>{t('common.loading')}</p>
-        </div>
-      ) : currentProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 50, background: '#fff', borderRadius: 18, boxShadow: '0 8px 32px rgba(15,23,42,0.12)' }}>
-          <p style={{ color: '#64748b', fontSize: 15 }}>{searchTerm ? t('product.no_products_found') : t('product.no_products')}</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, marginBottom: 24 }}>
-          {currentProducts.map((product) => {
-            const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
-            return (
-              <div key={product.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 6px 24px rgba(15,23,42,0.1)', transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(15,23,42,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(15,23,42,0.1)'; }}>
-                {/* Image */}
-                <div style={{ height: 160, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {product.image ? <img src={product.image} alt={product.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#9ca3af', fontSize: 40 }}>📦</span>}
-                </div>
-                {/* Info */}
-                <div style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{product.productName}</h3>
-                    {hasVariants && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 500 }}>{product.variants.length} {t('product.variants')}</span>}
-                  </div>
-                  {product.description && (
-                    <p style={{ margin: '0 0 8px', fontSize: 12, color: '#6b7280', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
-                  )}
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                    {product.category && <span style={{ background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.category}</span>}
-                    <span style={{ background: '#f8fafc', color: '#64748b', padding: '2px 8px', borderRadius: 4, fontSize: 11 }}>{product.unit || t('common.piece')}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>{getDisplayPrice(product)}</span>
-                    {(() => {
-                      const qty = parseInt(product.quantity || 0);
-                      const reserved = parseInt(product.reserved || 0);
-                      const staffReserved = parseInt(product.staffReserved || 0);
-                      const availableForStaff = Math.max(0, qty - reserved - staffReserved);
-                      return (
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>
-                          {t('product.remaining')}: {availableForStaff} {product.unit || t('common.piece')}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <button onClick={() => openProductModal(product)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)' }}>
-                    {t('cart.add_to_cart')}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-          <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === 1 ? '#f1f5f9' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>{t('common.previous')}</button>
-          <span style={{ padding: '10px 16px', fontSize: 14, color: '#374151' }}>{t('common.page')} {currentPage} / {totalPages}</span>
-          <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ padding: '10px 18px', border: '2px solid #e2e8f0', borderRadius: 10, background: currentPage === totalPages ? '#f1f5f9' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#1e40af', fontSize: 14, fontWeight: 600 }}>{t('common.next')}</button>
-        </div>
-      )}
+      <button
+        type="button"
+        className={styles.floatingCart}
+        onClick={() => navigate('/staff/withdraw')}
+      >
+        <span className="material-symbols-outlined">shopping_cart</span>
+        {cartCount > 0 && (
+          <span className={styles.floatingBadge}>{cartCount > 99 ? '99+' : cartCount}</span>
+        )}
+      </button>
 
       {/* Variant Selection Modal */}
       {selectedProduct && (
