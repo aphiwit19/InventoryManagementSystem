@@ -83,14 +83,9 @@ export default function RegisterPage() {
           {t('auth.copyright', { year: new Date().getFullYear() })}
         </div>
       </div>
-
+      
       {/* Right Panel - Form */}
       <div className={styles.rightPanel}>
-        {/* Language Switcher */}
-        <div className={styles.languageSwitcher}>
-          <LanguageSwitcher />
-        </div>
-
         {/* Mobile Logo */}
         <div className={styles.mobileLogo}>
           <img 
@@ -105,7 +100,12 @@ export default function RegisterPage() {
         <div className={styles.formContainer}>
           {/* Page Heading */}
           <div className={styles.pageHeading}>
-            <h1 className={styles.pageTitle}>{t('auth.create_account_title')}</h1>
+            <div className={styles.pageTitleRow}>
+              <h1 className={styles.pageTitle}>{t('auth.create_account_title')}</h1>
+              <div className={styles.languageSwitcher}>
+                <LanguageSwitcher />
+              </div>
+            </div>
             <p className={styles.pageSubtitle}>{t('auth.register_subtitle')}</p>
           </div>
 

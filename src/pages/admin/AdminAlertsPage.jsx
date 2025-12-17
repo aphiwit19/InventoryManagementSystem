@@ -55,10 +55,10 @@ export default function AdminAlertsPage() {
   useEffect(() => { setCurrentPage(1); }, [search]);
 
   const getStockStatus = (quantity, threshold = 10) => {
-    if (quantity === 0) return { status: 'critical', label: 'Critical', percent: 0 };
+    if (quantity === 0) return { status: 'critical', label: t('admin.critical'), percent: 0 };
     const percent = Math.min((quantity / threshold) * 100, 100);
-    if (quantity <= threshold * 0.3) return { status: 'critical', label: 'Critical', percent };
-    return { status: 'warning', label: 'Low Stock', percent };
+    if (quantity <= threshold * 0.3) return { status: 'critical', label: t('admin.critical'), percent };
+    return { status: 'warning', label: t('product.low_stock'), percent };
   };
 
   return (
@@ -77,7 +77,7 @@ export default function AdminAlertsPage() {
           <div className={styles.statCard}>
             <div className={`${styles.statCardDecor} ${styles.statCardDecorBlue}`}></div>
             <div className={styles.statCardContent}>
-              <span className={styles.statLabel}>Total Alerts</span>
+              <span className={styles.statLabel}>{t('admin.total_alerts')}</span>
               <div className={styles.statValue}>
                 <span className={styles.statNumber}>{totalAlerts}</span>
               </div>
@@ -86,11 +86,11 @@ export default function AdminAlertsPage() {
           <div className={`${styles.statCard} ${styles.statCardCritical}`}>
             <div className={`${styles.statCardDecor} ${styles.statCardDecorRed}`}></div>
             <div className={styles.statCardContent}>
-              <span className={styles.statLabel}>Critical Items (0 Stock)</span>
+              <span className={styles.statLabel}>{t('admin.critical_items')}</span>
               <div className={styles.statValue}>
                 <span className={styles.statNumber}>{criticalCount}</span>
                 {criticalCount > 0 && (
-                  <span className={`${styles.statBadge} ${styles.statBadgeRed}`}>Urgent</span>
+                  <span className={`${styles.statBadge} ${styles.statBadgeRed}`}>{t('admin.urgent')}</span>
                 )}
               </div>
             </div>
@@ -98,10 +98,10 @@ export default function AdminAlertsPage() {
           <div className={styles.statCard}>
             <div className={`${styles.statCardDecor} ${styles.statCardDecorIndigo}`}></div>
             <div className={styles.statCardContent}>
-              <span className={styles.statLabel}>Low Stock Items</span>
+              <span className={styles.statLabel}>{t('admin.low_stock_items')}</span>
               <div className={styles.statValue}>
                 <span className={styles.statNumber}>{totalAlerts - criticalCount}</span>
-                <span className={styles.statSubtext}>Need attention</span>
+                <span className={styles.statSubtext}>{t('admin.need_attention')}</span>
               </div>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function AdminAlertsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('search product')}
+              placeholder={t('product.search_products')}
               className={styles.searchInput}
             />
           </div>
@@ -140,7 +140,7 @@ export default function AdminAlertsPage() {
                     <th className={styles.tableHeadCell}>{t('product.product')}</th>
                     <th className={styles.tableHeadCell}>{t('product.category')}</th>
                     <th className={`${styles.tableHeadCell} ${styles.tableHeadCellStock}`}>{t('product.stock_level')}</th>
-                    <th className={styles.tableHeadCell}>Status</th>
+                    <th className={styles.tableHeadCell}>{t('common.status')}</th>
                     <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.action')}</th>
                   </tr>
                 </thead>
@@ -177,7 +177,7 @@ export default function AdminAlertsPage() {
                               <span className={isCritical ? styles.stockLevelCurrent : styles.stockLevelCurrentWarning}>
                                 {quantity} {p.unit || t('common.piece')}
                               </span>
-                              <span className={styles.stockLevelThreshold}>Threshold: {threshold}</span>
+                              <span className={styles.stockLevelThreshold}>{t('admin.threshold')}: {threshold}</span>
                             </div>
                             <div className={styles.stockLevelBar}>
                               <div 

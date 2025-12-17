@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import styles from './AdminOrdersPage.module.css';
 
 export default function AdminOrdersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -44,13 +44,31 @@ export default function AdminOrdersPage() {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [location.key]);
 
+  const normalizeStatus = (status) => {
+    switch (status) {
+      case 'จัดส่งแล้ว':
+      case 'shipped':
+        return 'shipped';
+      case 'รอดำเนินการ':
+      case 'pending':
+        return 'pending';
+      case 'ยกเลิก':
+      case 'cancelled':
+        return 'cancelled';
+      case 'paid':
+        return 'paid';
+      default:
+        return 'pending';
+    }
+  };
+
   const filtered = orders.filter(o => {
     const hit = (
       o.trackingNumber?.toLowerCase().includes(search.toLowerCase()) ||
       o.requestedBy?.toLowerCase().includes(search.toLowerCase()) ||
       o.receivedBy?.toLowerCase().includes(search.toLowerCase())
     );
-    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
+    const statusOk = statusFilter === 'all' || normalizeStatus(o.shippingStatus) === statusFilter;
     const sourceOk = sourceFilter === 'all' || (o.createdSource || '') === sourceFilter;
     const deliveryOk = deliveryFilter === 'all' || ((o.deliveryMethod || 'shipping') === deliveryFilter);
     return hit && statusOk && sourceOk && deliveryOk;
@@ -94,9 +112,11 @@ export default function AdminOrdersPage() {
   };
 
   const formatDate = (dateValue) => {
+    const lng = i18n.language?.split('-')[0] || 'th';
+    const locale = lng === 'th' ? 'th-TH' : 'en-US';
     return new Date(
       dateValue?.seconds ? dateValue.seconds * 1000 : dateValue
-    ).toLocaleDateString('th-TH');
+    ).toLocaleDateString(locale);
   };
 
   const formatItems = (items) => {
@@ -181,7 +201,7 @@ export default function AdminOrdersPage() {
                     <div>{t('common.action')}</div>
                   </div>
                   {currentOrders.map((o) => {
-                    const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
+                    const isProcessed = normalizeStatus(o.shippingStatus) !== 'pending';
                     return (
                       <div key={o.id} className={styles.tableRowCustomer}>
                         <div>{formatDate(o.withdrawDate)}</div>
@@ -220,7 +240,7 @@ export default function AdminOrdersPage() {
                     if (deliveryFilter === 'pickup' && (o.deliveryMethod || 'shipping') !== 'pickup') return null;
 
                     const deliveryText = (o.deliveryMethod || 'shipping') === 'pickup' ? t('order.pickup') : t('order.shipping');
-                    const isProcessed = (o.shippingStatus || 'รอดำเนินการ') !== 'รอดำเนินการ';
+                    const isProcessed = normalizeStatus(o.shippingStatus) !== 'pending';
 
                     return (
                       <div key={o.id} className={styles.tableRowStaff}>

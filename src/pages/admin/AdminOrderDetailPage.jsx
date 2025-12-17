@@ -9,7 +9,7 @@ const statuses = ['รอดำเนินการ', 'กำลังดำเ
 const pickupStatuses = ['รอดำเนินการ', 'รับของแล้ว'];
 
 export default function AdminOrderDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +27,21 @@ export default function AdminOrderDetailPage() {
   const isStaffOrder = (initialOrder?.createdSource || '') === 'staff';
   const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';
   const statusOptions = isPickup ? pickupStatuses : statuses;
+
+  const getStatusLabel = (statusValue) => {
+    switch (statusValue) {
+      case 'รอดำเนินการ':
+        return t('order.status_pending');
+      case 'กำลังดำเนินการส่ง':
+        return t('order.status_shipping');
+      case 'ส่งสำเร็จ':
+        return t('order.status_shipped');
+      case 'รับของแล้ว':
+        return t('order.status_picked_up');
+      default:
+        return statusValue;
+    }
+  };
 
   useEffect(() => {
     if (!initialOrder) {
@@ -69,7 +84,7 @@ export default function AdminOrderDetailPage() {
       }
     } catch (error) {
       console.error('Error saving order:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('order.save_failed', { message: error.message || '' }));
     } finally {
       setSaving(false);
     }
@@ -98,7 +113,7 @@ export default function AdminOrderDetailPage() {
     order.withdrawDate?.seconds
       ? order.withdrawDate.seconds * 1000
       : order.withdrawDate
-  ).toLocaleDateString('th-TH');
+  ).toLocaleDateString((i18n.language?.split('-')[0] || 'th') === 'th' ? 'th-TH' : 'en-US');
 
   const headerLabel = isStaffOrder
     ? (t('order.staff_orders') || 'คำสั่งเบิกพนักงาน')
@@ -115,7 +130,7 @@ export default function AdminOrderDetailPage() {
         <div className={styles.headerCard}>
           <div>
             <div className={styles.headerKicker}>
-              {isStaffOrder ? (t('withdraw.withdraw_history') || 'ประวัติการเบิก') : 'ORDER DETAIL'}
+              {isStaffOrder ? (t('withdraw.withdraw_history') || 'ประวัติการเบิก') : t('order.order_detail')}
             </div>
             <h1 className={styles.headerTitle}>
               {isStaffOrder ? (t('withdraw.withdraw_id') || 'รหัสการเบิก') : t('order.order_id')} #{id}
@@ -295,7 +310,7 @@ export default function AdminOrderDetailPage() {
                   >
                     <img
                       src={order.paymentSlipUrl}
-                      alt="สลิปการชำระเงิน"
+                      alt={t('order.payment_slip')}
                       style={{ maxWidth: 180, maxHeight: 220, objectFit: 'cover', display: 'block' }}
                     />
                   </a>
@@ -362,7 +377,7 @@ export default function AdminOrderDetailPage() {
             >
               {statusOptions.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {getStatusLabel(s)}
                 </option>
               ))}
             </select>

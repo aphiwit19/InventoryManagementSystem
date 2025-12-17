@@ -178,12 +178,11 @@
 
 /* Language switcher */
 .languageSwitcher {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  justify-content: flex-end;
+  margin-bottom: 0;
 }
 
 /* Mobile logo */
@@ -235,6 +234,13 @@
   gap: 0.5rem;
   margin-bottom: 2rem;
 }
+
+ .pageTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+ }
 
 .pageTitle {
   color: #0d121b;

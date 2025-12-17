@@ -233,7 +233,7 @@ export default function ProfilePage() {
       <div className={styles.loadingPage}>
         <div>
           <div style={{ fontSize: '3rem', marginBottom: '1rem', textAlign: 'center' }}>⏳</div>
-          <div style={{ fontSize: '1.05rem', color: '#64748b', textAlign: 'center' }}>{t('common.loading') || 'กำลังโหลดข้อมูล...'}</div>
+          <div style={{ fontSize: '1.05rem', color: '#64748b', textAlign: 'center' }}>{t('common.loading')}</div>
         </div>
       </div>
     );
@@ -243,16 +243,16 @@ export default function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.content}>
         <div className={styles.breadcrumbs}>
-          <Link className={styles.breadcrumbLink} to="/admin/dashboard">{t('common.dashboard') || 'Dashboard'}</Link>
+          <Link className={styles.breadcrumbLink} to="/admin/dashboard">{t('common.dashboard')}</Link>
           <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
-          <Link className={styles.breadcrumbLink} to="/admin/profile">{t('common.settings') || 'Settings'}</Link>
+          <Link className={styles.breadcrumbLink} to="/admin/profile">{t('common.settings')}</Link>
           <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
-          <span className={styles.breadcrumbCurrent}>{t('common.profile') || 'Profile'}</span>
+          <span className={styles.breadcrumbCurrent}>{t('common.profile')}</span>
         </div>
 
         <div className={styles.heading}>
-          <h1 className={styles.title}>{t('common.profile') || 'My Profile'} / โปรไฟล์ของฉัน</h1>
-          <p className={styles.subtitle}>{t('common.manage_profile') || 'Manage your personal information and system preferences.'}</p>
+          <h1 className={styles.title}>{t('profile.my_profile_title')}</h1>
+          <p className={styles.subtitle}>{t('profile.manage_profile')}</p>
         </div>
 
         {/* Left: Profile Card */}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
               <div className={styles.avatarWrap}>
                 <div className={styles.avatar}>
                   {photoURL ? (
-                    <img className={styles.avatarImg} src={photoURL} alt="Profile" />
+                    <img className={styles.avatarImg} src={photoURL} alt={t('common.profile')} />
                   ) : (
                     <span className={styles.avatarPlaceholder}>👤</span>
                   )}
@@ -270,13 +270,13 @@ export default function ProfilePage() {
                     <div className={styles.avatarOverlay}>⏳</div>
                   )}
                 </div>
-                <label htmlFor="avatar-upload" className={styles.avatarCameraButton} title={t('common.change_photo') || 'Change Photo'}>
+                <label htmlFor="avatar-upload" className={styles.avatarCameraButton} title={t('common.change_photo')}>
                   <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
                 </label>
               </div>
 
               <div className={styles.profileInfo}>
-                <h2 className={styles.profileName}>{profile?.displayName || 'Admin'}</h2>
+                <h2 className={styles.profileName}>{profile?.displayName || t('common.admin')}</h2>
                 <p className={styles.profileRole}>{profile?.email || user?.email || '-'}</p>
 
                 <div className={styles.buttonRow}>
@@ -284,7 +284,7 @@ export default function ProfilePage() {
                     htmlFor="avatar-upload"
                     className={`${styles.button} ${styles.buttonSecondary} ${uploadingPhoto ? styles.buttonDisabled : ''}`}
                   >
-                    {uploadingPhoto ? (t('message.uploading') || 'Uploading...') : (t('common.change_photo') || 'Change Photo')}
+                    {uploadingPhoto ? t('message.uploading') : t('common.change_photo')}
                   </label>
                 </div>
               </div>
@@ -306,13 +306,13 @@ export default function ProfilePage() {
           {/* Personal Information */}
           <div className={styles.card}>
             <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Personal Information</h3>
+              <h3 className={styles.cardTitle}>{t('profile.personal_information')}</h3>
               <button
                 type="button"
                 className={`${styles.button} ${styles.buttonSecondary}`}
                 onClick={() => setEditingPersonal(!editingPersonal)}
               >
-                {editingPersonal ? (t('common.cancel') || 'Cancel') : (t('common.edit') || 'Edit')}
+                {editingPersonal ? t('common.cancel') : t('common.edit')}
               </button>
             </div>
 
@@ -321,7 +321,7 @@ export default function ProfilePage() {
                 <div className={styles.formGrid}>
                   <div className={styles.field}>
                     <label className={styles.label} htmlFor="firstName">
-                      First Name <span className={styles.labelHint}>/ ชื่อจริง</span>
+                      {t('profile.first_name')}
                     </label>
                     <div className={styles.inputWrap}>
                       <input
@@ -337,7 +337,7 @@ export default function ProfilePage() {
 
                   <div className={styles.field}>
                     <label className={styles.label} htmlFor="lastName">
-                      Last Name <span className={styles.labelHint}>/ นามสกุล</span>
+                      {t('profile.last_name')}
                     </label>
                     <div className={styles.inputWrap}>
                       <input
@@ -353,7 +353,7 @@ export default function ProfilePage() {
 
                   <div className={styles.field}>
                     <label className={styles.label} htmlFor="phone">
-                      Phone Number <span className={styles.labelHint}>/ เบอร์โทรศัพท์</span>
+                      {t('profile.phone_number')}
                     </label>
                     <div className={styles.inputWrap}>
                       <span className={`material-symbols-outlined ${styles.iconLeft}`}>call</span>
@@ -370,7 +370,7 @@ export default function ProfilePage() {
 
                   <div className={styles.field}>
                     <label className={styles.label} htmlFor="birthDate">
-                      Birth Date <span className={styles.labelHint}>/ วันเกิด</span>
+                      {t('profile.birth_date')}
                     </label>
                     <div className={styles.inputWrap}>
                       <input
@@ -386,7 +386,7 @@ export default function ProfilePage() {
 
                   <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
                     <label className={styles.label} htmlFor="email">
-                      Email Address <span className={styles.labelHint}>/ อีเมล</span>
+                      {t('common.email')}
                     </label>
                     <div className={styles.inputWrap}>
                       <span className={`material-symbols-outlined ${styles.iconLeft}`}>mail</span>
@@ -409,7 +409,7 @@ export default function ProfilePage() {
                     className={`${styles.button} ${styles.buttonSecondary} ${styles.actionButton}`}
                     onClick={() => setEditingPersonal(false)}
                   >
-                    {t('common.cancel') || 'Cancel'}
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="button"
@@ -417,7 +417,7 @@ export default function ProfilePage() {
                     onClick={handleSaveProfile}
                     disabled={saving || !editingPersonal}
                   >
-                    {saving ? (t('message.saving') || 'Saving...') : (t('common.save_changes') || 'Save Changes')}
+                    {saving ? t('message.saving') : t('common.save_changes')}
                   </button>
                 </div>
               </form>
@@ -427,46 +427,46 @@ export default function ProfilePage() {
           {/* Change Password */}
           <div className={styles.card}>
             <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Change Password</h3>
-              <span className={styles.cardMeta}>{t('common.security') || 'Security'}</span>
+              <h3 className={styles.cardTitle}>{t('profile.change_password')}</h3>
+              <span className={styles.cardMeta}>{t('common.security')}</span>
             </div>
 
             <div className={styles.cardBody}>
 
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="currentPassword">รหัสผ่านปัจจุบัน</label>
+                <label className={styles.label} htmlFor="currentPassword">{t('profile.current_password')}</label>
                 <input
                   id="currentPassword"
                   type="password"
                   className={styles.input}
                   value={passwordForm.currentPassword}
                   onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
-                  placeholder="กรอกรหัสผ่านปัจจุบัน"
+                  placeholder={t('profile.current_password_placeholder')}
                 />
               </div>
 
               <div className={styles.formGrid} style={{ marginTop: '1rem' }}>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="newPassword">รหัสผ่านใหม่</label>
+                  <label className={styles.label} htmlFor="newPassword">{t('profile.new_password')}</label>
                   <input
                     id="newPassword"
                     type="password"
                     className={styles.input}
                     value={passwordForm.newPassword}
                     onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
-                    placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
+                    placeholder={t('profile.new_password_placeholder')}
                   />
                 </div>
 
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="confirmNewPassword">ยืนยันรหัสผ่านใหม่</label>
+                  <label className={styles.label} htmlFor="confirmNewPassword">{t('profile.confirm_new_password')}</label>
                   <input
                     id="confirmNewPassword"
                     type="password"
                     className={styles.input}
                     value={passwordForm.confirmPassword}
                     onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
-                    placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                    placeholder={t('profile.confirm_new_password_placeholder')}
                   />
                 </div>
               </div>
@@ -478,7 +478,7 @@ export default function ProfilePage() {
               className={`${styles.button} ${styles.buttonPrimary} ${changingPassword ? styles.buttonDisabled : ''}`}
               style={{ width: '100%', marginTop: '1rem' }}
             >
-              {changingPassword ? 'กำลังเปลี่ยน...' : 'เปลี่ยนรหัสผ่าน'}
+              {changingPassword ? t('profile.changing_password') : t('profile.change_password_action')}
             </button>
             </div>
           </div>
@@ -486,8 +486,8 @@ export default function ProfilePage() {
           {/* Account Settings */}
           <div className={styles.card}>
             <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Account Settings</h3>
-              <span className={styles.cardMeta}>{t('common.settings') || 'Settings'}</span>
+              <h3 className={styles.cardTitle}>{t('profile.account_settings')}</h3>
+              <span className={styles.cardMeta}>{t('common.settings')}</span>
             </div>
 
             <div className={styles.cardBody}>
@@ -497,7 +497,7 @@ export default function ProfilePage() {
                 className={`${styles.button} ${styles.buttonDanger}`}
                 style={{ width: '100%' }}
               >
-                ลบบัญชีผู้ใช้
+                {t('profile.delete_account')}
               </button>
             </div>
           </div>
@@ -509,7 +509,7 @@ export default function ProfilePage() {
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>{t('common.confirm') || 'Confirm'}</h2>
+              <h2 className={styles.modalTitle}>{t('common.confirm')}</h2>
               <button
                 type="button"
                 className={`${styles.button} ${styles.buttonDanger}`}
@@ -521,7 +521,7 @@ export default function ProfilePage() {
             </div>
             <div className={styles.modalBody}>
               <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-                คุณต้องการลบบัญชีผู้ใช้ไหม? การดำเนินการนี้ไม่สามารถยกเลิกได้
+                {t('profile.delete_account_warning')}
               </p>
             </div>
             <div className={styles.modalFooter}>
@@ -530,14 +530,14 @@ export default function ProfilePage() {
                 className={`${styles.button} ${styles.buttonSecondary}`}
                 onClick={() => setShowDeleteAccountModal(false)}
               >
-                {t('common.cancel') || 'Cancel'}
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 className={`${styles.button} ${styles.buttonDanger}`}
                 onClick={() => setShowDeleteAccountModal(false)}
               >
-                {t('common.ok') || 'OK'}
+                {t('common.ok')}
               </button>
             </div>
           </div>

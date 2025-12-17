@@ -52,8 +52,8 @@ const AdminLayout = () => {
             <img src="/Inventory Hub .png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className={styles.sidebarBrand}>
-            <h1 className={styles.sidebarTitle}>INVENTORY</h1>
-            <p className={styles.sidebarSubtitle}>PRO</p>
+            <h1 className={styles.sidebarTitle}>{t('admin.brand_title')}</h1>
+            <p className={styles.sidebarSubtitle}>{t('admin.brand_subtitle')}</p>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ const AdminLayout = () => {
               {(profile?.displayName || 'A').charAt(0).toUpperCase()}
             </div>
             <div className={styles.userDetails}>
-              <p className={styles.userName}>{profile?.displayName || 'Admin User'}</p>
+              <p className={styles.userName}>{profile?.displayName || t('admin.default_user_name')}</p>
               <p className={styles.userRole}>{profile?.email || 'admin@store.com'}</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ const AdminLayout = () => {
           {/* Mobile Menu Button */}
           <div className={styles.mobileMenuButton}>
             <span className="material-symbols-outlined">menu</span>
-            <h2 className={styles.mobileTitle}>Dashboard</h2>
+            <h2 className={styles.mobileTitle}>{t('common.dashboard')}</h2>
           </div>
 
           {/* Header Actions */}

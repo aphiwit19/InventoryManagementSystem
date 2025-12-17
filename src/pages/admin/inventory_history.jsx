@@ -319,7 +319,7 @@ export default function InventoryHistoryIndex() {
               {totalPages > 1 && (
                 <div className={styles.pagination}>
                   <div className={styles.paginationInfo}>
-                    Showing <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span> to <span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filteredHistory.length)}</span> of <span className={styles.paginationInfoHighlight}>{filteredHistory.length}</span> results
+                    {t('common.showing')} <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span>-<span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filteredHistory.length)}</span> {t('common.of')} <span className={styles.paginationInfoHighlight}>{filteredHistory.length}</span> {t('common.items')}
                   </div>
                   <div className={styles.paginationButtons}>
                     <button

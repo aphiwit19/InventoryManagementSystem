@@ -78,13 +78,13 @@ export default function AdminDashboard() {
 
   const addVariant = () => {
     if (!newVariant.size || !newVariant.color || !newVariant.quantity || !newVariant.costPrice || !newVariant.sellPrice) {
-      alert('กรุณากรอกข้อมูล Variant ให้ครบถ้วน');
+      alert(t('product.variant_incomplete'));
       return;
     }
     // Check duplicate
     const exists = variants.find(v => v.size === newVariant.size && v.color === newVariant.color);
     if (exists) {
-      alert('มี Variant นี้อยู่แล้ว (ไซส์ + สี ซ้ำกัน)');
+      alert(t('product.variant_duplicate'));
       return;
     }
     setVariants(prev => [...prev, { ...newVariant, id: Date.now() }]);
@@ -104,12 +104,12 @@ export default function AdminDashboard() {
 
     try {
       if (uploading) {
-        throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
+        throw new Error(t('product.image_uploading_wait'));
       }
 
       if (hasVariants) {
         if (variants.length === 0) {
-          throw new Error('กรุณาเพิ่มอย่างน้อย 1 Variant');
+          throw new Error(t('product.at_least_one_variant'));
         }
         await addProduct({
           ...formData,
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
         });
       } else {
         if (!simpleProduct.quantity || !simpleProduct.costPrice || !simpleProduct.sellPrice) {
-          throw new Error('กรุณากรอกราคาและจำนวนสินค้า');
+          throw new Error(t('product.price_qty_required'));
         }
         await addProduct({
           ...formData,
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
       navigate('/admin/products');
     } catch (err) {
       console.error('Error adding product:', err);
-      setError('เกิดข้อผิดพลาด: ' + err.message);
+      setError(t('product.add_product_failed', { message: err.message || '' }));
     } finally {
       setLoading(false);
     }
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
             {hasVariants && (
               <div style={{ background: '#fefce8', padding: '20px', borderRadius: 12, border: '1px solid #fde047' }}>
                 <h3 style={{ margin: '0 0 16px', color: '#854d0e', fontSize: 16 }}>
-                  📦 Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
+                  📦 {t('product.variants_label')} ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
                 </h3>
 
                 {/* Existing Variants */}
@@ -541,7 +541,7 @@ export default function AdminDashboard() {
                       setImagePreview(url);
                     } catch (err) {
                       console.error(err);
-                      setUploadError('อัพโหลดรูปภาพล้มเหลว');
+                      setUploadError(t('product.image_upload_failed'));
                     } finally {
                       setUploading(false);
                     }

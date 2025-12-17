@@ -68,7 +68,7 @@ export default function UsersPage() {
       setUsers(prev => prev.map(u => (u.id === id ? { ...u, role } : u)));
     } catch (error) {
       console.error('Error updating role:', error);
-      alert('เกิดข้อผิดพลาดในการอัพเดต Role: ' + error.message);
+      alert(t('user.update_role_failed', { message: error.message || '' }));
     } finally {
       setSaving(false);
     }
@@ -112,11 +112,11 @@ export default function UsersPage() {
   const getRoleLabel = (role) => {
     switch (role) {
       case 'admin':
-        return 'Admin';
+        return t('common.admin');
       case 'staff':
-        return 'Staff';
+        return t('common.staff');
       default:
-        return 'Customer';
+        return t('common.customer');
     }
   };
 
@@ -223,10 +223,10 @@ export default function UsersPage() {
           </div>
           <div className={styles.toolbarRight}>
             <span className={styles.showingText}>
-              Showing {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length}
+              {t('common.showing')} {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} {t('common.of')} {filteredUsers.length}
             </span>
             <div className={styles.divider}></div>
-            <button className={styles.refreshButton} onClick={handleRefresh} title="Refresh">
+            <button className={styles.refreshButton} onClick={handleRefresh} title={t('common.refresh')}>
               <span className="material-symbols-outlined">refresh</span>
             </button>
           </div>
@@ -238,15 +238,15 @@ export default function UsersPage() {
             <table className={styles.table}>
               <thead className={styles.tableHead}>
                 <tr>
-                  <th className={styles.tableHeadCell}>User</th>
-                  <th className={styles.tableHeadCell}>Role</th>
+                  <th className={styles.tableHeadCell}>{t('user.user_info')}</th>
+                  <th className={styles.tableHeadCell}>{t('user.user_role')}</th>
                   <th className={`${styles.tableHeadCell} ${styles.sortableHeader}`} onClick={toggleSortOrder}>
-                    Date
+                    {t('common.date')}
                     <span className="material-symbols-outlined" style={{ fontSize: '1rem', marginLeft: '0.25rem' }}>
                       {sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward'}
                     </span>
                   </th>
-                  <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>Actions</th>
+                  <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody className={styles.tableBody}>
@@ -298,8 +298,8 @@ export default function UsersPage() {
                                 disabled={saving}
                                 className={styles.roleSelect}
                               >
-                                <option value="customer">Customer</option>
-                                <option value="staff">Staff</option>
+                                <option value="customer">{t('common.customer')}</option>
+                                <option value="staff">{t('common.staff')}</option>
                               </select>
                             ) : (
                               <span className={styles.noEditBadge}>admin</span>
@@ -323,7 +323,7 @@ export default function UsersPage() {
                 disabled={currentPage === 1}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>chevron_left</span>
-                Previous
+                {t('common.previous')}
               </button>
               <div className={styles.paginationNumbers}>
                 {buildPageRange().map((page) => (
@@ -352,7 +352,7 @@ export default function UsersPage() {
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                Next
+                {t('common.next')}
                 <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>chevron_right</span>
               </button>
             </div>

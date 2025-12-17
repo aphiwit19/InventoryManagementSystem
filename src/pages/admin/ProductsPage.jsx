@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import styles from './ProductsPage.module.css';
 
 export default function ProductsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [products, setProducts] = useState([]);
@@ -118,7 +118,7 @@ export default function ProductsPage() {
       closeDeleteModal();
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert('เกิดข้อผิดพลาดในการลบสินค้า: ' + error.message);
+      alert(t('product.delete_failed', { message: error.message || '' }));
     } finally {
       setIsDeleting(false);
     }
@@ -146,7 +146,7 @@ export default function ProductsPage() {
     const hasVariants = addStockModal.hasVariants && Array.isArray(addStockModal.variants) && addStockModal.variants.length > 0;
     
     if (hasVariants && addStockVariantIdx === null) {
-      alert('กรุณาเลือก Variant ที่ต้องการเพิ่มสต็อก');
+      alert(t('product.select_variant_to_add'));
       return;
     }
 
@@ -198,10 +198,20 @@ export default function ProductsPage() {
       closeAddStockModal();
     } catch (error) {
       console.error('Error adding stock:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('product.add_stock_failed', { message: error.message || '' }));
     } finally {
       setIsAddingStock(false);
     }
+  };
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+    const lng = i18n.language?.split('-')[0] || 'th';
+    const locale = lng === 'th' ? 'th-TH' : 'en-US';
+    const d = (typeof dateValue === 'object' && dateValue.toDate)
+      ? dateValue.toDate()
+      : new Date(dateValue);
+    return d.toLocaleDateString(locale);
   };
 
   const getStockStatus = (product) => {
@@ -271,7 +281,7 @@ export default function ProductsPage() {
                   className={styles.selectInput}
                 >
                   <option value="">{t('common.all_categories')}</option>
-                  {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  {uniqueCategories.map(cat => <option key={cat} value={cat}>{t(`categories.${cat}`, cat)}</option>)}
                 </select>
                 <span className={`material-symbols-outlined ${styles.selectArrow}`}>expand_more</span>
               </div>
@@ -359,7 +369,7 @@ export default function ProductsPage() {
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                   />
                                 ) : (
-                                  <span className={styles.productImagePlaceholder}>No Image</span>
+                                  <span className={styles.productImagePlaceholder}>{t('product.no_image')}</span>
                                 )}
                               </div>
                               <div className={styles.productInfo}>
@@ -370,16 +380,12 @@ export default function ProductsPage() {
                                       onClick={() => toggleExpand(product.id)}
                                       className={styles.variantsButton}
                                     >
-                                      {product.variants.length} variants {isExpanded ? '▲' : '▼'}
+                                      {product.variants.length} {t('product.variants')} {isExpanded ? '▲' : '▼'}
                                     </button>
                                   )}
                                 </span>
                                 <span className={styles.productSku}>
-                                  {product.addDate 
-                                    ? (typeof product.addDate === 'object' && product.addDate.toDate 
-                                        ? product.addDate.toDate().toLocaleDateString('th-TH') 
-                                        : new Date(product.addDate).toLocaleDateString('th-TH')) 
-                                    : '-'}
+                                  {formatDate(product.addDate)}
                                 </span>
                               </div>
                             </div>
@@ -414,7 +420,7 @@ export default function ProductsPage() {
                             {stockStatus === 'active' && (
                               <span className={`${styles.statusBadge} ${styles.statusActive}`}>
                                 <span className={`${styles.statusDot} ${styles.statusDotActive}`}></span>
-                                Active
+                                {t('product.in_stock')}
                               </span>
                             )}
                             {stockStatus === 'low' && (
@@ -426,7 +432,7 @@ export default function ProductsPage() {
                             {stockStatus === 'out' && (
                               <span className={`${styles.statusBadge} ${styles.statusOutOfStock}`}>
                                 <span className={`${styles.statusDot} ${styles.statusDotOutOfStock}`}></span>
-                                Out of Stock
+                                {t('product.out_of_stock')}
                               </span>
                             )}
                           </td>
@@ -495,9 +501,7 @@ export default function ProductsPage() {
             {totalPages >= 1 && (
               <div className={styles.pagination}>
                 <span className={styles.paginationInfo}>
-                  Showing <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span> to{' '}
-                  <span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filteredProducts.length)}</span> of{' '}
-                  <span className={styles.paginationInfoHighlight}>{filteredProducts.length}</span> results
+                  {t('common.showing')} <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span>-<span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filteredProducts.length)}</span> {t('common.of')} <span className={styles.paginationInfoHighlight}>{filteredProducts.length}</span> {t('common.items')}
                 </span>
                 <div className={styles.paginationButtons}>
                   <button 

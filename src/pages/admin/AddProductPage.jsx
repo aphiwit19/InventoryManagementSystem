@@ -71,12 +71,12 @@ export default function AddProductPage() {
 
   const addVariant = () => {
     if (!newVariant.size || !newVariant.color || !newVariant.quantity || !newVariant.costPrice || !newVariant.sellPrice) {
-      alert('กรุณากรอกข้อมูล Variant ให้ครบถ้วน');
+      alert(t('product.variant_incomplete'));
       return;
     }
     const exists = variants.find(v => v.size === newVariant.size && v.color === newVariant.color);
     if (exists) {
-      alert('มี Variant นี้อยู่แล้ว (ไซส์ + สี ซ้ำกัน)');
+      alert(t('product.variant_duplicate'));
       return;
     }
     setVariants(prev => [...prev, { ...newVariant, id: Date.now() }]);
@@ -103,7 +103,7 @@ export default function AddProductPage() {
       setImagePreview(url);
     } catch (err) {
       console.error(err);
-      setUploadError('อัพโหลดรูปภาพล้มเหลว');
+      setUploadError(t('product.image_upload_failed'));
     } finally {
       setUploading(false);
     }
@@ -116,12 +116,12 @@ export default function AddProductPage() {
 
     try {
       if (uploading) {
-        throw new Error('กำลังอัพโหลดรูปภาพ กรุณารอสักครู่');
+        throw new Error(t('product.image_uploading_wait'));
       }
 
       if (hasVariants) {
         if (variants.length === 0) {
-          throw new Error('กรุณาเพิ่มอย่างน้อย 1 Variant');
+          throw new Error(t('product.at_least_one_variant'));
         }
         await addProduct({
           ...formData,
@@ -136,7 +136,7 @@ export default function AddProductPage() {
         });
       } else {
         if (!simpleProduct.quantity || !simpleProduct.costPrice || !simpleProduct.sellPrice) {
-          throw new Error('กรุณากรอกราคาและจำนวนสินค้า');
+          throw new Error(t('product.price_qty_required'));
         }
         await addProduct({
           ...formData,
@@ -148,7 +148,7 @@ export default function AddProductPage() {
       navigate('/admin/products');
     } catch (err) {
       console.error('Error adding product:', err);
-      setError('เกิดข้อผิดพลาด: ' + err.message);
+      setError(t('product.add_product_failed', { message: err.message || '' }));
     } finally {
       setSaving(false);
     }
@@ -174,7 +174,7 @@ export default function AddProductPage() {
               <li className={styles.breadcrumbItem}>
                 <Link to="/admin/dashboard" className={styles.breadcrumbLink}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.125rem', marginRight: '0.25rem' }}>home</span>
-                  Home
+                  {t('common.home')}
                 </Link>
               </li>
               <li className={styles.breadcrumbItem}>
@@ -232,7 +232,7 @@ export default function AddProductPage() {
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>
                     <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>info</span>
-                    {t('product.basic_info') || 'Basic Information'}
+                    {t('product.basic_info')}
                   </h2>
                 </div>
                 
@@ -365,7 +365,7 @@ export default function AddProductPage() {
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>
                     <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>imagesmode</span>
-                    {t('product.product_image') || 'Product Media'}
+                    {t('product.product_media')}
                   </h2>
                 </div>
 
@@ -385,7 +385,7 @@ export default function AddProductPage() {
                           />
                         </label>
                       </div>
-                      <div className={styles.mainBadge}>Main</div>
+                      <div className={styles.mainBadge}>{t('product.main_badge')}</div>
                     </div>
                   ) : (
                     <label className={styles.uploadPlaceholder}>
@@ -414,7 +414,7 @@ export default function AddProductPage() {
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>
                     <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>payments</span>
-                    {t('product.pricing_inventory') || 'Pricing & Inventory'}
+                    {t('product.pricing_inventory')}
                   </h2>
                 </div>
 
@@ -477,7 +477,7 @@ export default function AddProductPage() {
                         {simpleProduct.costPrice && simpleProduct.sellPrice && (
                           <p className={styles.profitMargin}>
                             <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>trending_up</span>
-                            Profit Margin: {calculateProfitMargin()}%
+                            {t('product.profit_margin')}: {calculateProfitMargin()}%
                           </p>
                         )}
                       </div>
@@ -551,7 +551,7 @@ export default function AddProductPage() {
                     <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
                       <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
                         <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>style</span>
-                        Variants ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
+                        {t('product.variants_label')} ({variants.length} {t('common.items')}, {t('common.total')} {totalVariantQuantity} {formData.unit || t('common.piece')})
                       </h3>
                     </div>
 

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import styles from './AdminOverviewPage.module.css';
 
 export default function AdminOverviewPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
@@ -44,10 +44,29 @@ export default function AdminOverviewPage() {
   const allWithdrawals = withdrawals || [];
   const customerOrders = allWithdrawals.filter(w => (w.createdSource || 'customer') === 'customer');
   const staffWithdrawals = allWithdrawals.filter(w => (w.createdSource || 'staff') === 'staff');
+
+  const normalizeStatus = (status) => {
+    switch (status) {
+      case 'จัดส่งแล้ว':
+      case 'shipped':
+        return 'shipped';
+      case 'รอดำเนินการ':
+      case 'pending':
+        return 'pending';
+      case 'ยกเลิก':
+      case 'cancelled':
+        return 'cancelled';
+      case 'paid':
+        return 'paid';
+      default:
+        return 'paid';
+    }
+  };
+
   // eslint-disable-next-line no-unused-vars
-  const pendingCustomerOrders = customerOrders.filter(o => (o.shippingStatus || 'รอดำเนินการ') === 'รอดำเนินการ');
+  const pendingCustomerOrders = customerOrders.filter(o => normalizeStatus(o.shippingStatus) === 'pending');
   // eslint-disable-next-line no-unused-vars
-  const pendingWithdrawals = staffWithdrawals.filter(o => (o.shippingStatus || 'รอดำเนินการ') === 'รอดำเนินการ');
+  const pendingWithdrawals = staffWithdrawals.filter(o => normalizeStatus(o.shippingStatus) === 'pending');
 
   const today = new Date();
   const isSameDay = (ts) => {
@@ -108,18 +127,17 @@ export default function AdminOverviewPage() {
   const formatDate = (ts) => {
     if (!ts) return '-';
     const d = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const lng = i18n.language?.split('-')[0] || 'th';
+    const locale = lng === 'th' ? 'th-TH' : 'en-US';
+    return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const getStatusStyle = (status) => {
-    switch (status) {
-      case 'จัดส่งแล้ว':
+    switch (normalizeStatus(status)) {
       case 'shipped':
         return styles.statusShipped;
-      case 'รอดำเนินการ':
       case 'pending':
         return styles.statusPending;
-      case 'ยกเลิก':
       case 'cancelled':
         return styles.statusCancelled;
       default:
@@ -128,15 +146,15 @@ export default function AdminOverviewPage() {
   };
 
   const getStatusText = (status) => {
-    switch (status) {
-      case 'จัดส่งแล้ว':
-        return 'Shipped';
-      case 'รอดำเนินการ':
-        return 'Pending';
-      case 'ยกเลิก':
-        return 'Cancelled';
+    switch (normalizeStatus(status)) {
+      case 'shipped':
+        return t('order.status_shipped');
+      case 'pending':
+        return t('order.status_pending');
+      case 'cancelled':
+        return t('order.status_cancelled');
       default:
-        return 'Paid';
+        return t('order.processing');
     }
   };
 
@@ -161,8 +179,8 @@ export default function AdminOverviewPage() {
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageHeaderText}>
-          <h1 className={styles.pageTitle}>Overview</h1>
-          <p className={styles.pageSubtitle}>Welcome back, Admin. Here's what's happening today.</p>
+          <h1 className={styles.pageTitle}>{t('admin.overview')}</h1>
+          <p className={styles.pageSubtitle}>{t('admin.overview_welcome')}</p>
         </div>
       </div>
 
@@ -172,7 +190,7 @@ export default function AdminOverviewPage() {
         <div className={styles.kpiCardPrimary}>
           <div className={styles.kpiCardPrimaryGlow}></div>
           <div className={styles.kpiCardContent}>
-            <p className={styles.kpiLabel}>Total Revenue</p>
+            <p className={styles.kpiLabel}>{t('admin.total_revenue')}</p>
             <h3 className={styles.kpiValue}>฿{totalRevenue.toLocaleString()}</h3>
           </div>
           <div className={styles.kpiTrend}>
@@ -180,7 +198,7 @@ export default function AdminOverviewPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '0.875rem', marginRight: '0.25rem' }}>trending_up</span>
               +5.2%
             </span>
-            <span className={styles.kpiTrendText}>vs last month</span>
+            <span className={styles.kpiTrendText}>{t('admin.vs_last_month')}</span>
           </div>
         </div>
 
@@ -188,7 +206,7 @@ export default function AdminOverviewPage() {
         <div className={styles.kpiCard} onClick={() => navigate('/admin/orders?source=customer')} style={{ cursor: 'pointer' }}>
           <div className={styles.kpiCardHeader}>
             <div className={styles.kpiCardInfo}>
-              <p className={styles.kpiCardLabel}>Total Orders</p>
+              <p className={styles.kpiCardLabel}>{t('admin.total_orders')}</p>
               <h3 className={styles.kpiCardValue}>{customerOrders.length.toLocaleString()}</h3>
             </div>
             <div className={`${styles.kpiCardIcon} ${styles.kpiCardIconBlue}`}>
@@ -200,7 +218,7 @@ export default function AdminOverviewPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_upward</span>
               12.0%
             </span>
-            <span className={styles.kpiTrendLabel}>vs last month</span>
+            <span className={styles.kpiTrendLabel}>{t('admin.vs_last_month')}</span>
           </div>
         </div>
 
@@ -208,7 +226,7 @@ export default function AdminOverviewPage() {
         <div className={styles.kpiCard} onClick={() => navigate('/admin/products')} style={{ cursor: 'pointer' }}>
           <div className={styles.kpiCardHeader}>
             <div className={styles.kpiCardInfo}>
-              <p className={styles.kpiCardLabel}>Products</p>
+              <p className={styles.kpiCardLabel}>{t('admin.products')}</p>
               <h3 className={styles.kpiCardValue}>{products.length.toLocaleString()}</h3>
             </div>
             <div className={`${styles.kpiCardIcon} ${styles.kpiCardIconPurple}`}>
@@ -220,7 +238,7 @@ export default function AdminOverviewPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_upward</span>
               1.5%
             </span>
-            <span className={styles.kpiTrendLabel}>New added</span>
+            <span className={styles.kpiTrendLabel}>{t('admin.new_added')}</span>
           </div>
         </div>
 
@@ -228,7 +246,7 @@ export default function AdminOverviewPage() {
         <div className={styles.kpiCard} onClick={() => navigate('/admin/alerts')} style={{ cursor: 'pointer' }}>
           <div className={styles.kpiCardHeader}>
             <div className={styles.kpiCardInfo}>
-              <p className={styles.kpiCardLabel}>Low Stock Alerts</p>
+              <p className={styles.kpiCardLabel}>{t('admin.low_stock_alert')}</p>
               <h3 className={styles.kpiCardValue}>{lowStock.length}</h3>
             </div>
             <div className={`${styles.kpiCardIcon} ${styles.kpiCardIconRed}`}>
@@ -238,7 +256,7 @@ export default function AdminOverviewPage() {
           <div className={styles.kpiCardTrend}>
             <span className={styles.kpiTrendWarning}>
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>priority_high</span>
-              Action Needed
+              {t('admin.action_needed')}
             </span>
           </div>
         </div>
@@ -250,12 +268,12 @@ export default function AdminOverviewPage() {
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartHeaderText}>
-              <h3 className={styles.chartTitle}>Revenue Trends</h3>
-              <p className={styles.chartSubtitle}>Weekly sales performance</p>
+              <h3 className={styles.chartTitle}>{t('admin.revenue_trends')}</h3>
+              <p className={styles.chartSubtitle}>{t('admin.weekly_sales_performance')}</p>
             </div>
             <div className={styles.chartTabs}>
-              <button className={styles.chartTabActive}>Weekly</button>
-              <button className={styles.chartTab}>Monthly</button>
+              <button className={styles.chartTabActive}>{t('admin.weekly')}</button>
+              <button className={styles.chartTab}>{t('admin.monthly')}</button>
             </div>
           </div>
 
@@ -278,7 +296,7 @@ export default function AdminOverviewPage() {
           <div className={styles.barChartLabels}>
             {dailyRevenue.map((d) => (
               <span key={d.key} className={styles.barChartLabel}>
-                {d.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                {d.date.toLocaleDateString(i18n.language?.startsWith('th') ? 'th-TH' : 'en-US', { weekday: 'short' })}
               </span>
             ))}
           </div>
@@ -288,8 +306,8 @@ export default function AdminOverviewPage() {
         <div className={styles.donutCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartHeaderText}>
-              <h3 className={styles.chartTitle}>Sales by Category</h3>
-              <p className={styles.chartSubtitle}>Top performing categories</p>
+              <h3 className={styles.chartTitle}>{t('admin.sales_by_category')}</h3>
+              <p className={styles.chartSubtitle}>{t('admin.top_categories')}</p>
             </div>
           </div>
           <div className={styles.donutChartContainer}>
@@ -299,7 +317,7 @@ export default function AdminOverviewPage() {
             >
               <div className={styles.donutChartCenter}>
                 <span className={styles.donutChartValue}>{products.length > 0 ? '85%' : '0%'}</span>
-                <span className={styles.donutChartLabel}>Sold</span>
+                <span className={styles.donutChartLabel}>{t('admin.sold')}</span>
               </div>
             </div>
           </div>
@@ -307,21 +325,21 @@ export default function AdminOverviewPage() {
             <div className={styles.donutLegendItem}>
               <div className={styles.donutLegendLabel}>
                 <div className={styles.donutLegendDot} style={{ backgroundColor: '#135bec' }}></div>
-                <span className={styles.donutLegendText}>Electronics</span>
+                <span className={styles.donutLegendText}>{t('admin.category_electronics')}</span>
               </div>
               <span className={styles.donutLegendValue}>45%</span>
             </div>
             <div className={styles.donutLegendItem}>
               <div className={styles.donutLegendLabel}>
                 <div className={styles.donutLegendDot} style={{ backgroundColor: '#3b82f6' }}></div>
-                <span className={styles.donutLegendText}>Fashion</span>
+                <span className={styles.donutLegendText}>{t('admin.category_fashion')}</span>
               </div>
               <span className={styles.donutLegendValue}>30%</span>
             </div>
             <div className={styles.donutLegendItem}>
               <div className={styles.donutLegendLabel}>
                 <div className={styles.donutLegendDot} style={{ backgroundColor: '#93c5fd' }}></div>
-                <span className={styles.donutLegendText}>Home</span>
+                <span className={styles.donutLegendText}>{t('admin.category_home')}</span>
               </div>
               <span className={styles.donutLegendValue}>15%</span>
             </div>
@@ -332,21 +350,21 @@ export default function AdminOverviewPage() {
       {/* Recent Orders Table */}
       <div className={styles.tableCard}>
           <div className={styles.tableHeader}>
-            <h3 className={styles.tableTitle}>Recent Orders</h3>
+            <h3 className={styles.tableTitle}>{t('admin.recent_orders')}</h3>
             <button className={styles.viewAllButton} onClick={() => navigate('/admin/orders?source=customer')}>
-              View All
+              {t('admin.view_all')}
             </button>
           </div>
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead className={styles.tableHead}>
                 <tr>
-                  <th className={styles.tableHeadCell}>Order ID</th>
-                  <th className={styles.tableHeadCell}>Customer</th>
-                  <th className={styles.tableHeadCell}>Date</th>
-                  <th className={styles.tableHeadCell}>Amount</th>
-                  <th className={styles.tableHeadCell}>Status</th>
-                  <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>Action</th>
+                  <th className={styles.tableHeadCell}>{t('order.order_id')}</th>
+                  <th className={styles.tableHeadCell}>{t('admin.customer')}</th>
+                  <th className={styles.tableHeadCell}>{t('common.date')}</th>
+                  <th className={styles.tableHeadCell}>{t('common.amount')}</th>
+                  <th className={styles.tableHeadCell}>{t('common.status')}</th>
+                  <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody className={styles.tableBody}>
@@ -367,7 +385,7 @@ export default function AdminOverviewPage() {
                           <div className={`${styles.customerAvatar} ${avatarColors[index % avatarColors.length]}`}>
                             {getCustomerInitials(order.requestedBy)}
                           </div>
-                          {order.requestedBy || 'Unknown'}
+                          {order.requestedBy || t('common.not_found')}
                         </div>
                       </td>
                       <td className={`${styles.tableCell} ${styles.tableCellMuted}`}>
@@ -402,7 +420,7 @@ export default function AdminOverviewPage() {
 
       {/* Footer */}
       <footer className={styles.footer}>
-        © 2024 Admin Dashboard. All rights reserved.
+        {t('admin.footer_rights', { year: new Date().getFullYear() })}
       </footer>
     </div>
   );

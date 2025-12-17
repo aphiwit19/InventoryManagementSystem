@@ -117,7 +117,7 @@ export default function AdminBankAccountPage() {
     const target = accounts[index];
     if (!target) return;
 
-    const ok = window.confirm(t('payment.confirm_delete_account') || 'ต้องการลบบัญชีนี้หรือไม่?');
+    const ok = window.confirm(t('payment.confirm_delete_account'));
     if (!ok) return;
 
     setSaving(true);
@@ -163,10 +163,10 @@ export default function AdminBankAccountPage() {
       );
 
       setAccounts(nextAccounts);
-      setSuccess(t('payment.account_deleted_success') || 'ลบบัญชีสำเร็จ');
+      setSuccess(t('payment.account_deleted_success'));
     } catch (e) {
       console.error('delete account failed:', e);
-      setError(t('payment.delete_account_failed') || 'ลบบัญชีไม่สำเร็จ');
+      setError(t('payment.delete_account_failed'));
     } finally {
       setSaving(false);
     }
@@ -372,7 +372,7 @@ export default function AdminBankAccountPage() {
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statContent}>
-              <p className={styles.statLabel}>Total Accounts</p>
+              <p className={styles.statLabel}>{t('payment.total_accounts')}</p>
               <p className={styles.statValue}>{totalAccounts}</p>
             </div>
             <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
@@ -381,7 +381,7 @@ export default function AdminBankAccountPage() {
           </div>
           <div className={styles.statCard}>
             <div className={styles.statContent}>
-              <p className={styles.statLabel}>Active</p>
+              <p className={styles.statLabel}>{t('payment.status_active')}</p>
               <p className={`${styles.statValue} ${styles.statValueGreen}`}>{activeAccounts}</p>
             </div>
             <div className={`${styles.statIcon} ${styles.statIconGreen}`}>
@@ -390,7 +390,7 @@ export default function AdminBankAccountPage() {
           </div>
           <div className={styles.statCard}>
             <div className={styles.statContent}>
-              <p className={styles.statLabel}>Inactive</p>
+              <p className={styles.statLabel}>{t('payment.status_inactive')}</p>
               <p className={`${styles.statValue} ${styles.statValueGray}`}>{inactiveAccounts}</p>
             </div>
             <div className={`${styles.statIcon} ${styles.statIconGray}`}>
@@ -433,7 +433,7 @@ export default function AdminBankAccountPage() {
                           acc.isPrimary ? styles.bankTypeBadgeGreen : 
                           isActiveAccount ? styles.bankTypeBadgePurple : styles.bankTypeBadgeGray
                         }`}>
-                          {acc.isPrimary ? t('payment.primary') : isActiveAccount ? 'Active' : 'Inactive'}
+                          {acc.isPrimary ? t('payment.primary') : isActiveAccount ? t('payment.status_active') : t('payment.status_inactive')}
                         </span>
                       </div>
                     </div>
@@ -486,7 +486,7 @@ export default function AdminBankAccountPage() {
                       <button 
                         className={styles.copyButton} 
                         onClick={() => copyToClipboard(acc.accountNumber)}
-                        title="Copy"
+                        title={t('common.copy')}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>content_copy</span>
                       </button>
@@ -502,11 +502,11 @@ export default function AdminBankAccountPage() {
                     >
                       <div className={styles.toggleKnob}></div>
                     </div>
-                    <span className={styles.toggleLabel}>Active</span>
+                    <span className={styles.toggleLabel}>{isActiveAccount ? t('payment.status_active') : t('payment.status_inactive')}</span>
                   </div>
                   <button className={styles.editButton} onClick={() => openEditModal(idx)}>
                     <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>edit</span>
-                    Edit Details
+                    {t('payment.edit_details')}
                   </button>
                 </div>
               </div>
@@ -519,7 +519,7 @@ export default function AdminBankAccountPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '1.875rem', color: '#94a3b8' }}>add</span>
             </div>
             <p className={styles.addNewCardTitle}>{t('payment.add_account')}</p>
-            <p className={styles.addNewCardSubtitle}>Supports all major Thai banks</p>
+            <p className={styles.addNewCardSubtitle}>{t('payment.supports_thai_banks')}</p>
           </button>
         </div>
       </div>
@@ -530,7 +530,7 @@ export default function AdminBankAccountPage() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
-                {editingIndex >= 0 ? t('Payment Edit') : t('payment.add_account')}
+                {editingIndex >= 0 ? t('payment.edit_account') : t('payment.add_account')}
               </h2>
               <button className={styles.modalCloseButton} onClick={() => setShowModal(false)}>
                 <span className="material-symbols-outlined">close</span>
@@ -588,7 +588,7 @@ export default function AdminBankAccountPage() {
                 <label className={styles.formLabel}>{t('payment.qr_code_for_payment')}</label>
                 <div className={styles.qrUploadContent}>
                   {qrUrl && (
-                    <img src={qrUrl} alt="QR Code" className={styles.qrPreview} />
+                    <img src={qrUrl} alt={t('payment.qr_code')} className={styles.qrPreview} />
                   )}
                   <label className={styles.uploadButton}>
                     <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>upload</span>
