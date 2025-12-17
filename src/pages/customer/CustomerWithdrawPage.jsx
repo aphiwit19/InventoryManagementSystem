@@ -145,13 +145,6 @@ export default function CustomerWithdrawPage() {
 
   return (
     <div className={styles.container}>
-      {/* Breadcrumbs */}
-      <div className={styles.breadcrumbs}>
-        <a href="/customer" className={styles.breadcrumbLink}>{t('product.products')}</a>
-        <span className={styles.breadcrumbSeparator}>/</span>
-        <span className={styles.breadcrumbCurrent}>{t('cart.cart') || 'Withdraw Cart'}</span>
-      </div>
-
       {cart.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyStateIcon}>🛒</div>

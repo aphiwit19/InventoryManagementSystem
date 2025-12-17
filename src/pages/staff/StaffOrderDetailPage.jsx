@@ -90,20 +90,6 @@ export default function StaffOrderDetailPage() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
-          <button
-            type="button"
-            className={styles.breadcrumbLink}
-            onClick={() => navigate('/staff/orders')}
-          >
-            {t('order.orders') || 'Orders'}
-          </button>
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-          <span className={styles.breadcrumbMid}>{t('withdraw.withdraw_history') || 'Withdrawals'}</span>
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-          <span className={styles.breadcrumbCurrent}>{orderNumber}</span>
-        </nav>
-
         <div className={styles.headerTop}>
           <div className={styles.headerLeft}>
             <div className={styles.titleRow}>

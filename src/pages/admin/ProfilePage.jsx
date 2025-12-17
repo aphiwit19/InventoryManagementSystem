@@ -242,14 +242,6 @@ export default function ProfilePage() {
   return (
     <div className={styles.page}>
       <div className={styles.content}>
-        <div className={styles.breadcrumbs}>
-          <Link className={styles.breadcrumbLink} to="/admin/dashboard">{t('common.dashboard')}</Link>
-          <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
-          <Link className={styles.breadcrumbLink} to="/admin/profile">{t('common.settings')}</Link>
-          <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
-          <span className={styles.breadcrumbCurrent}>{t('common.profile')}</span>
-        </div>
-
         <div className={styles.heading}>
           <h1 className={styles.title}>{t('profile.my_profile_title')}</h1>
           <p className={styles.subtitle}>{t('profile.manage_profile')}</p>
@@ -319,15 +311,16 @@ export default function ProfilePage() {
             <div className={styles.cardBody}>
               <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
                 <div className={styles.formGrid}>
-                  <div className={styles.field}>
+                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
                     <label className={styles.label} htmlFor="firstName">
-                      {t('profile.first_name')}
+                      {t('profile.full_name')}
                     </label>
                     <div className={styles.inputWrap}>
+                      <span className={`material-symbols-outlined ${styles.iconLeft}`}>person</span>
                       <input
                         id="firstName"
                         type="text"
-                        className={`${styles.input} ${!editingPersonal ? styles.inputDisabled : ''}`}
+                        className={`${styles.input} ${styles.inputWithIconLeft} ${!editingPersonal ? styles.inputDisabled : ''}`}
                         disabled={!editingPersonal}
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
@@ -335,23 +328,25 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="lastName">
-                      {t('profile.last_name')}
+                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
+                    <label className={styles.label} htmlFor="email">
+                      {t('profile.email_address')}
                     </label>
                     <div className={styles.inputWrap}>
+                      <span className={`material-symbols-outlined ${styles.iconLeft}`}>mail</span>
                       <input
-                        id="lastName"
-                        type="text"
-                        className={`${styles.input} ${!editingPersonal ? styles.inputDisabled : ''}`}
-                        disabled={!editingPersonal}
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        id="email"
+                        type="email"
+                        className={`${styles.input} ${styles.inputWithIconLeft} ${styles.inputWithIconRight} ${styles.inputDisabled}`}
+                        disabled
+                        value={profile?.email || user?.email || ''}
+                        readOnly
                       />
+                      <span className={`material-symbols-outlined ${styles.iconRight}`}>lock</span>
                     </div>
                   </div>
 
-                  <div className={styles.field}>
+                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
                     <label className={styles.label} htmlFor="phone">
                       {t('profile.phone_number')}
                     </label>
@@ -365,40 +360,6 @@ export default function ProfilePage() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                       />
-                    </div>
-                  </div>
-
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="birthDate">
-                      {t('profile.birth_date')}
-                    </label>
-                    <div className={styles.inputWrap}>
-                      <input
-                        id="birthDate"
-                        type="date"
-                        className={`${styles.input} ${!editingPersonal ? styles.inputDisabled : ''}`}
-                        disabled={!editingPersonal}
-                        value={formData.birthDate}
-                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
-                    <label className={styles.label} htmlFor="email">
-                      {t('common.email')}
-                    </label>
-                    <div className={styles.inputWrap}>
-                      <span className={`material-symbols-outlined ${styles.iconLeft}`}>mail</span>
-                      <input
-                        id="email"
-                        type="email"
-                        className={`${styles.input} ${styles.inputWithIconLeft} ${styles.inputWithIconRight} ${styles.inputDisabled}`}
-                        disabled
-                        value={profile?.email || user?.email || ''}
-                        readOnly
-                      />
-                      <span className={`material-symbols-outlined ${styles.iconRight}`}>lock</span>
                     </div>
                   </div>
                 </div>
