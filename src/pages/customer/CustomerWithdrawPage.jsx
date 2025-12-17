@@ -66,7 +66,7 @@ export default function CustomerWithdrawPage() {
       }));
     } catch (error) {
       console.error('Error updating quantity:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     }
   };
 
@@ -77,12 +77,12 @@ export default function CustomerWithdrawPage() {
       window.dispatchEvent(new Event('customer-cart-updated'));
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     }
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm('ต้องการลบสินค้าทั้งหมดออกจากตะกร้าหรือไม่?')) return;
+    if (!window.confirm(t('cart.confirm_clear_cart'))) return;
     try {
       for (const item of cart) {
         await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor);
@@ -91,18 +91,18 @@ export default function CustomerWithdrawPage() {
       window.dispatchEvent(new Event('customer-cart-updated'));
     } catch (error) {
       console.error('Error clearing cart:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) {
-      alert('ไม่มีสินค้าในตะกร้า');
+      alert(t('validation.no_items_in_cart'));
       return;
     }
     if (!formData.recipientName || !formData.address) {
-      alert('กรุณากรอกข้อมูลผู้รับให้ครบถ้วน');
+      alert(t('validation.please_fill_name_address'));
       return;
     }
 
@@ -125,16 +125,14 @@ export default function CustomerWithdrawPage() {
       });
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.sellPrice * item.quantity), 0);
-  const shippingFee = deliveryMethod === 'pickup' ? 0 : 50;
-  const tax = Math.round(subtotal * 0.07);
-  const totalAmount = subtotal + shippingFee + tax;
+  const totalAmount = subtotal;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   if (loading) {
@@ -149,7 +147,7 @@ export default function CustomerWithdrawPage() {
     <div className={styles.container}>
       {/* Breadcrumbs */}
       <div className={styles.breadcrumbs}>
-        <a href="/customer" className={styles.breadcrumbLink}>Inventory</a>
+        <a href="/customer" className={styles.breadcrumbLink}>{t('product.products')}</a>
         <span className={styles.breadcrumbSeparator}>/</span>
         <span className={styles.breadcrumbCurrent}>{t('cart.cart') || 'Withdraw Cart'}</span>
       </div>
@@ -174,16 +172,16 @@ export default function CustomerWithdrawPage() {
           <div className={styles.leftColumn}>
             {/* Page Header */}
             <div className={styles.pageHeader}>
-              <h1 className={styles.pageTitle}>Withdraw Items</h1>
-              <p className={styles.pageSubtitle}>Review your selected items and choose a delivery method.</p>
+              <h1 className={styles.pageTitle}>{t('cart.my_cart')}</h1>
+              <p className={styles.pageSubtitle}>{t('cart.review_items')}</p>
             </div>
 
             {/* Cart Items List */}
             <div className={styles.cartItemsList}>
               <div className={styles.cartHeader}>
-                <h2 className={styles.cartTitle}>Selected Items ({totalItems})</h2>
+                <h2 className={styles.cartTitle}>{t('cart.items_in_cart', { count: totalItems })}</h2>
                 <button className={styles.clearAllButton} onClick={handleClearAll}>
-                  <strong>Clear All</strong>
+                  <strong>{t('cart.clear_cart')}</strong>
                 </button>
               </div>
 
@@ -251,7 +249,7 @@ export default function CustomerWithdrawPage() {
 
             {/* Delivery Method Section */}
             <div className={styles.deliverySection}>
-              <h2 className={styles.deliverySectionTitle}>Delivery Method</h2>
+              <h2 className={styles.deliverySectionTitle}>{t('order.delivery_method')}</h2>
               <div className={styles.deliveryOptions}>
                 {/* Shipping */}
                 <label className={styles.deliveryOption}>
@@ -273,10 +271,10 @@ export default function CustomerWithdrawPage() {
                       </div>
                     </div>
                     <div className={styles.deliveryOptionContent}>
-                      <p className={styles.deliveryOptionTitle}>Standard Shipping</p>
-                      <p className={styles.deliveryOptionDesc}>Delivery within 3-5 business days</p>
+                      <p className={styles.deliveryOptionTitle}>{t('order.shipping')}</p>
+                      <p className={styles.deliveryOptionDesc}>{t('withdraw.shipping_hint')}</p>
                       <p className={`${styles.deliveryOptionPrice} ${styles.deliveryOptionPricePaid}`}>
-                        ฿{shippingFee.toLocaleString()}
+                        {t('withdraw.shipping_calc')}
                       </p>
                     </div>
                   </div>
@@ -288,12 +286,12 @@ export default function CustomerWithdrawPage() {
             <form className={styles.shippingForm} onSubmit={handleSubmit}>
               <div className={styles.shippingFormHeader}>
                 <span className={`material-symbols-outlined ${styles.shippingFormIcon}`}>location_on</span>
-                <h2 className={styles.shippingFormTitle}>Shipping Address</h2>
+                <h2 className={styles.shippingFormTitle}>{t('order.shipping_address')}</h2>
               </div>
 
               <div className={styles.formGrid}>
                 <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                  <label className={styles.formLabel}>Full Name / Company Name</label>
+                  <label className={styles.formLabel}>{t('order.recipient_name')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -305,7 +303,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Phone Number</label>
+                  <label className={styles.formLabel}>{t('common.phone')}</label>
                   <input
                     type="tel"
                     className={styles.formInput}
@@ -316,7 +314,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
-                  <label className={styles.formLabel}>Email Address (Optional)</label>
+                  <label className={styles.formLabel}>{t('auth.email')} ({t('common.optional')})</label>
                   <input
                     type="email"
                     className={styles.formInput}
@@ -327,7 +325,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                  <label className={styles.formLabel}>Address Details</label>
+                  <label className={styles.formLabel}>{t('common.address')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -339,7 +337,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Province</label>
+                  <label className={styles.formLabel}>{t('profile.province')}</label>
                   <div className={styles.selectWrapper}>
                     <select
                       className={styles.formSelect}
@@ -356,7 +354,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
-                  <label className={styles.formLabel}>District</label>
+                  <label className={styles.formLabel}>{t('profile.district')}</label>
                   <div className={styles.selectWrapper}>
                     <select
                       className={styles.formSelect}
@@ -372,7 +370,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Sub-district</label>
+                  <label className={styles.formLabel}>{t('profile.city')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -382,7 +380,7 @@ export default function CustomerWithdrawPage() {
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
-                  <label className={styles.formLabel}>Zip Code</label>
+                  <label className={styles.formLabel}>{t('profile.postal_code')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -400,7 +398,7 @@ export default function CustomerWithdrawPage() {
               {/* Summary Card */}
               <div className={styles.summaryCard}>
                 <div className={styles.summaryHeader}>
-                  <h2 className={styles.summaryTitle}>Order Summary</h2>
+                  <h2 className={styles.summaryTitle}>{t('order.order_summary')}</h2>
                 </div>
                 <div className={styles.summaryBody}>
                   <div className={styles.summaryRow}>
@@ -409,31 +407,6 @@ export default function CustomerWithdrawPage() {
                     </span>
                     <span className={styles.summaryValue}>฿{subtotal.toLocaleString()}</span>
                   </div>
-                  <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Shipping Estimate</span>
-                    <span className={styles.summaryValue}>
-                      {shippingFee === 0 ? 'FREE' : `฿${shippingFee.toLocaleString()}`}
-                    </span>
-                  </div>
-                  <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Tax (7%)</span>
-                    <span className={styles.summaryValue}>฿{tax.toLocaleString()}</span>
-                  </div>
-
-                  {/* Promo Code */}
-                  <div className={styles.promoSection}>
-                    <div className={styles.promoInputWrapper}>
-                      <input
-                        type="text"
-                        className={styles.promoInput}
-                        placeholder="Promo code"
-                      />
-                      <button type="button" className={styles.promoButton}>
-                        {t('common.apply') || 'Apply'}
-                      </button>
-                    </div>
-                  </div>
-
                   <div className={styles.summaryDivider} />
 
                   <div className={styles.summaryTotal}>
@@ -452,14 +425,14 @@ export default function CustomerWithdrawPage() {
                     disabled={submitting}
                     className={styles.submitButton}
                   >
-                    {submitting ? 'Processing...' : 'Confirm Withdrawal'}
+                    {submitting ? t('message.processing') : t('cart.proceed_to_checkout')}
                     <span className={`material-symbols-outlined ${styles.submitButtonIcon}`} style={{ fontSize: '1.25rem' }}>
                       arrow_forward
                     </span>
                   </button>
                   <p className={styles.secureText}>
                     <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>lock</span>
-                    Secure processing
+                    {t('payment.secure_payment')}
                   </p>
                 </div>
               </div>

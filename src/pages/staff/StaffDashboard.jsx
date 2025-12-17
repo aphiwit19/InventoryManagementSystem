@@ -135,7 +135,7 @@ export default function StaffDashboard() {
 
   const handleAddToCart = async () => {
     if (!user) {
-      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      alert(t('cart.please_login_cart'));
       return;
     }
 
@@ -145,7 +145,7 @@ export default function StaffDashboard() {
     const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
 
     if (hasVariants && !selectedVariant) {
-      alert('กรุณาเลือก Variant ก่อนเพิ่มลงตะกร้า');
+      alert(t('cart.please_select_variant'));
       return;
     }
 
@@ -155,7 +155,7 @@ export default function StaffDashboard() {
         productId: product.id,
         productName: product.productName,
         image: product.image,
-        unit: product.unit || 'ชิ้น',
+        unit: product.unit || t('common.piece'),
         quantity: quantity,
       };
 
@@ -181,7 +181,7 @@ export default function StaffDashboard() {
       closeModal();
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     } finally {
       setAddingToCart(false);
     }
@@ -231,7 +231,7 @@ export default function StaffDashboard() {
         <div className={styles.filters}>
           <div className={styles.filtersHeader}>
             <div className={styles.filtersTitleRow}>
-              <div className={styles.filtersTitle}>{t('product.all_products') || 'สินค้าทั้งหมด'}</div>
+              <div className={styles.filtersTitle}>{t('product.all_products')}</div>
             </div>
 
             <div className={styles.categoryDropdown} ref={categoryRef}>
@@ -242,7 +242,7 @@ export default function StaffDashboard() {
                 aria-haspopup="listbox"
                 aria-expanded={categoryOpen}
               >
-                <span>{categoryFilter ? t(`categories.${categoryFilter}`, categoryFilter) : (t('common.all_categories') || 'ทุกประเภท')}</span>
+                <span>{categoryFilter ? t(`categories.${categoryFilter}`, categoryFilter) : t('common.all_categories')}</span>
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>keyboard_arrow_down</span>
               </button>
 
@@ -257,7 +257,7 @@ export default function StaffDashboard() {
                       setCategoryOpen(false);
                     }}
                   >
-                    {t('common.all_categories') || 'ทุกประเภท'}
+                    {t('common.all_categories')}
                   </button>
                   {uniqueCategories.map((cat) => (
                     <button
@@ -330,10 +330,10 @@ export default function StaffDashboard() {
                         <span className={styles.stockDot}></span>
                         <span>
                           {available <= 0
-                            ? `0 Out of Stock`
+                            ? `0 ${t('product.out_of_stock')}`
                             : available <= 10
-                              ? `${available} Low Stock`
-                              : `${available} In Stock`}
+                              ? `${available} ${t('product.low_stock')}`
+                              : `${available} ${t('product.in_stock')}`}
                         </span>
                       </div>
 
@@ -401,7 +401,7 @@ export default function StaffDashboard() {
               {selectedProduct.description && (
                 <div style={{ marginBottom: 20, padding: '14px 16px', background: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
-                    {t('common.description') || 'คำอธิบายสินค้า'}
+                    {t('product.description')}
                   </div>
                   <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     {selectedProduct.description}

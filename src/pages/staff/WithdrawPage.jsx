@@ -65,44 +65,44 @@ export default function WithdrawPage() {
       }));
     } catch (error) {
       console.error('Error updating quantity:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     }
   };
 
   const handleRemoveItem = async (item) => {
-    if (!window.confirm('ต้องการลบสินค้านี้ออกจากตะกร้า?')) return;
+    if (!window.confirm(t('cart.confirm_remove_item'))) return;
     try {
       await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor, 'staff');
       setCart(prev => prev.filter(c => !(c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor)));
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     }
   };
 
   const handleClearCart = async () => {
-    if (!window.confirm('ต้องการล้างตะกร้าทั้งหมด?')) return;
+    if (!window.confirm(t('cart.confirm_clear_cart'))) return;
     try {
       await clearCart(user.uid, 'staff');
       setCart([]);
     } catch (error) {
       console.error('Error clearing cart:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) {
-      alert('ไม่มีสินค้าในตะกร้า');
+      alert(t('validation.no_items_in_cart'));
       return;
     }
     if (!formData.requesterName || !formData.recipientName) {
-      alert('กรุณากรอกข้อมูลผู้เบิกและผู้รับให้ครบถ้วน');
+      alert(t('withdraw.fill_requester_receiver'));
       return;
     }
     if (formData.deliveryMethod === 'shipping' && !formData.recipientAddress) {
-      alert('กรุณากรอกที่อยู่จัดส่งให้ครบถ้วน');
+      alert(t('withdraw.fill_shipping_address'));
       return;
     }
 
@@ -138,7 +138,7 @@ export default function WithdrawPage() {
       navigate('/staff');
     } catch (error) {
       console.error('Error creating withdrawal:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     } finally {
       setSubmitting(false);
     }
@@ -304,9 +304,8 @@ export default function WithdrawPage() {
                         </div>
                       </div>
                       <div>
-                        <p className={styles.deliveryName}>{t('order.pickup') || 'Self Pickup'}</p>
-                        <p className={styles.deliveryDesc}>{t('withdraw.pickup_hint') || 'Collect from Warehouse A (Bangkok)'}</p>
-                        <div className={`${styles.deliveryTag} ${styles.deliveryTagFree}`}>Free</div>
+                        <p className={styles.deliveryName} style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t('order.pickup')}</p>
+                        <p className={styles.deliveryDesc}>{t('withdraw.pickup_hint')}</p>
                       </div>
                     </button>
 
@@ -324,9 +323,8 @@ export default function WithdrawPage() {
                         </div>
                       </div>
                       <div>
-                        <p className={styles.deliveryName}>{t('order.shipping') || 'Standard Shipping'}</p>
-                        <p className={styles.deliveryDesc}>{t('withdraw.shipping_hint') || 'Delivery within 3-5 business days'}</p>
-                        <div className={styles.deliveryTag}>{t('withdraw.shipping_calc') || 'Calculated at checkout'}</div>
+                        <p className={styles.deliveryName} style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t('order.shipping')}</p>
+                        <p className={styles.deliveryDesc}>{t('withdraw.shipping_hint')}</p>
                       </div>
                     </button>
                   </div>
@@ -335,7 +333,7 @@ export default function WithdrawPage() {
                 <div className={styles.addressCard}>
                   <div className={styles.addressHeader}>
                     <span className="material-symbols-outlined" style={{ color: '#135bec' }}>assignment</span>
-                    <h2 className={styles.addressTitle}>{t('withdraw.withdraw_request') || 'Withdrawal Details'}</h2>
+                    <h2 className={styles.addressTitle}>{t('withdraw.withdraw_request')}</h2>
                   </div>
 
                   <div className={styles.formGrid}>
@@ -410,16 +408,16 @@ export default function WithdrawPage() {
                 <div className={styles.sticky}>
                   <div className={styles.summaryCard}>
                     <div className={styles.summaryHeader}>
-                      <h2 className={styles.summaryHeaderTitle}>{t('common.summary') || 'Order Summary'}</h2>
+                      <h2 className={styles.summaryHeaderTitle}>{t('common.summary')}</h2>
                     </div>
                     <div className={styles.summaryBody}>
                       <div className={styles.summaryRow}>
-                        <span>{t('common.items') || 'Items'} ({cart.length})</span>
+                        <span>{t('common.items')} ({cart.length})</span>
                         <span className={styles.summaryValue}>฿{totalAmount.toLocaleString()}</span>
                       </div>
                       <div className={styles.summaryDivider}></div>
                       <div className={styles.totalRow}>
-                        <span className={styles.totalLabel}>{t('common.total') || 'Total'}</span>
+                        <span className={styles.totalLabel}>{t('common.total')}</span>
                         <span className={styles.totalAmount}>฿{totalAmount.toLocaleString()}</span>
                       </div>
 

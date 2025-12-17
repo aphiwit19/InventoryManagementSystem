@@ -94,7 +94,7 @@ const CustomerLayout = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('search') || 'Search product name...'}
+                  placeholder={t('common.search')}
                 />
               </div>
             </div>
@@ -142,7 +142,7 @@ const CustomerLayout = () => {
         {/* Sidebar */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarContent}>
-            <h3 className={styles.sidebarTitle}>CATEGORIES</h3>
+            <h3 className={styles.sidebarTitle}>{t('common.menu')}</h3>
             <nav className={styles.sidebarNav}>
               {menuItems.map((item) => {
                 const isActive = isActiveLink(item.path, item.exact);

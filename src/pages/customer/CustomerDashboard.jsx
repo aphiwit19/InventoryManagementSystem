@@ -77,7 +77,7 @@ export default function CustomerDashboard() {
     const cats = products.map(p => p.category).filter(c => c && c.trim() !== '');
     const sorted = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
 
-    const otherLabel = 'อื่นๆ';
+    const otherLabel = t('product.other');
     const idx = sorted.findIndex((c) => String(c).trim() === otherLabel);
     if (idx >= 0) {
       const [other] = sorted.splice(idx, 1);
@@ -139,7 +139,7 @@ export default function CustomerDashboard() {
 
   const handleAddToCart = async () => {
     if (!user) {
-      alert('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+      alert(t('cart.please_login_cart'));
       return;
     }
 
@@ -149,7 +149,7 @@ export default function CustomerDashboard() {
     const hasVariants = product.hasVariants && Array.isArray(product.variants) && product.variants.length > 0;
 
     if (hasVariants && !selectedVariant) {
-      alert('กรุณาเลือก Variant ก่อนเพิ่มลงตะกร้า');
+      alert(t('cart.please_select_variant'));
       return;
     }
 
@@ -159,7 +159,7 @@ export default function CustomerDashboard() {
         productId: product.id,
         productName: product.productName,
         image: product.image,
-        unit: product.unit || 'ชิ้น',
+        unit: product.unit || t('common.piece'),
         quantity: quantity,
       };
 
@@ -185,7 +185,7 @@ export default function CustomerDashboard() {
       closeModal();
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('เกิดข้อผิดพลาด: ' + error.message);
+      alert(t('common.error') + ': ' + error.message);
     } finally {
       setAddingToCart(false);
     }
@@ -244,7 +244,7 @@ export default function CustomerDashboard() {
               <div className={styles.promoBannerContent}>
                 <div className={styles.promoBadge}>
                   <span className={`material-symbols-outlined ${styles.promoBadgeIcon}`}>bolt</span>
-                  <span className={styles.promoBadgeText}>🔥 SALE {discount}% OFF</span>
+                  <span className={styles.promoBadgeText}>🔥 {t('product.sale')} {discount}% {t('product.off')}</span>
                 </div>
                 <h2 className={styles.promoTitle}>{featuredPromo.productName}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -256,10 +256,10 @@ export default function CustomerDashboard() {
                   </span>
                 </div>
                 <p className={styles.promoDescription}>
-                  {featuredPromo.description || 'โปรโมชั่นพิเศษ ลดราคาสุดคุ้ม!'}
+                  {featuredPromo.description || t('product.special_promotion')}
                 </p>
                 <button className={styles.promoButton}>
-                  Buy Now
+                  {t('product.buy_now')}
                   <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>arrow_forward</span>
                 </button>
               </div>
@@ -532,7 +532,7 @@ export default function CustomerDashboard() {
                   }}
                 >
                   <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#111827', marginBottom: '0.375rem' }}>
-                    {t('common.description') || 'คำอธิบายสินค้า'}
+                    {t('product.description')}
                   </div>
                   <div
                     style={{

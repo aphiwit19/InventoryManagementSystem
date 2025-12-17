@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import styles from './StaffOrdersPage.module.css';
 
 export default function StaffOrdersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -30,7 +30,7 @@ export default function StaffOrdersPage() {
         };
         const aTime = toDate(a.withdrawDate);
         const bTime = toDate(b.withdrawDate);
-        return bTime - aTime; // ใหม่สุดอยู่บน
+        return bTime - aTime; // newest first
       });
       setOrders(sorted);
     } finally {
@@ -42,6 +42,17 @@ export default function StaffOrdersPage() {
     load();
   }, [load]);
 
+  // Normalize Thai status to stable code
+  const normalizeStatus = (status) => {
+    if (!status) return 'pending';
+    if (status === 'pending' || status === 'รอดำเนินการ') return 'pending';
+    if (status === 'shipping' || status === 'กำลังดำเนินการส่ง') return 'shipping';
+    if (status === 'delivered' || status === 'ส่งสำเร็จ') return 'delivered';
+    if (status === 'picked_up' || status === 'รับของแล้ว') return 'picked_up';
+    if (status === 'cancelled' || status === 'ยกเลิก') return 'cancelled';
+    return 'pending';
+  };
+
   const filtered = orders.filter(o => {
     const hit = (
       (o.orderNumber || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -49,7 +60,7 @@ export default function StaffOrdersPage() {
       (o.requestedBy || '').toLowerCase().includes(search.toLowerCase()) ||
       (o.requestedAddress || '').toLowerCase().includes(search.toLowerCase())
     );
-    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'รอดำเนินการ') === statusFilter;
+    const statusOk = statusFilter === 'all' || normalizeStatus(o.shippingStatus) === statusFilter;
     const method = o.deliveryMethod || 'shipping';
     const deliveryOk = deliveryFilter === 'all' || method === deliveryFilter;
     return hit && statusOk && deliveryOk;
@@ -75,8 +86,8 @@ export default function StaffOrdersPage() {
 
   const getDeliveryText = (method) => {
     const m = method || 'shipping';
-    if (m === 'pickup') return t('order.pickup') || 'รับเอง';
-    return t('order.shipping') || 'จัดส่ง';
+    if (m === 'pickup') return t('order.pickup');
+    return t('order.shipping');
   };
 
   const toDateMs = (w) => {
@@ -89,18 +100,19 @@ export default function StaffOrdersPage() {
   const formatDate = (w) => {
     const ms = toDateMs(w);
     if (!ms) return '-';
-    return new Date(ms).toLocaleDateString('th-TH');
+    const locale = i18n.language?.startsWith('en') ? 'en-US' : 'th-TH';
+    return new Date(ms).toLocaleDateString(locale);
   };
 
   const getStatusClass = (status) => {
-    switch (status) {
-      case 'กำลังดำเนินการส่ง':
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case 'shipping':
         return styles.statusShipped;
-      case 'ส่งสำเร็จ':
+      case 'delivered':
+      case 'picked_up':
         return styles.statusDelivered;
-      case 'รับของแล้ว':
-        return styles.statusDelivered;
-      case 'ยกเลิก':
+      case 'cancelled':
         return styles.statusCancelled;
       default:
         return styles.statusPending;
@@ -108,11 +120,14 @@ export default function StaffOrdersPage() {
   };
 
   const getStatusText = (status) => {
-    if (status === 'กำลังดำเนินการส่ง') return t('order.status_shipping') || status;
-    if (status === 'ส่งสำเร็จ') return t('order.status_delivered') || status;
-    if (status === 'รับของแล้ว') return t('order.status_picked_up') || status;
-    if (status === 'ยกเลิก') return t('order.status_cancelled') || status;
-    return t('order.status_pending') || status || 'รอดำเนินการ';
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case 'shipping': return t('order.status_shipping');
+      case 'delivered': return t('order.status_delivered');
+      case 'picked_up': return t('order.status_picked_up');
+      case 'cancelled': return t('order.status_cancelled');
+      default: return t('order.status_pending');
+    }
   };
 
   const getStatusCount = (method, statusValue) => {
@@ -120,7 +135,7 @@ export default function StaffOrdersPage() {
     return orders.filter((o) => {
       const m = o.deliveryMethod || 'shipping';
       const methodOk = normalizedMethod === 'all' || m === normalizedMethod;
-      const s = o.shippingStatus || 'รอดำเนินการ';
+      const s = normalizeStatus(o.shippingStatus);
       const statusOk = statusValue === 'all' || s === statusValue;
       return methodOk && statusOk;
     }).length;
@@ -164,8 +179,7 @@ export default function StaffOrdersPage() {
             {t('order.track_status') || t('order.my_orders')}
           </h1>
           <p className={styles.pageSubtitle}>
-            {t('order.order_history') ||
-              'จัดการและติดตามสถานะคำสั่งซื้อทั้งหมดของคุณ'}
+            {t('order.order_history')}
           </p>
         </div>
         <div className={styles.pageHeaderDecor}></div>
@@ -192,9 +206,9 @@ export default function StaffOrdersPage() {
           </button>
           <button
             type="button"
-            className={`${styles.filterChip} ${statusFilter === 'รอดำเนินการ' ? styles.filterChipActive : ''}`}
+            className={`${styles.filterChip} ${statusFilter === 'pending' ? styles.filterChipActive : ''}`}
             onClick={() => {
-              setStatusFilter('รอดำเนินการ');
+              setStatusFilter('pending');
               setCurrentPage(1);
             }}
           >
@@ -202,7 +216,7 @@ export default function StaffOrdersPage() {
               schedule
             </span>
             <span>
-              {t('order.status_pending') || 'Pending'} ({getStatusCount(deliveryFilter, 'รอดำเนินการ')})
+              {t('order.status_pending')} ({getStatusCount(deliveryFilter, 'pending')})
             </span>
           </button>
 
@@ -210,9 +224,9 @@ export default function StaffOrdersPage() {
             <>
               <button
                 type="button"
-                className={`${styles.filterChip} ${statusFilter === 'กำลังดำเนินการส่ง' ? styles.filterChipActive : ''}`}
+                className={`${styles.filterChip} ${statusFilter === 'shipping' ? styles.filterChipActive : ''}`}
                 onClick={() => {
-                  setStatusFilter('กำลังดำเนินการส่ง');
+                  setStatusFilter('shipping');
                   setCurrentPage(1);
                 }}
               >
@@ -220,14 +234,14 @@ export default function StaffOrdersPage() {
                   local_shipping
                 </span>
                 <span>
-                  {t('order.status_shipping') || 'Shipped'} ({getStatusCount(deliveryFilter, 'กำลังดำเนินการส่ง')})
+                  {t('order.status_shipping')} ({getStatusCount(deliveryFilter, 'shipping')})
                 </span>
               </button>
               <button
                 type="button"
-                className={`${styles.filterChip} ${statusFilter === 'ส่งสำเร็จ' ? styles.filterChipActive : ''}`}
+                className={`${styles.filterChip} ${statusFilter === 'delivered' ? styles.filterChipActive : ''}`}
                 onClick={() => {
-                  setStatusFilter('ส่งสำเร็จ');
+                  setStatusFilter('delivered');
                   setCurrentPage(1);
                 }}
               >
@@ -235,7 +249,7 @@ export default function StaffOrdersPage() {
                   check_circle
                 </span>
                 <span>
-                  {t('order.status_delivered') || 'Delivered'} ({getStatusCount(deliveryFilter, 'ส่งสำเร็จ')})
+                  {t('order.status_delivered')} ({getStatusCount(deliveryFilter, 'delivered')})
                 </span>
               </button>
             </>
@@ -244,9 +258,9 @@ export default function StaffOrdersPage() {
           {(deliveryFilter || 'all') === 'pickup' && (
             <button
               type="button"
-              className={`${styles.filterChip} ${statusFilter === 'รับของแล้ว' ? styles.filterChipActive : ''}`}
+              className={`${styles.filterChip} ${statusFilter === 'picked_up' ? styles.filterChipActive : ''}`}
               onClick={() => {
-                setStatusFilter('รับของแล้ว');
+                setStatusFilter('picked_up');
                 setCurrentPage(1);
               }}
             >
@@ -254,7 +268,7 @@ export default function StaffOrdersPage() {
                 storefront
               </span>
               <span>
-                {t('order.status_picked_up') || 'Picked up'} ({getStatusCount('pickup', 'รับของแล้ว')})
+                {t('order.status_picked_up')} ({getStatusCount('pickup', 'picked_up')})
               </span>
             </button>
           )}
@@ -267,7 +281,7 @@ export default function StaffOrdersPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>
                 filter_alt_off
               </span>
-              <span>{t('common.clear_filters') || 'Clear'}</span>
+              <span>{t('common.clear_filters')}</span>
             </button>
           )}
         </div>
@@ -282,9 +296,7 @@ export default function StaffOrdersPage() {
                 type="text"
                 className={styles.searchInput}
                 placeholder={
-                  t('ค้นหา') ||
-                  t('common.search') ||
-                  'Search...'
+                  t('common.search')
                 }
                 value={search}
                 onChange={(e) => {
@@ -370,7 +382,7 @@ export default function StaffOrdersPage() {
                               {order.items.map((item) => item.productName).join(', ').length > 50 ? '...' : ''}
                             </span>
                           ) : (
-                            <span className={styles.itemCount}>{t('order.no_items') || 'No items'}</span>
+                            <span className={styles.itemCount}>{t('order.no_items')}</span>
                           )}
                         </div>
                       </td>
@@ -386,9 +398,9 @@ export default function StaffOrdersPage() {
                         <span className={styles.orderTotal}>฿{(order.total || 0).toLocaleString()}</span>
                       </td>
                       <td className={styles.tableCell}>
-                        <span className={`${styles.statusBadge} ${getStatusClass(order.shippingStatus || 'รอดำเนินการ')}`}>
+                        <span className={`${styles.statusBadge} ${getStatusClass(order.shippingStatus)}`}>
                           <span className={styles.statusDot}></span>
-                          {getStatusText(order.shippingStatus || 'รอดำเนินการ')}
+                          {getStatusText(order.shippingStatus)}
                         </span>
                       </td>
                       <td className={`${styles.tableCell} ${styles.tableCellRight}`}>
@@ -397,7 +409,7 @@ export default function StaffOrdersPage() {
                           className={styles.viewDetailsButton}
                           onClick={() => navigate(`/staff/orders/${order.id}`)}
                         >
-                          {t('order.view_detail') || t('orderViewDetails') || 'View Details'}
+                          {t('order.view_detail')}
                         </button>
                       </td>
                     </tr>
@@ -409,10 +421,10 @@ export default function StaffOrdersPage() {
             {/* Pagination */}
             <div className={styles.pagination}>
               <span className={styles.paginationInfo}>
-                {t('common.showing') || 'Showing'}{' '}
-                <span className={styles.paginationInfoHighlight}>{startShowing}</span> {t('common.to') || 'to'}{' '}
-                <span className={styles.paginationInfoHighlight}>{endShowing}</span> {t('common.of') || 'of'}{' '}
-                <span className={styles.paginationInfoHighlight}>{filtered.length}</span> {t('order.orders') || 'results'}
+                {t('common.showing')}{' '}
+                <span className={styles.paginationInfoHighlight}>{startShowing}</span> '-'{' '}
+                <span className={styles.paginationInfoHighlight}>{endShowing}</span> {t('common.of')}{' '}
+                <span className={styles.paginationInfoHighlight}>{filtered.length}</span> {t('common.items')}
               </span>
               <div className={styles.paginationButtons}>
                 <button

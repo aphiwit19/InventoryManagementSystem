@@ -44,7 +44,7 @@ export async function createWithdrawal(payload) {
       receivedBy: payload.receivedBy || null,
       receivedAddress: payload.receivedAddress || '',
       note: payload.note || '',
-      withdrawDate: Timestamp.fromDate(new Date(payload.withdrawDate || new Date())),
+      withdrawDate: Timestamp.now(),
       total: parseFloat(payload.total || 0),
       shippingCarrier: payload.shippingCarrier || null,
       trackingNumber: payload.trackingNumber || '',

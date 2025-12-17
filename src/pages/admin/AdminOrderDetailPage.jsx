@@ -113,7 +113,13 @@ export default function AdminOrderDetailPage() {
     order.withdrawDate?.seconds
       ? order.withdrawDate.seconds * 1000
       : order.withdrawDate
-  ).toLocaleDateString((i18n.language?.split('-')[0] || 'th') === 'th' ? 'th-TH' : 'en-US');
+  ).toLocaleDateString((i18n.language?.split('-')[0] || 'th') === 'th' ? 'th-TH' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 
   const headerLabel = isStaffOrder
     ? (t('order.staff_orders') || 'คำสั่งเบิกพนักงาน')

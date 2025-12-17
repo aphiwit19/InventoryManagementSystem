@@ -257,7 +257,7 @@ export default function ProfilePage() {
 
   const handleDeleteAddress = async (addressId) => {
     if (!user?.uid) return;
-    if (!window.confirm('คุณต้องการลบที่อยู่นี้หรือไม่?')) return;
+    if (!window.confirm(t('profile.confirm_delete_address'))) return;
 
     try {
       await deleteAddress(user.uid, addressId);
@@ -357,7 +357,7 @@ export default function ProfilePage() {
     return (
       <div className={styles.loadingState}>
         <div className={styles.loadingIcon}>⏳</div>
-        <div className={styles.loadingText}>Loading...</div>
+        <div className={styles.loadingText}>{t('common.loading')}</div>
       </div>
     );
   }
@@ -365,8 +365,8 @@ export default function ProfilePage() {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>My Profile</h1>
-        <p className={styles.pageSubtitle}>Manage your personal information, address book, and security settings.</p>
+        <h1 className={styles.pageTitle}>{t('profile.my_profile')}</h1>
+        <p className={styles.pageSubtitle}>{t('profile.profile_subtitle')}</p>
       </div>
 
       <div className={styles.mainGrid}>
@@ -402,7 +402,7 @@ export default function ProfilePage() {
                 onClick={handleRemovePhoto}
                 disabled={uploadingPhoto}
               >
-                Remove Photo
+                {t('profile.remove_photo')}
               </button>
             ) : null}
           </div>
@@ -415,7 +415,7 @@ export default function ProfilePage() {
                 onClick={() => setActiveTab('personal')}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
-                Personal Information
+                {t('profile.personal_info')}
               </button>
               <button
                 type="button"
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                 onClick={() => setActiveTab('address')}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>location_on</span>
-                Address Book
+                {t('profile.address_book')}
               </button>
               <button
                 type="button"
@@ -431,7 +431,7 @@ export default function ProfilePage() {
                 onClick={() => navigate('/staff/orders')}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>shopping_bag</span>
-                My Orders
+                {t('profile.my_orders')}
               </button>
               <button
                 type="button"
@@ -439,7 +439,7 @@ export default function ProfilePage() {
                 onClick={() => setActiveTab('security')}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
-                Security
+                {t('profile.security')}
               </button>
               <div className={styles.navMenuDivider}></div>
             </nav>
@@ -454,21 +454,21 @@ export default function ProfilePage() {
                 className={`${styles.tabButton} ${activeTab === 'personal' ? styles.tabButtonActive : ''}`}
                 onClick={() => setActiveTab('personal')}
               >
-                Personal Information
+                {t('profile.personal_info')}
               </button>
               <button
                 type="button"
                 className={`${styles.tabButton} ${activeTab === 'address' ? styles.tabButtonActive : ''}`}
                 onClick={() => setActiveTab('address')}
               >
-                Address Book
+                {t('profile.address_book')}
               </button>
               <button
                 type="button"
                 className={`${styles.tabButton} ${activeTab === 'security' ? styles.tabButtonActive : ''}`}
                 onClick={() => setActiveTab('security')}
               >
-                Security
+                {t('profile.security')}
               </button>
             </div>
           </div>
@@ -476,14 +476,14 @@ export default function ProfilePage() {
           {activeTab === 'personal' && (
             <div className={styles.card}>
               <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Edit Profile</h2>
-                <span className={styles.lastUpdated}>Last updated: Recently</span>
+                <h2 className={styles.cardTitle}>{t('profile.edit_profile')}</h2>
+                <span className={styles.lastUpdated}>{t('profile.last_updated')}</span>
               </div>
 
               <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }}>
                 <div className={styles.formGrid}>
                   <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                    <label className={styles.formLabel}>Full Name</label>
+                    <label className={styles.formLabel}>{t('profile.full_name')}</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>person</span>
@@ -499,7 +499,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                    <label className={styles.formLabel}>Email Address</label>
+                    <label className={styles.formLabel}>{t('profile.email_address')}</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>mail</span>
@@ -511,11 +511,11 @@ export default function ProfilePage() {
                         disabled
                       />
                     </div>
-                    <p className={styles.formHint}>To change your email, please contact support.</p>
+                    <p className={styles.formHint}>{t('profile.email_change_hint')}</p>
                   </div>
 
                   <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                    <label className={styles.formLabel}>Phone Number</label>
+                    <label className={styles.formLabel}>{t('profile.phone_number')}</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>phone</span>
@@ -542,7 +542,7 @@ export default function ProfilePage() {
                           setEditingPersonal(false);
                         }}
                       >
-                        Cancel
+                        {t('common.cancel')}
                       </button>
                       <button
                         type="submit"
@@ -550,7 +550,7 @@ export default function ProfilePage() {
                         disabled={saving}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>save</span>
-                        {saving ? 'Saving...' : 'Save Changes'}
+                        {saving ? t('common.saving') : t('common.save_changes')}
                       </button>
                     </>
                   ) : (
@@ -560,7 +560,7 @@ export default function ProfilePage() {
                       onClick={() => setEditingPersonal(true)}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>edit</span>
-                      Edit Profile
+                      {t('profile.edit_profile')}
                     </button>
                   )}
                 </div>
@@ -572,17 +572,17 @@ export default function ProfilePage() {
             <div className={styles.card}>
               <div className={styles.addressHeader}>
                 <div>
-                  <h2 className={styles.cardTitle}>Address Book</h2>
-                  <p className={styles.cardSubtitle}>Manage your shipping and billing addresses.</p>
+                  <h2 className={styles.cardTitle}>{t('profile.address_book')}</h2>
+                  <p className={styles.cardSubtitle}>{t('profile.address_subtitle')}</p>
                 </div>
                 <button type="button" className={styles.addAddressButton} onClick={openAddAddressModal}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>add</span>
-                  Add New Address
+                  {t('profile.add_new_address')}
                 </button>
               </div>
 
               {addresses.length === 0 ? (
-                <div className={styles.emptyState}>No addresses yet. Click the button above to add one.</div>
+                <div className={styles.emptyState}>{t('profile.no_addresses')}</div>
               ) : (
                 <div className={styles.addressGrid}>
                   {addresses.map((addr) => (
@@ -611,7 +611,7 @@ export default function ProfilePage() {
                           </span>
                         </span>
                         <span className={styles.addressLabel}>{addr.name}</span>
-                        {addr.isDefault && <span className={styles.addressBadge}>Default</span>}
+                        {addr.isDefault && <span className={styles.addressBadge}>{t('profile.default')}</span>}
                       </div>
 
                       <p className={styles.addressName}>{fullName || profile?.displayName || 'Staff'}</p>
@@ -636,7 +636,7 @@ export default function ProfilePage() {
                             className={styles.setDefaultButton}
                             onClick={() => handleSetDefaultAddress(addr.id)}
                           >
-                            Set as default shipping
+                            {t('profile.set_as_default')}
                           </button>
                         </div>
                       )}
@@ -650,13 +650,13 @@ export default function ProfilePage() {
           {activeTab === 'security' && (
             <div className={styles.card}>
               <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Change Password</h2>
+                <h2 className={styles.cardTitle}>{t('profile.change_password')}</h2>
               </div>
 
               <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }}>
                 <div className={styles.formGrid}>
                   <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                    <label className={styles.formLabel}>Current Password</label>
+                    <label className={styles.formLabel}>{t('profile.current_password')}</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
@@ -666,13 +666,13 @@ export default function ProfilePage() {
                         className={styles.formInput}
                         value={passwordForm.currentPassword}
                         onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
-                        placeholder="Enter current password"
+                        placeholder={t('profile.current_password_placeholder')}
                       />
                     </div>
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>New Password</label>
+                    <label className={styles.formLabel}>{t('profile.new_password')}</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
@@ -682,13 +682,13 @@ export default function ProfilePage() {
                         className={styles.formInput}
                         value={passwordForm.newPassword}
                         onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
-                        placeholder="Enter new password (min 6 characters)"
+                        placeholder={t('profile.new_password_placeholder')}
                       />
                     </div>
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Confirm New Password</label>
+                    <label className={styles.formLabel}>{t('profile.confirm_new_password')}</label>
                     <div className={styles.inputWrapper}>
                       <div className={styles.inputIcon}>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
@@ -698,7 +698,7 @@ export default function ProfilePage() {
                         className={styles.formInput}
                         value={passwordForm.confirmPassword}
                         onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
-                        placeholder="Confirm new password"
+                        placeholder={t('profile.confirm_new_password_placeholder')}
                       />
                     </div>
                   </div>
@@ -707,7 +707,7 @@ export default function ProfilePage() {
                 <div className={styles.formActions}>
                   <button type="submit" className={styles.saveButton} disabled={changingPassword}>
                     <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>lock</span>
-                    {changingPassword ? 'Changing...' : 'Change Password'}
+                    {changingPassword ? t('profile.changing_password') : t('profile.change_password_action')}
                   </button>
                 </div>
               </form>
@@ -719,35 +719,35 @@ export default function ProfilePage() {
       {showAddressModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <h2 className={styles.modalTitle}>Add New Address</h2>
+            <h2 className={styles.modalTitle}>{t('profile.add_new_address')}</h2>
 
             <form className={styles.form}>
               <div className={styles.formGrid}>
                 <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                  <label className={styles.formLabel}>Address Label *</label>
+                  <label className={styles.formLabel}>{t('profile.address_label')} *</label>
                   <input
                     type="text"
                     className={styles.formInput}
                     style={{ paddingLeft: '0.75rem' }}
                     value={addressForm.name}
                     onChange={(e) => handleAddressInputChange('name', e.target.value)}
-                    placeholder="e.g. Home, Office"
+                    placeholder={t('profile.address_label_placeholder')}
                   />
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                  <label className={styles.formLabel}>Address *</label>
+                  <label className={styles.formLabel}>{t('common.address')} *</label>
                   <textarea
                     className={styles.formInput}
                     style={{ paddingLeft: '0.75rem', minHeight: '80px', resize: 'vertical' }}
                     value={addressForm.address}
                     onChange={(e) => handleAddressInputChange('address', e.target.value)}
-                    placeholder="Street address, building, floor"
+                    placeholder={t('profile.address_placeholder')}
                   />
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>District</label>
+                  <label className={styles.formLabel}>{t('profile.district')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -758,7 +758,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>City</label>
+                  <label className={styles.formLabel}>{t('profile.city')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -769,7 +769,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Province</label>
+                  <label className={styles.formLabel}>{t('profile.province')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -780,7 +780,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Postal Code</label>
+                  <label className={styles.formLabel}>{t('profile.postal_code')}</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -792,7 +792,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                  <label className={styles.formLabel}>Phone</label>
+                  <label className={styles.formLabel}>{t('common.phone')}</label>
                   <input
                     type="tel"
                     className={styles.formInput}
@@ -809,7 +809,7 @@ export default function ProfilePage() {
                   className={styles.cancelButton}
                   onClick={() => setShowAddressModal(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -817,7 +817,7 @@ export default function ProfilePage() {
                   onClick={handleSaveAddress}
                   disabled={saving}
                 >
-                  {saving ? 'Saving...' : 'Save Address'}
+                  {saving ? t('common.saving') : t('profile.save_address')}
                 </button>
               </div>
             </form>

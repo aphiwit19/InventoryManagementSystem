@@ -45,12 +45,8 @@ export default function StaffOrderDetailPage() {
       <div className={styles.stateWrap}>
         <div className={styles.stateCard}>
           <p className={styles.stateText}>
-            {t('withdraw.order_not_found') || t('order.notFound') || 'ไม่พบคำสั่งซื้อ'}
+            {t('withdraw.order_not_found')}
           </p>
-          <button type="button" className={styles.btn} onClick={() => navigate('/staff/orders')}>
-            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
-            {t('common.back') || 'กลับ'}
-          </button>
         </div>
       </div>
     );
@@ -60,7 +56,7 @@ export default function StaffOrderDetailPage() {
   const total = order.total || 0;
   const orderNumber = order.orderNumber || `#${id.slice(0, 8).toUpperCase()}`;
 
-  const safeStatus = order.shippingStatus || order.status || (t('order.processing') || 'กำลังดำเนินการ');
+  const safeStatus = order.shippingStatus || order.status || 'pending';
   const statusText = String(safeStatus);
 
   const handleCopyTracking = async () => {
@@ -80,10 +76,16 @@ export default function StaffOrderDetailPage() {
     return Number.isFinite(ms) ? ms : 0;
   };
   const dateMs = toDateMs(order.withdrawDate);
-  const dateStr = dateMs ? new Date(dateMs).toLocaleDateString('th-TH') : '-';
+  const dateStr = dateMs ? new Date(dateMs).toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : '-';
 
   const deliveryMethod = order.deliveryMethod || 'shipping';
-  const deliveryText = deliveryMethod === 'pickup' ? (t('order.pickup') || 'รับเอง') : (t('order.shipping') || 'จัดส่ง');
+  const deliveryText = deliveryMethod === 'pickup' ? t('order.pickup') : t('order.shipping');
 
   return (
     <div className={styles.page}>
@@ -118,13 +120,6 @@ export default function StaffOrderDetailPage() {
                 <span>{dateStr}</span>
               </div>
             </div>
-          </div>
-
-          <div className={styles.headerActions}>
-            <button type="button" className={styles.btn} onClick={() => navigate('/staff/orders')}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
-              {t('common.back') || 'กลับ'}
-            </button>
           </div>
         </div>
 
@@ -184,7 +179,7 @@ export default function StaffOrderDetailPage() {
 
               <div className={styles.summary}>
                 <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>{t('common.total') || 'Total'}</span>
+                  <span className={styles.summaryLabel}>{t('common.total')}</span>
                   <span className={styles.summaryTotal}>฿{Number(total || 0).toLocaleString()}</span>
                 </div>
               </div>

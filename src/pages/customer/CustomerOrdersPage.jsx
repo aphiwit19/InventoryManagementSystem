@@ -123,15 +123,15 @@ export default function CustomerOrdersPage() {
     switch (status) {
       case 'shipped':
       case 'กำลังดำเนินการส่ง':
-        return 'Shipped';
+        return t('order.status_shipped');
       case 'delivered':
       case 'ส่งสำเร็จ':
-        return 'Delivered';
+        return t('order.status_delivered');
       case 'cancelled':
       case 'ยกเลิก':
-        return 'Cancelled';
+        return t('order.status_cancelled');
       default:
-        return 'Pending';
+        return t('order.status_pending');
     }
   };
 
@@ -140,8 +140,8 @@ export default function CustomerOrdersPage() {
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageHeaderContent}>
-          <h1 className={styles.pageTitle}>{t('orderHistory') || 'Order History'}</h1>
-          <p className={styles.pageSubtitle}>{t('orderHistoryDesc') || 'Manage and track your recent purchases and returns.'}</p>
+          <h1 className={styles.pageTitle}>{t('order.order_history')}</h1>
+          <p className={styles.pageSubtitle}>{t('order.order_history_desc')}</p>
         </div>
         <div className={styles.pageHeaderDecor}></div>
       </div>
@@ -155,28 +155,28 @@ export default function CustomerOrdersPage() {
             onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>list</span>
-            <span>{t('allOrders') || 'All Orders'}</span>
+            <span>{t('order.all_orders')}</span>
           </button>
           <button 
             className={`${styles.filterChip} ${statusFilter === 'pending' ? styles.filterChipActive : ''}`}
             onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>schedule</span>
-            <span>{t('pending') || 'Pending'}</span>
+            <span>{t('order.status_pending')}</span>
           </button>
           <button 
             className={`${styles.filterChip} ${statusFilter === 'shipped' ? styles.filterChipActive : ''}`}
             onClick={() => { setStatusFilter('shipped'); setCurrentPage(1); }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>local_shipping</span>
-            <span>{t('shipped') || 'Shipped'}</span>
+            <span>{t('order.status_shipped')}</span>
           </button>
           <button 
             className={`${styles.filterChip} ${statusFilter === 'delivered' ? styles.filterChipActive : ''}`}
             onClick={() => { setStatusFilter('delivered'); setCurrentPage(1); }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>check_circle</span>
-            <span>{t('delivered') || 'Delivered'}</span>
+            <span>{t('order.status_delivered')}</span>
           </button>
         </div>
 
@@ -189,7 +189,7 @@ export default function CustomerOrdersPage() {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder={t('searchByOrderNumber') || 'Search by Order Number...'}
+              placeholder={t('order.search_order')}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
@@ -201,11 +201,11 @@ export default function CustomerOrdersPage() {
       <div className={styles.tableCard}>
         {loading ? (
           <div className={styles.loadingState}>
-            {t('loading') || 'Loading...'}
+            {t('common.loading')}
           </div>
         ) : filtered.length === 0 ? (
           <div className={styles.emptyState}>
-            {t('noOrdersFound') || 'No orders found'}
+            {t('order.no_orders_found')}
           </div>
         ) : (
           <>
@@ -213,12 +213,11 @@ export default function CustomerOrdersPage() {
               <table className={styles.table}>
                 <thead className={styles.tableHead}>
                   <tr>
-                    <th className={styles.tableHeadCell}>{t('orderId') || 'Order ID'}</th>
-                    <th className={styles.tableHeadCell}>{t('datePlaced') || 'Date Placed'}</th>
-                    <th className={styles.tableHeadCell}>{t('items') || 'Items'}</th>
-                    <th className={styles.tableHeadCell}>{t('totalAmount') || 'Total Amount'}</th>
-                    <th className={styles.tableHeadCell}>{t('status') || 'Status'}</th>
-                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('actions') || 'Actions'}</th>
+                    <th className={styles.tableHeadCell}>{t('order.order_id')}</th>
+                    <th className={styles.tableHeadCell}>{t('order.order_date')}</th>
+                    <th className={styles.tableHeadCell}>{t('common.items')}</th>
+                    <th className={styles.tableHeadCell}>{t('common.status')}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className={styles.tableBody}>
@@ -238,12 +237,9 @@ export default function CustomerOrdersPage() {
                               {order.items.map(item => item.productName).join(', ').length > 50 ? '...' : ''}
                             </span>
                           ) : (
-                            <span className={styles.itemCount}>{t('noItems') || 'No items'}</span>
+                            <span className={styles.itemCount}>{t('order.no_items')}</span>
                           )}
                         </div>
-                      </td>
-                      <td className={styles.tableCell}>
-                        <span className={styles.orderTotal}>฿{(order.total || 0).toLocaleString()}</span>
                       </td>
                       <td className={styles.tableCell}>
                         <span className={`${styles.statusBadge} ${getStatusClass(order.shippingStatus)}`}>
@@ -256,7 +252,7 @@ export default function CustomerOrdersPage() {
                           className={styles.viewDetailsButton}
                           onClick={() => navigate(`/customer/orders/${order.id}`, { state: { order } })}
                         >
-                          {t('viewDetails') || 'View Details'}
+                          {t('order.view_detail')}
                         </button>
                       </td>
                     </tr>
@@ -268,9 +264,9 @@ export default function CustomerOrdersPage() {
             {/* Pagination */}
             <div className={styles.pagination}>
               <span className={styles.paginationInfo}>
-                {t('showing') || 'Showing'} <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span> {t('to') || 'to'}{' '}
-                <span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filtered.length)}</span> {t('of') || 'of'}{' '}
-                <span className={styles.paginationInfoHighlight}>{filtered.length}</span> {t('results') || 'results'}
+                {t('common.showing')} <span className={styles.paginationInfoHighlight}>{startIndex + 1}</span> {t('common.to')}{' '}
+                <span className={styles.paginationInfoHighlight}>{Math.min(endIndex, filtered.length)}</span> {t('common.of')}{' '}
+                <span className={styles.paginationInfoHighlight}>{filtered.length}</span> {t('common.results')}
               </span>
               <div className={styles.paginationButtons}>
                 <button 

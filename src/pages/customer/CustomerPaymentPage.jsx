@@ -44,9 +44,7 @@ export default function CustomerPaymentPage() {
   );
 
   const shippingFromCart = location.state && location.state.shipping ? location.state.shipping : null;
-  const shippingFee = 150; // Fixed shipping fee
-  const vat = Math.round(total * 0.07);
-  const finalTotal = total + shippingFee + vat;
+  const finalTotal = total;
   const totalItems = items.reduce((sum, it) => sum + (it.quantity || 0), 0);
 
   // Load cart items
@@ -152,25 +150,25 @@ export default function CustomerPaymentPage() {
   const handleConfirm = async () => {
     setFormError('');
     if (!user?.uid) {
-      setFormError('Please login to continue');
+      setFormError(t('auth.please_login'));
       return;
     }
     if (items.length === 0) {
-      setFormError('Your cart is empty');
+      setFormError(t('validation.no_items_in_cart'));
       return;
     }
     if (!requestedBy.trim() || !requestedAddress.trim()) {
-      setFormError('Please fill in name and address');
+      setFormError(t('validation.please_fill_name_address'));
       return;
     }
 
     if (!paymentAccount.bankName || !paymentAccount.accountName || !paymentAccount.accountNumber) {
-      setFormError('Payment account not configured');
+      setFormError(t('payment.no_payment_account'));
       return;
     }
 
     if (!slipFile) {
-      setFormError('Please upload payment slip');
+      setFormError(t('validation.please_upload_slip'));
       return;
     }
 
@@ -244,10 +242,10 @@ export default function CustomerPaymentPage() {
       <div className={styles.container}>
         <div className={styles.emptyState}>
           <div className={styles.emptyStateIcon}>🛒</div>
-          <h2 className={styles.emptyStateTitle}>Your cart is empty</h2>
-          <p className={styles.emptyStateDesc}>Add some items to your cart before checkout.</p>
+          <h2 className={styles.emptyStateTitle}>{t('cart.cart_empty')}</h2>
+          <p className={styles.emptyStateDesc}>{t('cart.cart_empty_message')}</p>
           <Link to="/customer" className={styles.emptyStateButton}>
-            Browse Inventory
+            {t('cart.go_shopping')}
           </Link>
         </div>
       </div>
@@ -261,8 +259,8 @@ export default function CustomerPaymentPage() {
         <div className={styles.leftColumn}>
           {/* Page Header */}
           <div className={styles.pageHeader}>
-            <h1 className={styles.pageTitle}>Checkout</h1>
-            <p className={styles.pageSubtitle}>Complete your purchase securely.</p>
+            <h1 className={styles.pageTitle}>{t('cart.checkout')}</h1>
+            <p className={styles.pageSubtitle}>{t('payment.checkout_subtitle')}</p>
           </div>
 
           {/* Step 1: Shipping Address */}
@@ -270,7 +268,7 @@ export default function CustomerPaymentPage() {
             <div className={styles.sectionHeader}>
               <h3 className={styles.sectionTitle}>
                 <span className={styles.stepNumber}>1</span>
-                Shipping Address
+                {t('order.shipping_address')}
               </h3>
             </div>
             <div className={styles.addressCard}>
@@ -279,10 +277,10 @@ export default function CustomerPaymentPage() {
                   <div className={styles.addressDetails}>
                     <div className={styles.addressHeader}>
                       <span className={`material-symbols-outlined ${styles.addressIcon}`}>location_on</span>
-                      <p className={styles.addressName}>{requestedBy || 'No name'}</p>
+                      <p className={styles.addressName}>{requestedBy || t('common.no_data')}</p>
                     </div>
                     <p className={styles.addressText}>
-                      {requestedAddress || 'No address provided'}
+                      {requestedAddress || t('common.no_data')}
                       {phone && <><br />{phone}</>}
                     </p>
                   </div>
@@ -290,7 +288,7 @@ export default function CustomerPaymentPage() {
                     className={styles.changeButton}
                     onClick={() => navigate('/customer/withdraw')}
                   >
-                    Change
+                    {t('common.edit')}
                   </button>
                 </div>
               </div>
@@ -302,11 +300,11 @@ export default function CustomerPaymentPage() {
             <div className={styles.sectionHeader}>
               <h3 className={styles.sectionTitle}>
                 <span className={styles.stepNumber}>2</span>
-                Payment Method
+                {t('order.payment_method')}
               </h3>
               <div className={styles.securityBadge}>
                 <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>lock</span>
-                <span className={styles.securityText}>Encrypted</span>
+                <span className={styles.securityText}>{t('payment.encrypted')}</span>
               </div>
             </div>
             <div className={styles.paymentCard}>
@@ -317,14 +315,14 @@ export default function CustomerPaymentPage() {
                   onClick={() => setPaymentMethod('bank_transfer')}
                 >
                   <span className={`material-symbols-outlined ${styles.paymentTabIcon}`}>account_balance</span>
-                  <span className={styles.paymentTabText}>Bank Transfer</span>
+                  <span className={styles.paymentTabText}>{t('order.bank_transfer')}</span>
                 </button>
                 <button 
                   className={`${styles.paymentTab} ${paymentMethod === 'promptpay' ? styles.paymentTabActive : ''}`}
                   onClick={() => setPaymentMethod('promptpay')}
                 >
                   <span className={`material-symbols-outlined ${styles.paymentTabIcon}`}>qr_code_scanner</span>
-                  <span className={styles.paymentTabText}>PromptPay</span>
+                  <span className={styles.paymentTabText}>{t('payment.promptpay')}</span>
                 </button>
               </div>
 
@@ -354,9 +352,9 @@ export default function CustomerPaymentPage() {
                     {/* Upload Slip */}
                     <label className={styles.uploadArea}>
                       <span className={`material-symbols-outlined ${styles.uploadIcon}`}>cloud_upload</span>
-                      <p className={styles.uploadTitle}>Upload Payment Slip</p>
-                      <p className={styles.uploadDesc}>Drag and drop or click to browse</p>
-                      <p className={styles.uploadHint}>JPG, PNG or PDF up to 5MB</p>
+                      <p className={styles.uploadTitle}>{t('payment.upload_slip')}</p>
+                      <p className={styles.uploadDesc}>{t('payment.upload_desc')}</p>
+                      <p className={styles.uploadHint}>{t('payment.file_hint')}</p>
                       <input
                         type="file"
                         accept="image/*"
@@ -390,16 +388,16 @@ export default function CustomerPaymentPage() {
                         )}
                       </div>
                       <p className={styles.qrText}>
-                        Scan QR code to pay ฿{finalTotal.toLocaleString()}
+                        {t('payment.scan_qr_to_pay')} ฿{finalTotal.toLocaleString()}
                       </p>
                     </div>
 
                     {/* Upload Slip */}
                     <label className={styles.uploadArea}>
                       <span className={`material-symbols-outlined ${styles.uploadIcon}`}>cloud_upload</span>
-                      <p className={styles.uploadTitle}>Upload Payment Slip</p>
-                      <p className={styles.uploadDesc}>Drag and drop or click to browse</p>
-                      <p className={styles.uploadHint}>JPG, PNG or PDF up to 5MB</p>
+                      <p className={styles.uploadTitle}>{t('payment.upload_slip')}</p>
+                      <p className={styles.uploadDesc}>{t('payment.upload_desc')}</p>
+                      <p className={styles.uploadHint}>{t('payment.file_hint')}</p>
                       <input
                         type="file"
                         accept="image/*"
@@ -430,8 +428,8 @@ export default function CustomerPaymentPage() {
           <div className={styles.summarySticky}>
             <div className={styles.summaryCard}>
               <div className={styles.summaryHeader}>
-                <h3 className={styles.summaryTitle}>Order Summary</h3>
-                <Link to="/customer/withdraw" className={styles.editOrderLink}>Edit Order</Link>
+                <h3 className={styles.summaryTitle}>{t('order.order_summary')}</h3>
+                <Link to="/customer/withdraw" className={styles.editOrderLink}>{t('common.edit')}</Link>
               </div>
 
               {/* Product List */}
@@ -454,7 +452,7 @@ export default function CustomerPaymentPage() {
                           {item.variantSize && item.variantColor && ' | '}
                           {item.variantColor && `Color: ${item.variantColor}`}
                         </p>
-                        <span className={styles.productQty}>Qty: {item.quantity}</span>
+                        <span className={styles.productQty}>{t('common.quantity')}: {item.quantity}</span>
                       </div>
                     </div>
                   );
@@ -464,20 +462,12 @@ export default function CustomerPaymentPage() {
               {/* Calculations */}
               <div className={styles.calculations}>
                 <div className={styles.calcRow}>
-                  <span>Subtotal ({totalItems} items)</span>
+                  <span>{t('order.product_total')} ({totalItems} {t('common.items')})</span>
                   <span className={styles.calcValue}>฿{total.toLocaleString()}</span>
-                </div>
-                <div className={styles.calcRow}>
-                  <span>Shipping</span>
-                  <span className={styles.calcValue}>฿{shippingFee.toLocaleString()}</span>
-                </div>
-                <div className={styles.calcRow}>
-                  <span>VAT (7%)</span>
-                  <span className={styles.calcValue}>฿{vat.toLocaleString()}</span>
                 </div>
                 <div className={styles.calcDivider}></div>
                 <div className={styles.calcTotal}>
-                  <span className={styles.calcTotalLabel}>Total Amount</span>
+                  <span className={styles.calcTotalLabel}>{t('common.total')}</span>
                   <span className={styles.calcTotalValue}>฿{finalTotal.toLocaleString()}</span>
                 </div>
 
@@ -492,12 +482,12 @@ export default function CustomerPaymentPage() {
                   onClick={handleConfirm}
                   disabled={saving}
                 >
-                  {saving ? 'Processing...' : 'Pay Now'}
+                  {saving ? t('message.processing') : t('payment.pay_now')}
                   <span className="material-symbols-outlined">arrow_forward</span>
                 </button>
                 <p className={styles.securePaymentText}>
                   <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>verified_user</span>
-                  Payments are secure and encrypted
+                  {t('payment.secure_payment')}
                 </p>
               </div>
             </div>

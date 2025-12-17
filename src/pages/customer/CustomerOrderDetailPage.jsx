@@ -101,17 +101,17 @@ export default function CustomerOrderDetailPage() {
     switch (status) {
       case 'shipped':
       case 'กำลังดำเนินการส่ง':
-        return t('shipped') || 'Shipped';
+        return t('order.status_shipped');
       case 'delivered':
       case 'ส่งสำเร็จ':
-        return t('delivered') || 'Delivered';
+        return t('order.status_delivered');
       case 'cancelled':
       case 'ยกเลิก':
-        return t('cancelled') || 'Cancelled';
+        return t('order.status_cancelled');
       case 'processing':
-        return t('processing') || 'Processing';
+        return t('order.status_processing');
       default:
-        return t('pending') || 'Pending';
+        return t('order.status_pending');
     }
   };
 
@@ -133,7 +133,7 @@ export default function CustomerOrderDetailPage() {
   if (loading) {
     return (
       <div className={styles.loadingState}>
-        <p>{t('loading') || 'Loading...'}</p>
+        <p>{t('common.loading')}</p>
       </div>
     );
   }
@@ -142,12 +142,12 @@ export default function CustomerOrderDetailPage() {
     return (
       <div className={styles.container}>
         <div className={styles.emptyState}>
-          <p className={styles.emptyStateText}>{t('orderNotFound') || 'Order not found'}</p>
+          <p className={styles.emptyStateText}>{t('withdraw.order_not_found')}</p>
           <button
             className={styles.emptyStateButton}
             onClick={() => navigate('/customer/orders')}
           >
-            {t('backToOrders') || 'Back to Orders'}
+            {t('order.back_to_orders')}
           </button>
         </div>
       </div>
@@ -156,9 +156,6 @@ export default function CustomerOrderDetailPage() {
 
   const items = order.items || [];
   const subtotal = order.subtotal || order.total || 0;
-  const shipping = order.shippingFee || 0;
-  const tax = order.tax || Math.round(subtotal * 0.07);
-  const discount = order.discount || 0;
   const total = order.total || 0;
   const status = order.shippingStatus || 'pending';
   const stepProgress = getStepProgress(status);
@@ -178,7 +175,7 @@ export default function CustomerOrderDetailPage() {
           </div>
           <p className={styles.pageSubtitle}>
             <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>calendar_today</span>
-            {t('placedOn') || 'Placed on'} {formatDate(order.withdrawDate || order.createdAt)}
+            {t('order.placed_on')} {formatDate(order.withdrawDate || order.createdAt)}
           </p>
         </div>
               </div>
@@ -195,7 +192,7 @@ export default function CustomerOrderDetailPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>check</span>
             </div>
             <div className={styles.stepInfo}>
-              <p className={styles.stepTitle}>{t('orderPlaced') || 'Order Placed'}</p>
+              <p className={styles.stepTitle}>{t('order.order_placed')}</p>
               <p className={styles.stepDate}>{formatDateShort(order.withdrawDate || order.createdAt)}</p>
             </div>
           </div>
@@ -207,9 +204,9 @@ export default function CustomerOrderDetailPage() {
             </div>
             <div className={styles.stepInfo}>
               <p className={`${styles.stepTitle} ${stepProgress >= 50 ? styles.stepTitleCurrent : ''}`}>
-                {t('processing') || 'Processing'}
+                {t('order.status_processing')}
               </p>
-              <p className={styles.stepDate}>{stepProgress >= 50 ? formatDateShort(order.processedAt) : (t('pending') || 'Pending')}</p>
+              <p className={styles.stepDate}>{stepProgress >= 50 ? formatDateShort(order.processedAt) : t('order.status_pending')}</p>
             </div>
           </div>
 
@@ -219,8 +216,8 @@ export default function CustomerOrderDetailPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>local_shipping</span>
             </div>
             <div className={styles.stepInfo}>
-              <p className={styles.stepTitle}>{t('shipped') || 'Shipped'}</p>
-              <p className={styles.stepDate}>{stepProgress >= 75 ? formatDateShort(order.shippedAt) : (t('pending') || 'Pending')}</p>
+              <p className={styles.stepTitle}>{t('order.status_shipped')}</p>
+              <p className={styles.stepDate}>{stepProgress >= 75 ? formatDateShort(order.shippedAt) : t('order.status_pending')}</p>
             </div>
           </div>
 
@@ -235,18 +232,18 @@ export default function CustomerOrderDetailPage() {
           <div className={`${styles.card} ${styles.orderItemsCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>
-                {t('orderItems') || 'Order Items'}
-                <span className={styles.cardTitleCount}>({items.length} {t('items') || 'items'})</span>
+                {t('order.order_items')}
+                <span className={styles.cardTitleCount}>({items.length} {t('common.items')})</span>
               </h3>
             </div>
             <div className={styles.tableWrapper}>
               <table className={styles.table}>
                 <thead className={styles.tableHead}>
                   <tr>
-                    <th className={styles.tableHeadCell}>{t('product') || 'Product'}</th>
-                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('price') || 'Price'}</th>
-                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellCenter}`}>{t('qty') || 'Qty'}</th>
-                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('total') || 'Total'}</th>
+                    <th className={styles.tableHeadCell}>{t('product.product')}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.price')}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellCenter}`}>{t('common.quantity')}</th>
+                    <th className={`${styles.tableHeadCell} ${styles.tableHeadCellRight}`}>{t('common.total')}</th>
                   </tr>
                 </thead>
                 <tbody className={styles.tableBody}>
@@ -281,13 +278,13 @@ export default function CustomerOrderDetailPage() {
           {/* Notes Section */}
           {order.notes && (
             <div className={`${styles.card} ${styles.notesCard}`}>
-              <h3 className={styles.notesTitle}>{t('orderNotes') || 'Order Notes'}</h3>
+              <h3 className={styles.notesTitle}>{t('order.order_note')}</h3>
               <div className={styles.noteItem}>
                 <div className={styles.noteIcon}>
                   <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>edit_note</span>
                 </div>
                 <div className={styles.noteContent}>
-                  <p className={styles.noteLabel}>{t('customerRequest') || 'Customer Request'}</p>
+                  <p className={styles.noteLabel}>{t('order.customer_request')}</p>
                   <p className={styles.noteText}>"{order.notes}"</p>
                 </div>
               </div>
@@ -300,30 +297,16 @@ export default function CustomerOrderDetailPage() {
           {/* Order Summary */}
           <div className={styles.summaryCard}>
             <div className={styles.summaryHeader}>
-              <h3 className={styles.summaryTitle}>{t('orderSummary') || 'Order Summary'}</h3>
+              <h3 className={styles.summaryTitle}>{t('order.order_summary')}</h3>
             </div>
             <div className={styles.summaryBody}>
               <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>{t('subtotal') || 'Subtotal'}</span>
+                <span className={styles.summaryLabel}>{t('order.product_total')}</span>
                 <span className={styles.summaryValue}>฿{subtotal.toLocaleString()}</span>
               </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>{t('shipping') || 'Shipping'}</span>
-                <span className={styles.summaryValue}>{shipping === 0 ? 'FREE' : `฿${shipping.toLocaleString()}`}</span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>{t('tax') || 'Tax (7%)'}</span>
-                <span className={styles.summaryValue}>฿{tax.toLocaleString()}</span>
-              </div>
-              {discount > 0 && (
-                <div className={`${styles.summaryRow} ${styles.summaryRowDiscount}`}>
-                  <span>{t('discount') || 'Discount'}</span>
-                  <span>-฿{discount.toLocaleString()}</span>
-                </div>
-              )}
               <div className={styles.summaryDivider}></div>
               <div className={styles.summaryTotal}>
-                <span className={styles.summaryTotalLabel}>{t('total') || 'Total'}</span>
+                <span className={styles.summaryTotalLabel}>{t('common.total')}</span>
                 <span className={styles.summaryTotalValue}>฿{total.toLocaleString()}</span>
               </div>
             </div>
@@ -347,7 +330,7 @@ export default function CustomerOrderDetailPage() {
               <div className={styles.addressSection}>
                 <h5 className={styles.addressLabel}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>local_shipping</span>
-                  {t('shippingAddress') || 'Shipping Address'}
+                  {t('order.shipping_address')}
                 </h5>
                 <p className={styles.addressText}>
                   {order.requestedAddress || '-'}
@@ -359,7 +342,7 @@ export default function CustomerOrderDetailPage() {
                 <div className={styles.addressSection}>
                   <h5 className={styles.addressLabel}>
                     <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>phone</span>
-                    {t('phone') || 'Phone'}
+                    {t('common.phone')}
                   </h5>
                   <p className={styles.addressText}>{order.phone}</p>
                 </div>
@@ -371,7 +354,7 @@ export default function CustomerOrderDetailPage() {
           <div className={styles.paymentCard}>
             <h5 className={styles.paymentLabel}>
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>credit_card</span>
-              {t('paymentInfo') || 'Payment Info'}
+              {t('payment.payment_info')}
             </h5>
             <div className={styles.paymentMethod}>
               <div className={styles.paymentIcon}>
@@ -383,10 +366,10 @@ export default function CustomerOrderDetailPage() {
               </div>
             </div>
             <div className={styles.paymentStatus}>
-              <span className={styles.paymentStatusLabel}>{t('paymentStatus') || 'Payment Status'}</span>
+              <span className={styles.paymentStatusLabel}>{t('order.payment_status')}</span>
               <div className={styles.paymentStatusValue}>
                 <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>check_circle</span>
-                <span>{t('paid') || 'Paid'}</span>
+                <span>{t('order.paid')}</span>
               </div>
             </div>
           </div>
@@ -397,7 +380,7 @@ export default function CustomerOrderDetailPage() {
       <div className={styles.backButtonWrapper}>
         <button className={styles.backButton} onClick={() => navigate('/customer/orders')}>
           <span className="material-symbols-outlined" style={{ fontSize: '1.125rem' }}>arrow_back</span>
-          {t('backToOrders') || 'Back to Orders'}
+          {t('order.back_to_orders')}
         </button>
       </div>
     </div>

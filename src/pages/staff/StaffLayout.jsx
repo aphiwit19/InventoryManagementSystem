@@ -138,7 +138,7 @@ const StaffLayout = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('ค้นหา') || 'Search SKU, Name, or Category (ค้นหาสินค้า)...'}
+                  placeholder={t('common.search')}
                   className={styles.searchInput}
                 />
               </div>

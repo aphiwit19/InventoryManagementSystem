@@ -83,21 +83,20 @@ export default function CustomerOrderSuccessPage() {
           </div>
 
           {/* Heading */}
-          <h1 className={styles.heading}>Thank you for your order!</h1>
+          <h1 className={styles.heading}>{t('message.order_success_title')}</h1>
           <p className={styles.subtitle}>
-            Your order has been placed successfully. A confirmation email has been sent to{' '}
-            <span className={styles.subtitleEmail}>{user?.email || 'your email'}</span>.
+            {t('message.order_success_message')}
           </p>
 
           {/* Order Details Box */}
           <div className={styles.orderDetailsBox}>
             <div className={styles.orderDetailsHeader}>
               <div className={styles.orderNumberSection}>
-                <p className={styles.orderLabel}>Order Number</p>
+                <p className={styles.orderLabel}>{t('order.order_id')}</p>
                 <p className={styles.orderNumber}>#{orderId}</p>
               </div>
               <div className={styles.orderDateSection}>
-                <p className={styles.orderLabel}>Placed On</p>
+                <p className={styles.orderLabel}>{t('order.placed_on')}</p>
                 <p className={styles.orderDate}>{formatDate(latestOrder?.withdrawDate)}</p>
               </div>
             </div>
@@ -108,7 +107,7 @@ export default function CustomerOrderSuccessPage() {
                 <summary className={styles.accordionSummary}>
                   <span className={styles.accordionTitle}>
                     <span className={`material-symbols-outlined ${styles.accordionIcon}`}>shopping_bag</span>
-                    Order Summary ({itemsCount} Items)
+                    {t('order.order_summary')} ({itemsCount} {t('common.items')})
                   </span>
                   <span className={styles.accordionArrow}>
                     <span className="material-symbols-outlined">expand_more</span>
@@ -126,7 +125,7 @@ export default function CustomerOrderSuccessPage() {
                     ))}
                   </ul>
                   <div className={styles.totalRow}>
-                    <span>Total</span>
+                    <span>{t('common.total')}</span>
                     <span>฿{totalAmount.toLocaleString()}</span>
                   </div>
                 </div>
@@ -138,11 +137,11 @@ export default function CustomerOrderSuccessPage() {
           <div className={styles.actionButtons}>
             <Link to={`/customer/orders/${latestOrder?.id || ''}`} className={styles.primaryButton}>
               <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>visibility</span>
-              View Order Details
+              {t('order.view_detail')}
             </Link>
             <Link to="/customer" className={styles.secondaryButton}>
               <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>arrow_back</span>
-              Back to Dashboard
+              {t('message.back_to_shop')}
             </Link>
           </div>
         </div>
@@ -150,7 +149,7 @@ export default function CustomerOrderSuccessPage() {
 
       {/* Help Text */}
       <p className={styles.helpText}>
-        Need help? <Link to="/customer" className={styles.helpLink}>Contact Support</Link>
+        {t('message.need_help')} <Link to="/customer" className={styles.helpLink}>{t('message.contact_support')}</Link>
       </p>
     </div>
   );
