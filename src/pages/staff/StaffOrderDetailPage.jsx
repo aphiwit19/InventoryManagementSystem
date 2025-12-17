@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import { getWithdrawalsByUser } from '../../services';
@@ -8,7 +8,6 @@ import styles from './StaffOrderDetailPage.module.css';
 export default function StaffOrderDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
