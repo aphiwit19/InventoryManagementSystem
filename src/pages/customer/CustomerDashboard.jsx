@@ -85,6 +85,7 @@ export default function CustomerDashboard() {
     }
 
     return sorted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]);
 
   useEffect(() => {
