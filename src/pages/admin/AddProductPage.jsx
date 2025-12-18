@@ -168,26 +168,6 @@ export default function AddProductPage() {
       {/* Sticky Header */}
       <header className={styles.stickyHeader}>
         <div className={styles.headerContent}>
-          {/* Breadcrumbs */}
-          <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
-            <ol className={styles.breadcrumbList}>
-              <li className={styles.breadcrumbItem}>
-                <Link to="/admin/dashboard" className={styles.breadcrumbLink}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.125rem', marginRight: '0.25rem' }}>home</span>
-                  {t('common.home')}
-                </Link>
-              </li>
-              <li className={styles.breadcrumbItem}>
-                <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
-                <Link to="/admin/products" className={styles.breadcrumbLink}>{t('admin.products')}</Link>
-              </li>
-              <li className={styles.breadcrumbItem}>
-                <span className={`material-symbols-outlined ${styles.breadcrumbSeparator}`}>chevron_right</span>
-                <span className={styles.breadcrumbCurrent}>{t('product.add_product')}</span>
-              </li>
-            </ol>
-          </nav>
-
           {/* Title Row */}
           <div className={styles.headerTitleRow}>
             <div className={styles.headerTitleGroup}>

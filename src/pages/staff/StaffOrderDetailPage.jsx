@@ -58,16 +58,6 @@ export default function StaffOrderDetailPage() {
   const safeStatus = order.shippingStatus || order.status || 'pending';
   const statusText = String(safeStatus);
 
-  const handleCopyTracking = async () => {
-    const text = String(order.trackingNumber || '').trim();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      /* ignore */
-    }
-  };
-
   const toDateMs = (w) => {
     if (!w) return 0;
     if (w.seconds) return w.seconds * 1000;
@@ -252,13 +242,8 @@ export default function StaffOrderDetailPage() {
 
                 <div className={styles.block}>
                   <div className={styles.blockLabel}>{t('order.tracking_number') || 'Tracking Number'}</div>
-                  <div className={styles.trackingRow}>
-                    <div className={styles.trackingCode}>
-                      <code className={styles.mono}>{order.trackingNumber || '-'}</code>
-                    </div>
-                    <button type="button" className={styles.copyBtn} onClick={handleCopyTracking} disabled={!order.trackingNumber}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>content_copy</span>
-                    </button>
+                  <div className={styles.trackingCode}>
+                    <code className={styles.mono}>{order.trackingNumber || '-'}</code>
                   </div>
                 </div>
 

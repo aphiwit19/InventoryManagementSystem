@@ -595,7 +595,8 @@
     "city": "City",
     "province": "Province",
     "postal_code": "Postal Code",
-    "save_address": "Save Address"
+    "save_address": "Save Address",
+    "edit_address": "Edit Address"
   },
   "admin": {
     "admin_panel": "Admin Panel",
@@ -622,6 +623,7 @@
     "revenue_chart": "Revenue Chart",
     "revenue_trends": "Revenue Trends",
     "weekly_sales_performance": "Weekly sales performance",
+    "monthly_sales_performance": "Monthly sales performance",
     "weekly": "Weekly",
     "monthly": "Monthly",
     "last_7_days": "Last 7 Days",

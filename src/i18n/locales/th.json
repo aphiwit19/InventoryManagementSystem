@@ -596,7 +596,8 @@
     "city": "อำเภอ",
     "province": "จังหวัด",
     "postal_code": "รหัสไปรษณีย์",
-    "save_address": "บันทึกที่อยู่"
+    "save_address": "บันทึกที่อยู่",
+    "edit_address": "แก้ไขที่อยู่"
   },
   "admin": {
     "admin_panel": "แผงควบคุม Admin",
@@ -623,6 +624,7 @@
     "revenue_chart": "กราฟรายได้",
     "revenue_trends": "แนวโน้มรายได้",
     "weekly_sales_performance": "ประสิทธิภาพยอดขายรายสัปดาห์",
+    "monthly_sales_performance": "ประสิทธิภาพยอดขายรายเดือน",
     "weekly": "รายสัปดาห์",
     "monthly": "รายเดือน",
     "last_7_days": "7 วันล่าสุด",

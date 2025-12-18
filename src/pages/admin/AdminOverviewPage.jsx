@@ -13,6 +13,7 @@ export default function AdminOverviewPage() {
   const [withdrawals, setWithdrawals] = useState([]);
   // eslint-disable-next-line no-unused-vars
   const [userCounts, setUserCounts] = useState({ customers: 0, staff: 0, total: 0 });
+  const [chartPeriod, setChartPeriod] = useState('weekly'); // 'weekly' or 'monthly'
 
   useEffect(() => {
     const load = async () => {
@@ -87,7 +88,7 @@ export default function AdminOverviewPage() {
   const totalRevenue = customerOrders
     .reduce((sum, o) => sum + (parseFloat(o.total || 0) || 0), 0);
 
-  // Build daily revenue for last 7 days
+  // Build daily revenue for last 7 days (weekly)
   const buildDailyRevenue = () => {
     const days = [];
     for (let i = 6; i >= 0; i -= 1) {
@@ -112,8 +113,35 @@ export default function AdminOverviewPage() {
     return days;
   };
 
+  // Build monthly revenue for last 6 months
+  const buildMonthlyRevenue = () => {
+    const months = [];
+    for (let i = 5; i >= 0; i -= 1) {
+      const d = new Date(today);
+      d.setMonth(d.getMonth() - i);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      months.push({ key, date: d, total: 0 });
+    }
+
+    const map = new Map(months.map(m => [m.key, m]));
+
+    customerOrders.forEach((o) => {
+      const ts = o.createdAt;
+      if (!ts) return;
+      const d = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!map.has(key)) return;
+      const row = map.get(key);
+      row.total += (parseFloat(o.total || 0) || 0);
+    });
+
+    return months;
+  };
+
   const dailyRevenue = buildDailyRevenue();
-  const maxDailyRevenue = dailyRevenue.reduce((m, d) => Math.max(m, d.total), 0) || 1;
+  const monthlyRevenue = buildMonthlyRevenue();
+  const chartData = chartPeriod === 'weekly' ? dailyRevenue : monthlyRevenue;
+  const maxChartValue = chartData.reduce((m, d) => Math.max(m, d.total), 0) || 1;
 
   // Recent orders (last 5)
   const recentOrders = [...customerOrders]
@@ -269,18 +297,28 @@ export default function AdminOverviewPage() {
           <div className={styles.chartHeader}>
             <div className={styles.chartHeaderText}>
               <h3 className={styles.chartTitle}>{t('admin.revenue_trends')}</h3>
-              <p className={styles.chartSubtitle}>{t('admin.weekly_sales_performance')}</p>
+              <p className={styles.chartSubtitle}>{chartPeriod === 'weekly' ? t('admin.weekly_sales_performance') : t('admin.monthly_sales_performance')}</p>
             </div>
             <div className={styles.chartTabs}>
-              <button className={styles.chartTabActive}>{t('admin.weekly')}</button>
-              <button className={styles.chartTab}>{t('admin.monthly')}</button>
+              <button 
+                className={chartPeriod === 'weekly' ? styles.chartTabActive : styles.chartTab}
+                onClick={() => setChartPeriod('weekly')}
+              >
+                {t('admin.weekly')}
+              </button>
+              <button 
+                className={chartPeriod === 'monthly' ? styles.chartTabActive : styles.chartTab}
+                onClick={() => setChartPeriod('monthly')}
+              >
+                {t('admin.monthly')}
+              </button>
             </div>
           </div>
 
           {/* Bar Chart */}
           <div className={styles.barChartContainer}>
-            {dailyRevenue.map((d) => {
-              const ratio = d.total <= 0 ? 0.05 : d.total / maxDailyRevenue;
+            {chartData.map((d) => {
+              const ratio = d.total <= 0 ? 0.05 : d.total / maxChartValue;
               const height = Math.max(20, ratio * 150);
               return (
                 <div key={d.key} className={styles.barChartItem}>
@@ -294,9 +332,12 @@ export default function AdminOverviewPage() {
             })}
           </div>
           <div className={styles.barChartLabels}>
-            {dailyRevenue.map((d) => (
+            {chartData.map((d) => (
               <span key={d.key} className={styles.barChartLabel}>
-                {d.date.toLocaleDateString(i18n.language?.startsWith('th') ? 'th-TH' : 'en-US', { weekday: 'short' })}
+                {chartPeriod === 'weekly' 
+                  ? d.date.toLocaleDateString(i18n.language?.startsWith('th') ? 'th-TH' : 'en-US', { weekday: 'short' })
+                  : d.date.toLocaleDateString(i18n.language?.startsWith('th') ? 'th-TH' : 'en-US', { month: 'short' })
+                }
               </span>
             ))}
           </div>

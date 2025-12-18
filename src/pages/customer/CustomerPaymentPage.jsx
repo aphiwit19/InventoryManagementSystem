@@ -84,12 +84,32 @@ export default function CustomerPaymentPage() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          const name = data.displayName || data.name || profile?.displayName || user.displayName || user.email || '';
+          const name = data.firstName || data.displayName || data.name || profile?.displayName || user.displayName || user.email || '';
           setRequestedBy(name);
-          const userPhone = data.phone || data.tel || '';
-          setPhone(userPhone);
-          const userAddress = data.address || data.requestedAddress || '';
-          setRequestedAddress(userAddress);
+          
+          // Find default address or use first address from addresses array
+          const addresses = data.addresses || [];
+          const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+          
+          if (defaultAddr) {
+            // Use address from saved addresses
+            setPhone(defaultAddr.phone || data.phone || data.tel || '');
+            // Build full address string from address components
+            const addressParts = [
+              defaultAddr.address,
+              defaultAddr.district,
+              defaultAddr.city,
+              defaultAddr.province,
+              defaultAddr.postalCode
+            ].filter(Boolean);
+            setRequestedAddress(addressParts.join(', '));
+          } else {
+            // No saved address, use profile data
+            const userPhone = data.phone || data.tel || '';
+            setPhone(userPhone);
+            const userAddress = data.address || data.requestedAddress || '';
+            setRequestedAddress(userAddress);
+          }
         } else {
           setRequestedBy(profile?.displayName || user.displayName || user.email || '');
         }

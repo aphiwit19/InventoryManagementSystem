@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCart, updateCartItem, removeFromCart } from '../../services';
+import { getCart, updateCartItem, removeFromCart, ensureUserProfile } from '../../services';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
 import styles from './CustomerWithdrawPage.module.css';
@@ -42,16 +42,56 @@ export default function CustomerWithdrawPage() {
   }, [user]);
 
   useEffect(() => {
-    if (profile) {
-      setFormData(prev => ({
-        ...prev,
-        recipientName: profile.displayName || profile.email || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        address: profile.address || '',
-      }));
-    }
-  }, [profile]);
+    const loadUserData = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        // Load user profile with addresses from Firestore
+        const userData = await ensureUserProfile(user.uid, profile?.email || user?.email, profile?.displayName);
+        
+        // Find default address or use first address
+        const addresses = userData.addresses || [];
+        const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+        
+        if (defaultAddr) {
+          setFormData(prev => ({
+            ...prev,
+            recipientName: userData.firstName || profile?.displayName || profile?.email || '',
+            email: profile?.email || '',
+            phone: defaultAddr.phone || userData.phone || '',
+            address: defaultAddr.address || '',
+            province: defaultAddr.province || '',
+            district: defaultAddr.district || '',
+            subdistrict: defaultAddr.city || '',
+            zipCode: defaultAddr.postalCode || '',
+          }));
+        } else {
+          // No saved address, use profile data
+          setFormData(prev => ({
+            ...prev,
+            recipientName: userData.firstName || profile?.displayName || profile?.email || '',
+            email: profile?.email || '',
+            phone: userData.phone || '',
+            address: '',
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to profile data
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            recipientName: profile.displayName || profile.email || '',
+            email: profile.email || '',
+            phone: profile.phone || '',
+            address: profile.address || '',
+          }));
+        }
+      }
+    };
+    
+    loadUserData();
+  }, [user?.uid, profile]);
 
   const handleQuantityChange = async (item, newQty) => {
     if (newQty < 1) return;
@@ -331,35 +371,22 @@ export default function CustomerWithdrawPage() {
 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>{t('profile.province')}</label>
-                  <div className={styles.selectWrapper}>
-                    <select
-                      className={styles.formSelect}
-                      value={formData.province}
-                      onChange={(e) => setFormData(prev => ({ ...prev, province: e.target.value }))}
-                    >
-                      <option value="">{t('common.select') || 'Select Province'}</option>
-                      <option value="Bangkok">Bangkok</option>
-                      <option value="Chiang Mai">Chiang Mai</option>
-                      <option value="Phuket">Phuket</option>
-                    </select>
-                    <span className={`material-symbols-outlined ${styles.selectIcon}`}>expand_more</span>
-                  </div>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.province}
+                    onChange={(e) => setFormData(prev => ({ ...prev, province: e.target.value }))}
+                  />
                 </div>
 
                 <div className={`${styles.formGroup} ${styles.formGroupRight}`}>
                   <label className={styles.formLabel}>{t('profile.district')}</label>
-                  <div className={styles.selectWrapper}>
-                    <select
-                      className={styles.formSelect}
-                      value={formData.district}
-                      onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                    >
-                      <option value="">{t('common.select') || 'Select District'}</option>
-                      <option value="Pathum Wan">Pathum Wan</option>
-                      <option value="Bang Rak">Bang Rak</option>
-                    </select>
-                    <span className={`material-symbols-outlined ${styles.selectIcon}`}>expand_more</span>
-                  </div>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.district}
+                    onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
+                  />
                 </div>
 
                 <div className={styles.formGroup}>
