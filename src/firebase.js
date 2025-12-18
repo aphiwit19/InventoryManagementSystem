@@ -4,16 +4,15 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// TODO: Replace these placeholders with your Firebase project's web app config
-// You can find it in Firebase Console → Project settings → Your apps → SDK setup and configuration
+// Firebase config from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyA1eB9H3EP9bBGZOY6G46tjCDU6G6NuKqc",
-  authDomain: "internship-173fa.firebaseapp.com",
-  projectId: "internship-173fa",
-  storageBucket: "internship-173fa.firebasestorage.app",
-  messagingSenderId: "835291171321",
-  appId: "1:835291171321:web:055e07371c859a392f1528",
-  measurementId: "G-0EXL4LH93B"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
