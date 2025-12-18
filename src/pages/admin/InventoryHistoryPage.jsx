@@ -9,6 +9,7 @@ export default function InventoryHistoryPage() {
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [popupMessage, setPopupMessage] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -21,11 +22,12 @@ export default function InventoryHistoryPage() {
         setHistory(historyData);
       } catch (error) {
         console.error('Error loading data:', error);
-        alert(t('common.error_loading_data'));
+        setPopupMessage(t('common.error_loading_data'));
       } finally {
         setLoading(false);
       }
     };
+
     loadData();
   }, [id, t]); // Added 't' as a dependency
 
@@ -194,6 +196,56 @@ export default function InventoryHistoryPage() {
           </>
         )}
       </div>
+
+      {popupMessage && (
+        <div
+          onClick={() => setPopupMessage('')}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '28rem',
+              background: 'white',
+              borderRadius: '0.75rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>{t('common.notice')}</div>
+              <button
+                type="button"
+                onClick={() => setPopupMessage('')}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: '1rem 1.25rem', color: '#0f172a' }}>{popupMessage}</div>
+            <div style={{ padding: '0 1.25rem 1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setPopupMessage('')}
+                style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+              >
+                {t('common.ok')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

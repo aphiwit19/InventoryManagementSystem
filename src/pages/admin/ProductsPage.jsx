@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { getAllProducts, deleteProduct, isLowStock, DEFAULT_CATEGORIES, addInventoryHistory } from '../../services';
+import { getAllProducts, deleteProduct, isLowStock, addInventoryHistory, getAllCategories, getCategoryNameByLang } from '../../services';
 import { db } from '../../firebase';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
@@ -13,11 +13,13 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [isDeleting, setIsDeleting] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
   const [expandedProduct, setExpandedProduct] = useState(null);
   const lowStock = filteredProducts.filter(p => isLowStock(p));
 
@@ -45,10 +47,38 @@ export default function ProductsPage() {
     loadProducts();
   }, []);
 
-  const uniqueCategories = useMemo(() => {
-    const cats = products.map(p => p.category).filter(c => c && c.trim() !== '');
-    return [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort();
-  }, [products]);
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const rows = await getAllCategories({ activeOnly: true });
+        setCategories(rows);
+      } catch (e) {
+        console.error('Error loading categories:', e);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  const categoryOptions = useMemo(() => {
+    const known = categories.map((c) => ({
+      value: c.id,
+      type: 'id',
+      label: getCategoryNameByLang(c, i18n.language),
+    }));
+
+    const legacyNames = products
+      .filter((p) => !p.categoryId)
+      .map((p) => p.category)
+      .filter((c) => c && String(c).trim() !== '');
+
+    const legacyUnique = [...new Set(legacyNames)].sort().map((name) => ({
+      value: `legacy:${name}`,
+      type: 'legacy',
+      label: name,
+    }));
+
+    return [...known, ...legacyUnique];
+  }, [categories, i18n.language, products]);
 
   useEffect(() => {
     let filtered = products;
@@ -60,7 +90,12 @@ export default function ProductsPage() {
     }
     
     if (categoryFilter) {
-      filtered = filtered.filter(product => product.category === categoryFilter);
+      if (categoryFilter.startsWith('legacy:')) {
+        const legacyName = categoryFilter.replace('legacy:', '');
+        filtered = filtered.filter(product => product.category === legacyName);
+      } else {
+        filtered = filtered.filter(product => product.categoryId === categoryFilter);
+      }
     }
     
     setFilteredProducts(filtered);
@@ -118,7 +153,7 @@ export default function ProductsPage() {
       closeDeleteModal();
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert(t('product.delete_failed', { message: error.message || '' }));
+      setPopupMessage(t('product.delete_failed', { message: error.message || '' }));
     } finally {
       setIsDeleting(false);
     }
@@ -146,7 +181,7 @@ export default function ProductsPage() {
     const hasVariants = addStockModal.hasVariants && Array.isArray(addStockModal.variants) && addStockModal.variants.length > 0;
     
     if (hasVariants && addStockVariantIdx === null) {
-      alert(t('product.select_variant_to_add'));
+      setPopupMessage(t('product.select_variant_to_add'));
       return;
     }
 
@@ -198,7 +233,7 @@ export default function ProductsPage() {
       closeAddStockModal();
     } catch (error) {
       console.error('Error adding stock:', error);
-      alert(t('product.add_stock_failed', { message: error.message || '' }));
+      setPopupMessage(t('product.add_stock_failed', { message: error.message || '' }));
     } finally {
       setIsAddingStock(false);
     }
@@ -281,7 +316,11 @@ export default function ProductsPage() {
                   className={styles.selectInput}
                 >
                   <option value="">{t('common.all_categories')}</option>
-                  {uniqueCategories.map(cat => <option key={cat} value={cat}>{t(`categories.${cat}`, cat)}</option>)}
+                  {categoryOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
                 <span className={`material-symbols-outlined ${styles.selectArrow}`}>expand_more</span>
               </div>
@@ -690,6 +729,28 @@ export default function ProductsPage() {
                   className={`${styles.modalButtonConfirm} ${styles.modalButtonDelete}`}
                 >
                   {isDeleting ? t('product.deleting') : t('product.confirm_delete_product')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {popupMessage && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setPopupMessage('')}
+        >
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>{t('common.notice')}</h2>
+              <button onClick={() => setPopupMessage('')} className={styles.modalCloseButton}>×</button>
+            </div>
+            <div className={styles.modalBody}>
+              <p style={{ margin: 0 }}>{popupMessage}</p>
+              <div className={styles.modalActions} style={{ marginTop: '1rem' }}>
+                <button onClick={() => setPopupMessage('')} className={styles.modalButtonConfirm}>
+                  {t('common.ok')}
                 </button>
               </div>
             </div>

@@ -29,6 +29,7 @@ const AdminLayout = () => {
   const menuItems = [
     { path: '/admin/dashboard', icon: 'dashboard', labelKey: 'common.dashboard' },
     { path: '/admin/products', icon: 'inventory_2', labelKey: 'admin.products' },
+    { path: '/admin/categories', icon: 'category', labelKey: 'admin.categories' },
     { path: '/admin/orders?source=customer', icon: 'shopping_cart', labelKey: 'order.customer_orders', isOrderSource: 'customer' },
     { path: '/admin/orders?source=staff', icon: 'point_of_sale', labelKey: 'order.staff_orders', isOrderSource: 'staff' },
     { path: '/admin/inventory_history', icon: 'history', labelKey: 'admin.inventory_history' },

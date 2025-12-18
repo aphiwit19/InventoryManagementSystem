@@ -1,13 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getProductById, updateProduct, DEFAULT_UNITS, DEFAULT_CATEGORIES, DEFAULT_SIZES, DEFAULT_COLORS } from '../../services';
+import {
+  getProductById,
+  updateProduct,
+  DEFAULT_UNITS,
+  DEFAULT_SIZES,
+  DEFAULT_SHOE_SIZES,
+  DEFAULT_COLORS,
+  getAllCategories,
+  getCategoryNameByLang,
+  listSerialItems,
+  bulkImportSerialItems,
+} from '../../services';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
 import styles from './EditProductPage.module.css';
 
 export default function EditProductPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -20,10 +31,50 @@ export default function EditProductPage() {
     addDate: '',
     unit: '',
     category: '',
+    categoryId: '',
+    categoryName: null,
   });
+
+  const [categories, setCategories] = useState([]);
+  const lang = useMemo(() => i18n.language || 'th', [i18n.language]);
+
+  const [inventoryMode, setInventoryMode] = useState('bulk');
+  const [specs, setSpecs] = useState({
+    brand: '',
+    model: '',
+    cpu: '',
+    ramGb: '',
+    storageGb: '',
+    storageType: '',
+  });
+  const [warranty, setWarranty] = useState({
+    type: 'manufacturer',
+    months: '',
+    startPolicy: 'activated_date',
+  });
+
+  const [serialStatusFilter, setSerialStatusFilter] = useState('');
+  const [serialItems, setSerialItems] = useState([]);
+  const [serialLoading, setSerialLoading] = useState(false);
+  const [serialImportText, setSerialImportText] = useState('');
+  const [serialImportResult, setSerialImportResult] = useState(null);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const rows = await getAllCategories({ activeOnly: true });
+        setCategories(rows);
+      } catch (e) {
+        console.error('Error loading categories:', e);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Toggle for variants mode
   const [hasVariants, setHasVariants] = useState(false);
+
+  const [sizePreset, setSizePreset] = useState('clothing');
 
   // For non-variant products
   const [simpleProduct, setSimpleProduct] = useState({
@@ -64,6 +115,10 @@ export default function EditProductPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [imagePreview, setImagePreview] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
+
+  const isElectronics = formData.categoryId === 'electronics';
+  const isSerialized = inventoryMode === 'serialized';
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -74,6 +129,9 @@ export default function EditProductPage() {
         const addDate = product.addDate?.toDate ? product.addDate.toDate() : new Date(product.addDate);
         const formattedDate = addDate.toISOString().split('T')[0];
 
+        const resolvedCategoryId = product.categoryId || '';
+        const resolvedCategoryName = product.categoryName && typeof product.categoryName === 'object' ? product.categoryName : null;
+
         setFormData({
           productName: product.productName || '',
           description: product.description || '',
@@ -82,6 +140,27 @@ export default function EditProductPage() {
           addDate: formattedDate,
           unit: product.unit || '',
           category: product.category || '',
+          categoryId: resolvedCategoryId,
+          categoryName: resolvedCategoryName,
+        });
+
+        setInventoryMode(product.inventoryMode || 'bulk');
+
+        const pSpecs = product.specs && typeof product.specs === 'object' ? product.specs : {};
+        setSpecs({
+          brand: pSpecs.brand || '',
+          model: pSpecs.model || '',
+          cpu: pSpecs.cpu || '',
+          ramGb: pSpecs.ramGb ?? '',
+          storageGb: pSpecs.storageGb ?? '',
+          storageType: pSpecs.storageType || '',
+        });
+
+        const pWarranty = product.warranty && typeof product.warranty === 'object' ? product.warranty : {};
+        setWarranty({
+          type: pWarranty.type || 'manufacturer',
+          months: pWarranty.months ?? '',
+          startPolicy: 'activated_date',
         });
 
         if (product.image) {
@@ -91,6 +170,13 @@ export default function EditProductPage() {
         // Check if has variants
         if (product.hasVariants && Array.isArray(product.variants)) {
           setHasVariants(true);
+
+          const looksLikeShoeSizes = product.variants.some((v) => {
+            const s = String(v.size || '').trim();
+            return s !== '' && /^\d+(\.\d+)?$/.test(s);
+          });
+          setSizePreset(looksLikeShoeSizes ? 'shoe' : 'clothing');
+
           setVariants(product.variants.map((v, idx) => ({
             ...v,
             id: idx,
@@ -119,7 +205,8 @@ export default function EditProductPage() {
         if (product.unit && !DEFAULT_UNITS.includes(product.unit)) {
           setShowCustomUnit(true);
         }
-        if (product.category && !DEFAULT_CATEGORIES.includes(product.category)) {
+        if (!product.categoryId && product.category) {
+          // legacy string-only category
           setShowCustomCategory(true);
         }
       } catch (err) {
@@ -130,8 +217,40 @@ export default function EditProductPage() {
       }
     };
     loadProduct();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, t]);
+
+  useEffect(() => {
+    const refreshSerials = async () => {
+      if (!id) return;
+      if (!isElectronics || !isSerialized) return;
+
+      setSerialLoading(true);
+      try {
+        const rows = await listSerialItems(id, { status: serialStatusFilter || undefined });
+        setSerialItems(rows);
+      } catch (e) {
+        console.error('Error loading serial items:', e);
+        setPopupMessage(t('product.serial_load_failed', { message: e.message || '' }));
+      } finally {
+        setSerialLoading(false);
+      }
+    };
+
+    refreshSerials();
+  }, [id, isElectronics, isSerialized, serialStatusFilter, t]);
+
+  const availableSizes = useMemo(() => {
+    if (formData.categoryId === 'fashion' && sizePreset === 'shoe') return DEFAULT_SHOE_SIZES;
+    return DEFAULT_SIZES;
+  }, [formData.categoryId, sizePreset]);
+
+  useEffect(() => {
+    if (formData.categoryId !== 'fashion' && sizePreset !== 'clothing') {
+      setSizePreset('clothing');
+      setShowCustomSize(false);
+      setNewVariant(prev => ({ ...prev, size: '' }));
+    }
+  }, [formData.categoryId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -154,12 +273,12 @@ export default function EditProductPage() {
 
   const addVariant = () => {
     if (!newVariant.size || !newVariant.color || !newVariant.quantity || !newVariant.costPrice || !newVariant.sellPrice) {
-      alert(t('product.variant_incomplete'));
+      setPopupMessage(t('product.variant_incomplete'));
       return;
     }
     const exists = variants.find(v => v.size === newVariant.size && v.color === newVariant.color);
     if (exists) {
-      alert(t('product.variant_duplicate'));
+      setPopupMessage(t('product.variant_duplicate'));
       return;
     }
     setVariants(prev => [...prev, { ...newVariant, id: Date.now() }]);
@@ -234,6 +353,17 @@ export default function EditProductPage() {
         }
         await updateProduct(id, {
           ...formData,
+          inventoryMode,
+          specs: isElectronics ? {
+            ...specs,
+            ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
+            storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
+          } : null,
+          warranty: isElectronics ? {
+            ...warranty,
+            months: warranty.months === '' ? '' : parseInt(warranty.months) || 0,
+            startPolicy: 'activated_date',
+          } : null,
           hasVariants: true,
           variants: variants.map(v => ({
             size: v.size,
@@ -252,6 +382,17 @@ export default function EditProductPage() {
         }
         await updateProduct(id, {
           ...formData,
+          inventoryMode,
+          specs: isElectronics ? {
+            ...specs,
+            ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
+            storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
+          } : null,
+          warranty: isElectronics ? {
+            ...warranty,
+            months: warranty.months === '' ? '' : parseInt(warranty.months) || 0,
+            startPolicy: 'activated_date',
+          } : null,
           hasVariants: false,
           ...simpleProduct,
           promotion: promotionData,
@@ -432,21 +573,31 @@ export default function EditProductPage() {
                     </label>
                     {!showCustomCategory ? (
                       <select
-                        name="category"
-                        value={formData.category}
+                        name="categoryId"
+                        value={formData.categoryId}
                         onChange={(e) => {
                           if (e.target.value === '__custom__') {
                             setShowCustomCategory(true);
-                            setFormData(prev => ({ ...prev, category: '' }));
+                            setFormData(prev => ({ ...prev, category: '', categoryId: '', categoryName: null }));
                           } else {
-                            handleChange(e);
+                            const selected = categories.find(c => c.id === e.target.value);
+                            setFormData(prev => ({
+                              ...prev,
+                              categoryId: e.target.value,
+                              categoryName: selected?.name || null,
+                              category: selected?.name?.th || '',
+                            }));
                           }
                         }}
                         required
                         className={styles.formSelect}
                       >
                         <option value="">-- {t('product.select_category')} --</option>
-                        {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {getCategoryNameByLang(c, lang)}
+                          </option>
+                        ))}
                         <option value="__custom__">+ {t('product.add_new_category')}</option>
                       </select>
                     ) : (
@@ -462,7 +613,7 @@ export default function EditProductPage() {
                         />
                         <button 
                           type="button" 
-                          onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
+                          onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '', categoryId: '', categoryName: null })); }}
                           className={styles.cancelButton}
                           style={{ padding: '0.5rem 0.75rem' }}
                         >
@@ -510,6 +661,154 @@ export default function EditProductPage() {
                 )}
               </div>
 
+              {isElectronics && isSerialized && (
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>
+                      <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>qr_code_scanner</span>
+                      {t('product.serial_manager')}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setSerialLoading(true);
+                          const rows = await listSerialItems(id, { status: serialStatusFilter || undefined });
+                          setSerialItems(rows);
+                        } catch (e) {
+                          console.error('Error loading serial items:', e);
+                          setPopupMessage(t('product.serial_load_failed', { message: e.message || '' }));
+                        } finally {
+                          setSerialLoading(false);
+                        }
+                      }}
+                      className={styles.cancelButton}
+                      style={{ padding: '0.5rem 0.75rem' }}
+                      disabled={serialLoading}
+                    >
+                      {t('common.refresh') || 'Refresh'}
+                    </button>
+                  </div>
+
+                  <div className={styles.formRow2}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>{t('product.serial_filter_status')}</label>
+                      <select
+                        value={serialStatusFilter}
+                        onChange={(e) => setSerialStatusFilter(e.target.value)}
+                        className={styles.formSelect}
+                      >
+                        <option value="">{t('common.all')}</option>
+                        <option value="available">{t('product.serial_status_available')}</option>
+                        <option value="reserved">{t('product.serial_status_reserved')}</option>
+                        <option value="sold">{t('product.serial_status_sold')}</option>
+                        <option value="returned">{t('product.serial_status_returned')}</option>
+                        <option value="damaged">{t('product.serial_status_damaged')}</option>
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>{t('product.serial_count')}</label>
+                      <input
+                        value={serialLoading ? t('common.loading') : String(serialItems.length)}
+                        readOnly
+                        className={styles.formInput}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.divider}></div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>{t('product.serial_import')}</label>
+                    <textarea
+                      value={serialImportText}
+                      onChange={(e) => setSerialImportText(e.target.value)}
+                      rows={6}
+                      placeholder={t('product.serial_import_placeholder')}
+                      className={styles.formTextarea}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() => { setSerialImportText(''); setSerialImportResult(null); }}
+                        className={styles.cancelButton}
+                        style={{ padding: '0.5rem 0.75rem' }}
+                      >
+                        {t('common.clear') || 'Clear'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.saveButton}
+                        style={{ padding: '0.5rem 0.75rem' }}
+                        disabled={serialLoading}
+                        onClick={async () => {
+                          try {
+                            setSerialLoading(true);
+                            const res = await bulkImportSerialItems(id, serialImportText, {
+                              costPrice: simpleProduct.costPrice || null,
+                              warrantyProvider: warranty.type === 'store' ? 'store' : 'manufacturer',
+                              warrantyMonths: warranty.months,
+                              variantKey: null,
+                            });
+                            setSerialImportResult(res);
+                            const rows = await listSerialItems(id, { status: serialStatusFilter || undefined });
+                            setSerialItems(rows);
+                          } catch (e) {
+                            console.error('Error importing serial items:', e);
+                            setPopupMessage(t('product.serial_import_failed', { message: e.message || '' }));
+                          } finally {
+                            setSerialLoading(false);
+                          }
+                        }}
+                      >
+                        {t('product.serial_import_button')}
+                      </button>
+                    </div>
+
+                    {serialImportResult && (
+                      <div className={styles.statusDescription} style={{ marginTop: 10 }}>
+                        {t('product.serial_import_result', {
+                          created: serialImportResult.created || 0,
+                          skippedExisting: serialImportResult.skippedExisting || 0,
+                          duplicatesInInput: serialImportResult.duplicatesInInput || 0,
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.divider}></div>
+
+                  {serialItems.length === 0 ? (
+                    <div style={{ fontSize: 14, color: '#9ca3af' }}>{t('product.serial_no_items')}</div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className={styles.variantsTable}>
+                        <thead className={styles.variantsTableHead}>
+                          <tr>
+                            <th>{t('product.serial')}</th>
+                            <th>{t('common.status')}</th>
+                            <th>{t('order.order_id') || 'Order'}</th>
+                            <th>{t('product.warranty')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className={styles.variantsTableBody}>
+                          {serialItems.map((s) => (
+                            <tr key={s.id}>
+                              <td style={{ fontFamily: 'ui-monospace, monospace' }}>{s.serial || s.id}</td>
+                              <td>{s.status || '-'}</td>
+                              <td>{s.order?.orderId || '-'}</td>
+                              <td>
+                                {s.warranty?.startAt ? (s.warranty?.months ? `${s.warranty.months}m` : '-') : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Pricing & Inventory Card */}
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
@@ -518,6 +817,135 @@ export default function EditProductPage() {
                     {t('product.pricing_inventory')}
                   </h2>
                 </div>
+
+                {isElectronics && (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>{t('product.inventory_mode')}</label>
+                      <select
+                        value={inventoryMode}
+                        onChange={(e) => setInventoryMode(e.target.value)}
+                        className={styles.formSelect}
+                      >
+                        <option value="bulk">{t('product.inventory_mode_bulk')}</option>
+                        <option value="serialized">{t('product.inventory_mode_serialized')}</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.divider}></div>
+
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>memory</span>
+                        {t('product.electronics_specs')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_brand')}</label>
+                        <input
+                          value={specs.brand}
+                          onChange={(e) => setSpecs((p) => ({ ...p, brand: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_model')}</label>
+                        <input
+                          value={specs.model}
+                          onChange={(e) => setSpecs((p) => ({ ...p, model: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_cpu')}</label>
+                        <input
+                          value={specs.cpu}
+                          onChange={(e) => setSpecs((p) => ({ ...p, cpu: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_ram_gb')}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={specs.ramGb}
+                          onChange={(e) => setSpecs((p) => ({ ...p, ramGb: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_storage_gb')}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={specs.storageGb}
+                          onChange={(e) => setSpecs((p) => ({ ...p, storageGb: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_storage_type')}</label>
+                        <input
+                          value={specs.storageType}
+                          onChange={(e) => setSpecs((p) => ({ ...p, storageType: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>verified</span>
+                        {t('product.warranty')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.warranty_type')}</label>
+                        <select
+                          value={warranty.type}
+                          onChange={(e) => setWarranty((p) => ({ ...p, type: e.target.value }))}
+                          className={styles.formSelect}
+                        >
+                          <option value="none">{t('product.warranty_type_none')}</option>
+                          <option value="manufacturer">{t('product.warranty_type_manufacturer')}</option>
+                          <option value="store">{t('product.warranty_type_store')}</option>
+                        </select>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.warranty_months')}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={warranty.months}
+                          onChange={(e) => setWarranty((p) => ({ ...p, months: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <div className={styles.statusDescription}>
+                        {t('product.warranty_start_policy_activated_date')}
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
 
                 {/* Variants Toggle */}
                 <label className={styles.variantsToggle}>
@@ -726,6 +1154,27 @@ export default function EditProductPage() {
                     {/* Add New Variant */}
                     <div className={styles.addVariantForm}>
                       <div className={styles.addVariantTitle}>+ {t('product.add_variant')}</div>
+
+                      {formData.categoryId === 'fashion' && (
+                        <div className={styles.formRow2} style={{ marginBottom: '0.75rem' }}>
+                          <div>
+                            <label className={styles.formLabel}>{t('product.size_preset')}</label>
+                            <select
+                              value={sizePreset}
+                              onChange={(e) => {
+                                setSizePreset(e.target.value);
+                                setShowCustomSize(false);
+                                setNewVariant(prev => ({ ...prev, size: '' }));
+                              }}
+                              className={styles.formSelect}
+                            >
+                              <option value="clothing">{t('product.size_preset_clothing')}</option>
+                              <option value="shoe">{t('product.size_preset_shoe')}</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
                       <div className={styles.formRow2} style={{ marginBottom: '0.75rem' }}>
                         {/* Size */}
                         <div>
@@ -744,7 +1193,7 @@ export default function EditProductPage() {
                               className={styles.formSelect}
                             >
                               <option value="">-- {t('product.select_size')} --</option>
-                              {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                              {availableSizes.map(s => <option key={s} value={s}>{s}</option>)}
                               <option value="__custom__">+ {t('product.add_new_size')}</option>
                             </select>
                           ) : (
@@ -930,6 +1379,57 @@ export default function EditProductPage() {
 
         {/* Footer spacing */}
         <div className={styles.footerSpacing}></div>
+
+        {popupMessage && (
+          <div
+            onClick={() => setPopupMessage('')}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.45)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem',
+              zIndex: 9999,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '28rem',
+                background: 'white',
+                borderRadius: '0.75rem',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+                overflow: 'hidden',
+                border: '1px solid #e5e7eb',
+              }}
+            >
+              <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 700, color: '#0f172a' }}>{t('common.notice')}</div>
+                <button
+                  type="button"
+                  onClick={() => setPopupMessage('')}
+                  style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ padding: '1rem 1.25rem', color: '#0f172a' }}>{popupMessage}</div>
+              <div style={{ padding: '0 1.25rem 1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setPopupMessage('')}
+                  className={styles.saveButton}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  {t('common.ok')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

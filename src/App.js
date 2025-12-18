@@ -32,6 +32,7 @@ import InventoryHistoryIndex from './pages/admin/inventory_history';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
 import ProfilePage from './pages/admin/ProfilePage';
+import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
 
 function HomeRouter() {
   const { profile } = useAuth();
@@ -55,6 +56,7 @@ function App() {
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminOverviewPage />} />
               <Route path="alerts" element={<AdminAlertsPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="products" element={<ProductsPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="orders/:id" element={<AdminOrderDetailPage />} />

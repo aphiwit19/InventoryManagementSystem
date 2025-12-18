@@ -28,6 +28,11 @@ export const DEFAULT_CATEGORIES = [
 // Default sizes for dropdown
 export const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
+// Default shoe sizes for dropdown
+export const DEFAULT_SHOE_SIZES = [
+  '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'
+];
+
 // Default colors for dropdown
 export const DEFAULT_COLORS = [
   'ดำ', 'ขาว', 'แดง', 'น้ำเงิน', 'เขียว', 'เหลือง', 'ส้ม', 'ชมพู', 'ม่วง', 'เทา', 'น้ำตาล', 'ครีม'
@@ -68,6 +73,12 @@ export function getVariantAvailableQuantity(variant) {
 export async function addProduct(productData) {
   try {
     const hasVariants = productData.hasVariants === true && Array.isArray(productData.variants) && productData.variants.length > 0;
+    const categoryName = productData.categoryName && typeof productData.categoryName === 'object' ? productData.categoryName : null;
+    const categoryId = productData.categoryId || '';
+    const category = productData.category || categoryName?.th || 'อื่นๆ';
+    const inventoryMode = productData.inventoryMode || 'bulk';
+    const specs = productData.specs && typeof productData.specs === 'object' ? productData.specs : null;
+    const warranty = productData.warranty && typeof productData.warranty === 'object' ? productData.warranty : null;
     
     let data;
     
@@ -92,7 +103,12 @@ export async function addProduct(productData) {
         purchaseLocation: productData.purchaseLocation || '',
         addDate: Timestamp.fromDate(new Date(productData.addDate)),
         unit: productData.unit || 'ชิ้น',
-        category: productData.category || 'อื่นๆ',
+        categoryId,
+        categoryName,
+        category,
+        inventoryMode,
+        specs,
+        warranty,
         hasVariants: true,
         variants: variants,
         // Summary fields for easy querying
@@ -126,7 +142,12 @@ export async function addProduct(productData) {
         reserved: 0,
         staffReserved: 0,
         unit: productData.unit || 'ชิ้น',
-        category: productData.category || 'อื่นๆ',
+        categoryId,
+        categoryName,
+        category,
+        inventoryMode,
+        specs,
+        warranty,
         hasVariants: false,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
@@ -194,6 +215,12 @@ export async function updateProduct(productId, productData) {
   try {
     const currentSnap = await getDoc(doc(db, 'products', productId));
     const current = currentSnap.exists() ? currentSnap.data() : {};
+    const categoryName = productData.categoryName && typeof productData.categoryName === 'object' ? productData.categoryName : (current?.categoryName ?? null);
+    const categoryId = productData.categoryId ?? current?.categoryId ?? '';
+    const category = productData.category ?? categoryName?.th ?? current?.category ?? 'อื่นๆ';
+    const inventoryMode = productData.inventoryMode ?? current?.inventoryMode ?? 'bulk';
+    const specs = productData.specs && typeof productData.specs === 'object' ? productData.specs : (current?.specs ?? null);
+    const warranty = productData.warranty && typeof productData.warranty === 'object' ? productData.warranty : (current?.warranty ?? null);
     
     let addDateValue;
     if (typeof productData.addDate === 'string') {
@@ -229,7 +256,12 @@ export async function updateProduct(productId, productData) {
         purchaseLocation: productData.purchaseLocation ?? current?.purchaseLocation ?? '',
         addDate: addDateValue,
         unit: productData.unit ?? current?.unit ?? 'ชิ้น',
-        category: productData.category ?? current?.category ?? 'อื่นๆ',
+        categoryId,
+        categoryName,
+        category,
+        inventoryMode,
+        specs,
+        warranty,
         hasVariants: true,
         variants: variants,
         quantity: totalQuantity,
@@ -259,7 +291,12 @@ export async function updateProduct(productId, productData) {
         quantity: parseInt(productData.quantity) || 0,
         initialQuantity: current?.initialQuantity ?? (parseInt(productData.quantity) || 0),
         unit: productData.unit ?? current?.unit ?? 'ชิ้น',
-        category: productData.category ?? current?.category ?? 'อื่นๆ',
+        categoryId,
+        categoryName,
+        category,
+        inventoryMode,
+        specs,
+        warranty,
         hasVariants: false,
         promotion: productData.promotion || null,
         updatedAt: Timestamp.now(),

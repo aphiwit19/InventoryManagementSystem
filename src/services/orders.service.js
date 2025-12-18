@@ -1,5 +1,6 @@
 // Orders service layer
 import { db, collection, doc, Timestamp, runTransaction, collectionGroup, getDocs, query, orderBy, getDoc, updateDoc } from '../repositories/firestore';
+import { markSerialItemsSoldAndActivateWarrantyForOrder } from './serials.service';
 
 export async function createWithdrawal(payload) {
   try {
@@ -193,6 +194,24 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
     const isNewShippingProgressStatus =
       (updates.shippingStatus === 'กำลังดำเนินการส่ง' || updates.shippingStatus === 'ส่งสำเร็จ');
 
+    const shouldActivateWarrantyOnComplete =
+      (isPickup && updates.shippingStatus === 'รับของแล้ว' && currentData.shippingStatus !== 'รับของแล้ว') ||
+      (!isPickup && updates.shippingStatus === 'ส่งสำเร็จ' && currentData.shippingStatus !== 'ส่งสำเร็จ');
+
+    const activateWarrantyForSerializedElectronics = async () => {
+      if (!shouldActivateWarrantyOnComplete) return;
+
+      const items = currentData.items || [];
+      const productIds = Array.from(new Set(items.map((it) => it.productId).filter(Boolean)));
+      if (productIds.length === 0) return;
+
+      await Promise.all(
+        productIds.map((pid) =>
+          markSerialItemsSoldAndActivateWarrantyForOrder(pid, withdrawalId, Timestamp.now())
+        )
+      );
+    };
+
     if (isPickup && updates.shippingStatus === 'รับของแล้ว' && currentData.shippingStatus !== 'รับของแล้ว') {
       await runTransaction(db, async (tx) => {
         const items = currentData.items || [];
@@ -279,6 +298,8 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
           updatedAt: Timestamp.now(),
         });
       });
+
+      await activateWarrantyForSerializedElectronics();
       return;
     }
 
@@ -370,6 +391,8 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
           updatedAt: Timestamp.now(),
         });
       });
+
+      await activateWarrantyForSerializedElectronics();
       return;
     }
 
@@ -379,6 +402,8 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
       ...(updates.shippingStatus !== undefined ? { shippingStatus: updates.shippingStatus } : {}),
       updatedAt: Timestamp.now(),
     });
+
+    await activateWarrantyForSerializedElectronics();
   } catch (error) {
     console.error('Error updating withdrawal shipping:', error);
     throw error;

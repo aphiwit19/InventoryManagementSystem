@@ -1,6 +1,11 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { updateWithdrawalShipping } from '../../services';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  getProductById,
+  listSerialItemsByOrder,
+  reserveSerialItemsForOrder,
+  updateWithdrawalShipping,
+} from '../../services';
 import { useTranslation } from 'react-i18next';
 import styles from './AdminOrderDetailPage.module.css';
 
@@ -23,6 +28,12 @@ export default function AdminOrderDetailPage() {
   });
   const [paymentStatus] = useState(initialOrder?.paymentStatus || 'pending'); // pending | confirmed | rejected
   const [saving, setSaving] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
+
+  const [productsById, setProductsById] = useState({});
+  const [serialInputs, setSerialInputs] = useState({});
+  const [serialAssignedByProductId, setSerialAssignedByProductId] = useState({});
+  const [serialBusyByProductId, setSerialBusyByProductId] = useState({});
 
   const isStaffOrder = (initialOrder?.createdSource || '') === 'staff';
   const isPickup = (order?.deliveryMethod || 'shipping') === 'pickup';
@@ -48,6 +59,73 @@ export default function AdminOrderDetailPage() {
       navigate('/admin/orders');
     }
   }, [initialOrder, navigate]);
+
+  const items = useMemo(() => order?.items || [], [order]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      if (!order) return;
+      const ids = Array.from(new Set((order.items || []).map((it) => it.productId).filter(Boolean)));
+      if (ids.length === 0) return;
+
+      try {
+        const pairs = await Promise.all(
+          ids.map(async (pid) => {
+            try {
+              const p = await getProductById(pid);
+              return [pid, p];
+            } catch (e) {
+              console.error('Error loading product for order item:', pid, e);
+              return [pid, null];
+            }
+          })
+        );
+        setProductsById((prev) => {
+          const next = { ...prev };
+          for (const [pid, p] of pairs) next[pid] = p;
+          return next;
+        });
+      } catch (e) {
+        console.error('Error loading products for order:', e);
+      }
+    };
+
+    loadProducts();
+  }, [order]);
+
+  useEffect(() => {
+    const loadAssignedSerials = async () => {
+      if (!order) return;
+      if (!order.items || order.items.length === 0) return;
+
+      const productIds = Array.from(new Set(order.items.map((it) => it.productId).filter(Boolean)));
+      if (productIds.length === 0) return;
+
+      try {
+        const pairs = await Promise.all(
+          productIds.map(async (pid) => {
+            try {
+              const rows = await listSerialItemsByOrder(pid, id);
+              return [pid, rows];
+            } catch (e) {
+              console.error('Error loading assigned serials:', pid, e);
+              return [pid, []];
+            }
+          })
+        );
+
+        setSerialAssignedByProductId((prev) => {
+          const next = { ...prev };
+          for (const [pid, rows] of pairs) next[pid] = rows;
+          return next;
+        });
+      } catch (e) {
+        console.error('Error loading assigned serials for order:', e);
+      }
+    };
+
+    loadAssignedSerials();
+  }, [order, id]);
 
   const handleBack = () => {
     // พยายามย้อนกลับหน้าก่อน ถ้าไม่มีให้กลับไป /admin/orders
@@ -84,7 +162,7 @@ export default function AdminOrderDetailPage() {
       }
     } catch (error) {
       console.error('Error saving order:', error);
-      alert(t('order.save_failed', { message: error.message || '' }));
+      setPopupMessage(t('order.save_failed', { message: error.message || '' }));
     } finally {
       setSaving(false);
     }
@@ -105,7 +183,6 @@ export default function AdminOrderDetailPage() {
     );
   }
 
-  const items = order.items || [];
   const totalText = typeof order.total === 'number'
     ? order.total.toLocaleString()
     : (parseFloat(order.total || 0) || 0).toLocaleString();
@@ -204,6 +281,127 @@ export default function AdminOrderDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Serial assignment (Admin-only serialized electronics) */}
+        {items.some((it) => {
+          const pid = it.productId;
+          const p = pid ? productsById[pid] : null;
+          return p && p.categoryId === 'electronics' && (p.inventoryMode || 'bulk') === 'serialized';
+        }) && (
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>qr_code_scanner</span>
+              </div>
+              <h2 className={styles.cardTitle}>{t('order.serial_assignment') || 'Assign Serials'}</h2>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {items.map((it, idx) => {
+                const pid = it.productId;
+                if (!pid) return null;
+                const p = productsById[pid];
+                if (!p) return null;
+                const isSerializedElectronics = p.categoryId === 'electronics' && (p.inventoryMode || 'bulk') === 'serialized';
+                if (!isSerializedElectronics) return null;
+
+                const requiredQty = parseInt(it.quantity || 0);
+                const assigned = serialAssignedByProductId[pid] || [];
+                const inputText = serialInputs[pid] || '';
+
+                return (
+                  <div key={`${pid}_${idx}`} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{it.productName || p.productName || '-'}</div>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                          {t('common.quantity')} {requiredQty} {t('common.piece')} · {t('order.serial_assigned') || 'Assigned'}: {assigned.length}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 12, marginTop: 10 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                          {t('order.serial_input') || 'Paste serials (one per line)'}
+                        </label>
+                        <textarea
+                          value={inputText}
+                          onChange={(e) => setSerialInputs((prev) => ({ ...prev, [pid]: e.target.value }))}
+                          rows={5}
+                          placeholder={t('product.serial_import_placeholder')}
+                          style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', resize: 'vertical' }}
+                        />
+                        <div style={{ marginTop: 8, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            className={styles.backBtn}
+                            style={{ width: 'auto', padding: '0.45rem 0.75rem' }}
+                            onClick={() => setSerialInputs((prev) => ({ ...prev, [pid]: '' }))}
+                            disabled={!!serialBusyByProductId[pid]}
+                          >
+                            {t('common.clear')}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.saveBtn}
+                            style={{ width: 'auto', padding: '0.45rem 0.75rem' }}
+                            disabled={!!serialBusyByProductId[pid]}
+                            onClick={async () => {
+                              try {
+                                const serials = String(serialInputs[pid] || '')
+                                  .split(/\r?\n/)
+                                  .map((s) => String(s || '').trim())
+                                  .filter(Boolean);
+
+                                if (requiredQty > 0 && serials.length !== requiredQty) {
+                                  setPopupMessage(t('order.serial_count_mismatch', { required: requiredQty, got: serials.length }));
+                                  return;
+                                }
+
+                                setSerialBusyByProductId((prev) => ({ ...prev, [pid]: true }));
+                                await reserveSerialItemsForOrder(pid, id, serials);
+                                const rows = await listSerialItemsByOrder(pid, id);
+                                setSerialAssignedByProductId((prev) => ({ ...prev, [pid]: rows }));
+                                setSerialInputs((prev) => ({ ...prev, [pid]: '' }));
+                              } catch (e) {
+                                console.error('Error reserving serials:', e);
+                                setPopupMessage(t('order.serial_assign_failed', { message: e.message || '' }));
+                              } finally {
+                                setSerialBusyByProductId((prev) => ({ ...prev, [pid]: false }));
+                              }
+                            }}
+                          >
+                            {t('order.assign_serials') || 'Assign'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                          {t('order.assigned_serials') || 'Assigned serials'}
+                        </label>
+                        <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 10, minHeight: 120, background: '#f8fafc' }}>
+                          {assigned.length === 0 ? (
+                            <div style={{ fontSize: 13, color: '#94a3b8' }}>{t('order.no_assigned_serials') || 'No serials assigned yet'}</div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {assigned.map((s) => (
+                                <div key={s.id} style={{ fontFamily: 'ui-monospace, monospace', fontSize: 13, color: '#0f172a' }}>
+                                  {s.serial || s.id}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ข้อมูลการจัดส่ง/รับเอง Card */}
         <div className={styles.card}>
@@ -399,6 +597,57 @@ export default function AdminOrderDetailPage() {
           </button>
         </div>
       </div>
+
+      {popupMessage && (
+        <div
+          onClick={() => setPopupMessage('')}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '28rem',
+              background: 'white',
+              borderRadius: '0.75rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>{t('common.notice')}</div>
+              <button
+                type="button"
+                onClick={() => setPopupMessage('')}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: '1rem 1.25rem', color: '#0f172a' }}>{popupMessage}</div>
+            <div style={{ padding: '0 1.25rem 1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setPopupMessage('')}
+                className={styles.saveBtn}
+                style={{ width: 'auto', padding: '0.5rem 1rem' }}
+              >
+                {t('common.ok')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

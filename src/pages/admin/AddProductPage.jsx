@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addProduct, DEFAULT_UNITS, DEFAULT_CATEGORIES, DEFAULT_SIZES, DEFAULT_COLORS } from '../../services';
+import { addProduct, DEFAULT_UNITS, DEFAULT_SIZES, DEFAULT_SHOE_SIZES, DEFAULT_COLORS, getAllCategories, getCategoryNameByLang } from '../../services';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
 import styles from './AddProductPage.module.css';
 
 export default function AddProductPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   // Basic product info
@@ -19,10 +19,29 @@ export default function AddProductPage() {
     addDate: new Date().toISOString().split('T')[0],
     unit: '',
     category: '',
+    categoryId: '',
+    categoryName: null,
   });
+
+  const [categories, setCategories] = useState([]);
+  const lang = useMemo(() => i18n.language || 'th', [i18n.language]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const rows = await getAllCategories({ activeOnly: true });
+        setCategories(rows);
+      } catch (e) {
+        console.error('Error loading categories:', e);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Toggle for variants mode
   const [hasVariants, setHasVariants] = useState(false);
+
+  const [sizePreset, setSizePreset] = useState('clothing');
 
   // For non-variant products
   const [simpleProduct, setSimpleProduct] = useState({
@@ -47,12 +66,26 @@ export default function AddProductPage() {
   const [showCustomSize, setShowCustomSize] = useState(false);
   const [showCustomColor, setShowCustomColor] = useState(false);
 
+  const availableSizes = useMemo(() => {
+    if (formData.categoryId === 'fashion' && sizePreset === 'shoe') return DEFAULT_SHOE_SIZES;
+    return DEFAULT_SIZES;
+  }, [formData.categoryId, sizePreset]);
+
+  useEffect(() => {
+    if (formData.categoryId !== 'fashion' && sizePreset !== 'clothing') {
+      setSizePreset('clothing');
+      setShowCustomSize(false);
+      setNewVariant(prev => ({ ...prev, size: '' }));
+    }
+  }, [formData.categoryId]);
+
   // UI states
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [imagePreview, setImagePreview] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,12 +104,12 @@ export default function AddProductPage() {
 
   const addVariant = () => {
     if (!newVariant.size || !newVariant.color || !newVariant.quantity || !newVariant.costPrice || !newVariant.sellPrice) {
-      alert(t('product.variant_incomplete'));
+      setPopupMessage(t('product.variant_incomplete'));
       return;
     }
     const exists = variants.find(v => v.size === newVariant.size && v.color === newVariant.color);
     if (exists) {
-      alert(t('product.variant_duplicate'));
+      setPopupMessage(t('product.variant_duplicate'));
       return;
     }
     setVariants(prev => [...prev, { ...newVariant, id: Date.now() }]);
@@ -298,21 +331,31 @@ export default function AddProductPage() {
                     </label>
                     {!showCustomCategory ? (
                       <select
-                        name="category"
-                        value={formData.category}
+                        name="categoryId"
+                        value={formData.categoryId}
                         onChange={(e) => {
                           if (e.target.value === '__custom__') {
                             setShowCustomCategory(true);
-                            setFormData(prev => ({ ...prev, category: '' }));
+                            setFormData(prev => ({ ...prev, category: '', categoryId: '', categoryName: null }));
                           } else {
-                            handleChange(e);
+                            const selected = categories.find(c => c.id === e.target.value);
+                            setFormData(prev => ({
+                              ...prev,
+                              categoryId: e.target.value,
+                              categoryName: selected?.name || null,
+                              category: selected?.name?.th || '',
+                            }));
                           }
                         }}
                         required
                         className={styles.formSelect}
                       >
                         <option value="">-- {t('product.select_category')} --</option>
-                        {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`, c)}</option>)}
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {getCategoryNameByLang(c, lang)}
+                          </option>
+                        ))}
                         <option value="__custom__">+ {t('product.add_new_category')}</option>
                       </select>
                     ) : (
@@ -328,11 +371,27 @@ export default function AddProductPage() {
                         />
                         <button 
                           type="button" 
-                          onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '' })); }}
+                          onClick={() => { setShowCustomCategory(false); setFormData(prev => ({ ...prev, category: '', categoryId: '', categoryName: null })); }}
                           className={styles.cancelButton}
                           style={{ padding: '0.5rem 0.75rem' }}
                         >
                           ✕
+                        </button>
+                      </div>
+                    )}
+
+                    {categories.length === 0 && !showCustomCategory && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <div style={{ color: '#b91c1c', fontSize: '0.8125rem' }}>
+                          {t('category.load_failed')}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/admin/categories')}
+                          className={styles.cancelButton}
+                          style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem' }}
+                        >
+                          {t('admin.categories')}
                         </button>
                       </div>
                     )}
@@ -584,6 +643,27 @@ export default function AddProductPage() {
                     {/* Add New Variant */}
                     <div className={styles.addVariantForm}>
                       <div className={styles.addVariantTitle}>+ {t('product.add_variant')}</div>
+
+                      {formData.categoryId === 'fashion' && (
+                        <div className={styles.formRow2} style={{ marginBottom: '0.75rem' }}>
+                          <div>
+                            <label className={styles.formLabel}>{t('product.size_preset')}</label>
+                            <select
+                              value={sizePreset}
+                              onChange={(e) => {
+                                setSizePreset(e.target.value);
+                                setShowCustomSize(false);
+                                setNewVariant(prev => ({ ...prev, size: '' }));
+                              }}
+                              className={styles.formSelect}
+                            >
+                              <option value="clothing">{t('product.size_preset_clothing')}</option>
+                              <option value="shoe">{t('product.size_preset_shoe')}</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
                       <div className={styles.formRow2} style={{ marginBottom: '0.75rem' }}>
                         {/* Size */}
                         <div>
@@ -602,7 +682,7 @@ export default function AddProductPage() {
                               className={styles.formSelect}
                             >
                               <option value="">-- {t('product.select_size')} --</option>
-                              {DEFAULT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                              {availableSizes.map(s => <option key={s} value={s}>{s}</option>)}
                               <option value="__custom__">+ {t('product.add_new_size')}</option>
                             </select>
                           ) : (
@@ -736,6 +816,57 @@ export default function AddProductPage() {
         {/* Footer spacing */}
         <div className={styles.footerSpacing}></div>
       </div>
+
+      {popupMessage && (
+        <div
+          onClick={() => setPopupMessage('')}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '28rem',
+              background: 'white',
+              borderRadius: '0.75rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>{t('common.notice')}</div>
+              <button
+                type="button"
+                onClick={() => setPopupMessage('')}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: '1rem 1.25rem', color: '#0f172a' }}>{popupMessage}</div>
+            <div style={{ padding: '0 1.25rem 1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setPopupMessage('')}
+                className={styles.saveButton}
+                style={{ padding: '0.5rem 1rem' }}
+              >
+                {t('common.ok')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
