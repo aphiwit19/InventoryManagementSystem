@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addProduct, DEFAULT_UNITS, DEFAULT_SIZES, DEFAULT_SHOE_SIZES, DEFAULT_COLORS, getAllCategories, getCategoryNameByLang } from '../../services';
+import { addProduct, DEFAULT_UNITS, DEFAULT_SIZES, DEFAULT_SHOE_SIZES, DEFAULT_COLORS, getAllCategories, getCategoryNameByLang, updateCategory } from '../../services';
 import { storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
@@ -30,17 +30,18 @@ export default function AddProductPage() {
     [categories, formData.categoryId]
   );
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const rows = await getAllCategories({ activeOnly: true });
-        setCategories(rows);
-      } catch (e) {
-        console.error('Error loading categories:', e);
-      }
-    };
-    loadCategories();
+  const loadCategories = useCallback(async () => {
+    try {
+      const rows = await getAllCategories({ activeOnly: true });
+      setCategories(rows);
+    } catch (e) {
+      console.error('Error loading categories:', e);
+    }
   }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   // Toggle for variants mode
   const [hasVariants, setHasVariants] = useState(false);
@@ -122,7 +123,7 @@ export default function AddProductPage() {
       case 'toys_kids':
         return { defaultUnit: 'ชิ้น', preferredUnits: ['ชิ้น', 'อัน', 'กล่อง', 'แพ็ก'] };
       default:
-        return { defaultUnit: '', preferredUnits: [] };
+        return { defaultUnit: 'ชิ้น', preferredUnits: ['ชิ้น', 'อัน', 'กล่อง', 'แพ็ก'] };
     }
   }, [formData.categoryId]);
 
@@ -229,6 +230,160 @@ export default function AddProductPage() {
   });
 
   const [categorySpecs, setCategorySpecs] = useState({});
+  const [showAddCategorySpec, setShowAddCategorySpec] = useState(false);
+  const [newCategorySpec, setNewCategorySpec] = useState({ key: '', labelTh: '', labelEn: '', type: 'text' });
+  const [savingCategorySpec, setSavingCategorySpec] = useState(false);
+  const [showManageCategorySpecs, setShowManageCategorySpecs] = useState(false);
+  const [manageCategorySpecKeys, setManageCategorySpecKeys] = useState([]);
+  const [savingManageCategorySpecs, setSavingManageCategorySpecs] = useState(false);
+
+  const saveCategorySpecKey = async () => {
+    if (!formData.categoryId) {
+      setPopupMessage('กรุณาเลือกหมวดหมู่ก่อน');
+      return;
+    }
+    if (!selectedCategory) {
+      setPopupMessage('ไม่พบข้อมูลหมวดหมู่');
+      return;
+    }
+
+    const key = String(newCategorySpec.key || '').trim();
+    const labelTh = String(newCategorySpec.labelTh || '').trim();
+    const labelEn = String(newCategorySpec.labelEn || '').trim();
+    const type = String(newCategorySpec.type || 'text');
+
+    if (!key) {
+      setPopupMessage('กรุณากรอก key ของสเปค');
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(key)) {
+      setPopupMessage('key ต้องเป็นตัวอักษร a-z ตัวเลข หรือ _ (underscore) เท่านั้น');
+      return;
+    }
+    if (!labelTh && !labelEn) {
+      setPopupMessage('กรุณากรอกชื่อสเปคอย่างน้อย 1 ภาษา');
+      return;
+    }
+
+    const existing = Array.isArray(selectedCategory.specKeys) ? selectedCategory.specKeys : [];
+    if (existing.some((sk) => String(sk?.key || '').trim() === key)) {
+      setPopupMessage('มี key นี้อยู่แล้วในหมวดหมู่');
+      return;
+    }
+
+    const nextSpecKeys = [
+      ...existing,
+      {
+        key,
+        label: {
+          th: labelTh || labelEn || key,
+          en: labelEn || labelTh || key,
+        },
+        type: type === 'number' || type === 'textarea' ? type : 'text',
+      },
+    ];
+
+    const nextFeatures = {
+      ...(selectedCategory?.features && typeof selectedCategory.features === 'object' ? selectedCategory.features : {}),
+      specs: true,
+    };
+
+    setSavingCategorySpec(true);
+    try {
+      await updateCategory(formData.categoryId, {
+        features: nextFeatures,
+        specKeys: nextSpecKeys,
+      });
+      await loadCategories();
+      setShowAddCategorySpec(false);
+      setNewCategorySpec({ key: '', labelTh: '', labelEn: '', type: 'text' });
+      setPopupMessage('เพิ่มช่องสเปคเรียบร้อย');
+    } catch (e) {
+      console.error(e);
+      setPopupMessage('เพิ่มช่องสเปคไม่สำเร็จ');
+    } finally {
+      setSavingCategorySpec(false);
+    }
+  };
+
+  const openManageCategorySpecs = () => {
+    if (!selectedCategory) {
+      setPopupMessage('ไม่พบข้อมูลหมวดหมู่');
+      return;
+    }
+    const existing = Array.isArray(selectedCategory.specKeys) ? selectedCategory.specKeys : [];
+    setManageCategorySpecKeys(
+      existing.map((sk) => ({
+        key: String(sk?.key || '').trim(),
+        labelTh: String(sk?.label?.th || ''),
+        labelEn: String(sk?.label?.en || ''),
+        type: String(sk?.type || 'text'),
+      }))
+    );
+    setShowManageCategorySpecs(true);
+  };
+
+  const saveManagedCategorySpecs = async () => {
+    if (!formData.categoryId) {
+      setPopupMessage('กรุณาเลือกหมวดหมู่ก่อน');
+      return;
+    }
+    if (!selectedCategory) {
+      setPopupMessage('ไม่พบข้อมูลหมวดหมู่');
+      return;
+    }
+
+    const rows = Array.isArray(manageCategorySpecKeys) ? manageCategorySpecKeys : [];
+    const cleaned = [];
+    const seen = new Set();
+    for (const r of rows) {
+      const key = String(r?.key || '').trim();
+      if (!key) continue;
+      if (seen.has(key)) {
+        setPopupMessage('พบ key ซ้ำในรายการสเปค');
+        return;
+      }
+      seen.add(key);
+
+      const labelTh = String(r?.labelTh || '').trim();
+      const labelEn = String(r?.labelEn || '').trim();
+      const type = String(r?.type || 'text');
+      cleaned.push({
+        key,
+        label: {
+          th: labelTh || labelEn || key,
+          en: labelEn || labelTh || key,
+        },
+        type: type === 'number' || type === 'textarea' ? type : 'text',
+      });
+    }
+
+    if (cleaned.length === 0) {
+      setPopupMessage('ไม่มีรายการสเปคให้บันทึก');
+      return;
+    }
+
+    const nextFeatures = {
+      ...(selectedCategory?.features && typeof selectedCategory.features === 'object' ? selectedCategory.features : {}),
+      specs: true,
+    };
+
+    setSavingManageCategorySpecs(true);
+    try {
+      await updateCategory(formData.categoryId, {
+        features: nextFeatures,
+        specKeys: cleaned,
+      });
+      await loadCategories();
+      setShowManageCategorySpecs(false);
+      setPopupMessage('บันทึกชื่อสเปคเรียบร้อย');
+    } catch (e) {
+      console.error(e);
+      setPopupMessage('บันทึกชื่อสเปคไม่สำเร็จ');
+    } finally {
+      setSavingManageCategorySpecs(false);
+    }
+  };
 
   useEffect(() => {
     if (!isElectronics) {
@@ -965,50 +1120,215 @@ export default function AddProductPage() {
                   </>
                 )}
 
-                {!isElectronics && selectedCategory?.features?.specs === true && Array.isArray(selectedCategory?.specKeys) && selectedCategory.specKeys.length > 0 && (
+                {!isElectronics && selectedCategory && (
                   <>
                     <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
                       <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
                         <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
                         {t('product.category_specs')}
                       </h3>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        {Array.isArray(selectedCategory?.specKeys) && selectedCategory.specKeys.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={openManageCategorySpecs}
+                            className={styles.cancelButton}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                          >
+                            แก้ไขชื่อ
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCategorySpec(true)}
+                          className={styles.saveButton}
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
 
-                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
-                      {selectedCategory.specKeys.map((sk) => {
-                        const key = sk?.key;
-                        if (!key) return null;
-                        const label = (lang.startsWith('en') ? sk?.label?.en : sk?.label?.th) || sk?.label?.th || sk?.label?.en || key;
-                        const type = sk?.type || 'text';
-                        const value = categorySpecs?.[key] ?? '';
-
-                        if (type === 'textarea') {
-                          return (
-                            <div key={key} className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                              <label className={styles.formLabel}>{label}</label>
-                              <textarea
-                                value={value}
-                                onChange={(e) => setCategorySpecs((p) => ({ ...p, [key]: e.target.value }))}
-                                rows={3}
-                                className={styles.formTextarea}
+                    {showManageCategorySpecs && (
+                      <div style={{ marginTop: '1rem', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1rem', background: '#f8fafc' }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem' }}>แก้ไขชื่อ/ชนิดของสเปค</div>
+                        {manageCategorySpecKeys.map((row, idx) => (
+                          <div key={row.key || idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                            <div className={styles.formGroup} style={{ margin: 0 }}>
+                              <label className={styles.formLabel}>key</label>
+                              <input value={row.key} disabled className={styles.formInput} />
+                            </div>
+                            <div className={styles.formGroup} style={{ margin: 0 }}>
+                              <label className={styles.formLabel}>type</label>
+                              <select
+                                value={row.type || 'text'}
+                                onChange={(e) =>
+                                  setManageCategorySpecKeys((prev) =>
+                                    prev.map((r, i) => (i === idx ? { ...r, type: e.target.value } : r))
+                                  )
+                                }
+                                className={styles.formSelect}
+                              >
+                                <option value="text">text</option>
+                                <option value="number">number</option>
+                                <option value="textarea">textarea</option>
+                              </select>
+                            </div>
+                            <div className={styles.formGroup} style={{ margin: 0 }}>
+                              <label className={styles.formLabel}>ชื่อ (TH)</label>
+                              <input
+                                value={row.labelTh || ''}
+                                onChange={(e) =>
+                                  setManageCategorySpecKeys((prev) =>
+                                    prev.map((r, i) => (i === idx ? { ...r, labelTh: e.target.value } : r))
+                                  )
+                                }
+                                className={styles.formInput}
                               />
                             </div>
-                          );
-                        }
+                            <div className={styles.formGroup} style={{ margin: 0 }}>
+                              <label className={styles.formLabel}>Name (EN)</label>
+                              <input
+                                value={row.labelEn || ''}
+                                onChange={(e) =>
+                                  setManageCategorySpecKeys((prev) =>
+                                    prev.map((r, i) => (i === idx ? { ...r, labelEn: e.target.value } : r))
+                                  )
+                                }
+                                className={styles.formInput}
+                              />
+                            </div>
+                          </div>
+                        ))}
 
-                        return (
-                          <div key={key} className={styles.formGroup}>
-                            <label className={styles.formLabel}>{label}</label>
+                        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowManageCategorySpecs(false)}
+                            className={styles.cancelButton}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                            disabled={savingManageCategorySpecs}
+                          >
+                            {t('common.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={saveManagedCategorySpecs}
+                            className={styles.saveButton}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                            disabled={savingManageCategorySpecs}
+                          >
+                            {savingManageCategorySpecs ? t('message.saving') : t('common.save')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {showAddCategorySpec && (
+                      <div style={{ marginTop: '1rem', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1rem', background: '#f8fafc' }}>
+                        <div className={styles.formRow2}>
+                          <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>key</label>
                             <input
-                              type={type === 'number' ? 'number' : 'text'}
-                              value={value}
-                              onChange={(e) => setCategorySpecs((p) => ({ ...p, [key]: e.target.value }))}
+                              value={newCategorySpec.key}
+                              onChange={(e) => setNewCategorySpec((p) => ({ ...p, key: e.target.value }))}
+                              className={styles.formInput}
+                              placeholder="เช่น material, warranty_period"
+                            />
+                          </div>
+                          <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>type</label>
+                            <select
+                              value={newCategorySpec.type}
+                              onChange={(e) => setNewCategorySpec((p) => ({ ...p, type: e.target.value }))}
+                              className={styles.formSelect}
+                            >
+                              <option value="text">text</option>
+                              <option value="number">number</option>
+                              <option value="textarea">textarea</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className={styles.formRow2} style={{ marginTop: '0.75rem' }}>
+                          <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>ชื่อ (TH)</label>
+                            <input
+                              value={newCategorySpec.labelTh}
+                              onChange={(e) => setNewCategorySpec((p) => ({ ...p, labelTh: e.target.value }))}
                               className={styles.formInput}
                             />
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Name (EN)</label>
+                            <input
+                              value={newCategorySpec.labelEn}
+                              onChange={(e) => setNewCategorySpec((p) => ({ ...p, labelEn: e.target.value }))}
+                              className={styles.formInput}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setShowAddCategorySpec(false); setNewCategorySpec({ key: '', labelTh: '', labelEn: '', type: 'text' }); }}
+                            className={styles.cancelButton}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                            disabled={savingCategorySpec}
+                          >
+                            {t('common.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={saveCategorySpecKey}
+                            className={styles.saveButton}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+                            disabled={savingCategorySpec}
+                          >
+                            {savingCategorySpec ? t('message.saving') : t('common.save')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedCategory?.features?.specs === true && Array.isArray(selectedCategory?.specKeys) && selectedCategory.specKeys.length > 0 && (
+                      <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                        {selectedCategory.specKeys.map((sk) => {
+                          const key = sk?.key;
+                          if (!key) return null;
+                          const label = (lang.startsWith('en') ? sk?.label?.en : sk?.label?.th) || sk?.label?.th || sk?.label?.en || key;
+                          const type = sk?.type || 'text';
+                          const value = categorySpecs?.[key] ?? '';
+
+                          if (type === 'textarea') {
+                            return (
+                              <div key={key} className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                <label className={styles.formLabel}>{label}</label>
+                                <textarea
+                                  value={value}
+                                  onChange={(e) => setCategorySpecs((p) => ({ ...p, [key]: e.target.value }))}
+                                  rows={3}
+                                  className={styles.formTextarea}
+                                />
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={key} className={styles.formGroup}>
+                              <label className={styles.formLabel}>{label}</label>
+                              <input
+                                type={type === 'number' ? 'number' : 'text'}
+                                value={value}
+                                onChange={(e) => setCategorySpecs((p) => ({ ...p, [key]: e.target.value }))}
+                                className={styles.formInput}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <div className={styles.divider}></div>
                   </>

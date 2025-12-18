@@ -1,16 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createOrReplaceCategory, getAllCategories, seedDefaultCategories, updateCategory } from '../../services';
+import { createOrReplaceCategory, deleteCategory, getAllCategories, seedDefaultCategories, updateCategory } from '../../services';
 import styles from './AdminCategoriesPage.module.css';
 
 export default function AdminCategoriesPage() {
   const { t, i18n } = useTranslation();
   const [categories, setCategories] = useState([]);
+  const [baselineById, setBaselineById] = useState({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
   const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState('');
   const [newCategory, setNewCategory] = useState(null);
+  const confirmActionRef = useRef(null);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '' });
 
   const lang = useMemo(() => i18n.language || 'th', [i18n.language]);
 
@@ -20,6 +23,16 @@ export default function AdminCategoriesPage() {
     try {
       const rows = await getAllCategories({ activeOnly: false });
       setCategories(rows);
+      setBaselineById(
+        rows.reduce((acc, c) => {
+          acc[c.id] = {
+            name: c?.name && typeof c.name === 'object' ? c.name : { th: '', en: '' },
+            active: c?.active !== false,
+            sortOrder: Number(c?.sortOrder) || 0,
+          };
+          return acc;
+        }, {})
+      );
     } catch (e) {
       console.error(e);
       setError(t('category.load_failed'));
@@ -38,6 +51,68 @@ export default function AdminCategoriesPage() {
     );
   };
 
+  const isDirty = (c) => {
+    const base = baselineById?.[c?.id];
+    if (!base) return false;
+
+    const nameTh = String(c?.name?.th || '');
+    const nameEn = String(c?.name?.en || '');
+    const baseTh = String(base?.name?.th || '');
+    const baseEn = String(base?.name?.en || '');
+
+    const active = c?.active !== false;
+    const sortOrder = Number(c?.sortOrder) || 0;
+
+    return nameTh !== baseTh || nameEn !== baseEn || active !== base.active || sortOrder !== base.sortOrder;
+  };
+
+  const openConfirm = (message, onConfirm) => {
+    confirmActionRef.current = typeof onConfirm === 'function' ? onConfirm : null;
+    setConfirmState({ open: true, message: String(message || '') });
+  };
+
+  const closeConfirm = () => {
+    confirmActionRef.current = null;
+    setConfirmState({ open: false, message: '' });
+  };
+
+  const confirmOk = () => {
+    const fn = confirmActionRef.current;
+    closeConfirm();
+    if (typeof fn === 'function') {
+      Promise.resolve(fn()).catch((e) => {
+        console.error(e);
+      });
+    }
+  };
+
+  const cancelEdit = (id) => {
+    const row = categories.find((c) => c.id === id);
+    if (!row) return;
+
+    openConfirm(`ต้องการลบหมวดหมู่ "${id}" หรือไม่?`, async () => {
+      try {
+        setSavingId(id);
+        setError('');
+        await deleteCategory(id);
+
+        setCategories((prev) => (Array.isArray(prev) ? prev.filter((c) => c.id !== id) : prev));
+        setBaselineById((prev) => {
+          const next = { ...(prev || {}) };
+          delete next[id];
+          return next;
+        });
+
+        await load();
+      } catch (e) {
+        console.error(e);
+        setError(t('category.save_failed'));
+      } finally {
+        setSavingId('');
+      }
+    });
+  };
+
   const saveCategory = async (c) => {
     setSavingId(c.id);
     setError('');
@@ -49,6 +124,14 @@ export default function AdminCategoriesPage() {
         features: c.features || {},
         specKeys: Array.isArray(c.specKeys) ? c.specKeys : [],
       });
+      setBaselineById((prev) => ({
+        ...(prev || {}),
+        [c.id]: {
+          name: c?.name && typeof c.name === 'object' ? c.name : { th: '', en: '' },
+          active: c?.active !== false,
+          sortOrder: Number(c?.sortOrder) || 0,
+        },
+      }));
     } catch (e) {
       console.error(e);
       setError(t('category.save_failed'));
@@ -70,8 +153,10 @@ export default function AdminCategoriesPage() {
   };
 
   const cancelAdd = () => {
-    setNewCategory(null);
-    setError('');
+    openConfirm('ต้องการยกเลิกการเพิ่มหมวดหมู่นี้หรือไม่?', () => {
+      setNewCategory(null);
+      setError('');
+    });
   };
 
   const saveNewCategory = async () => {
@@ -328,6 +413,15 @@ export default function AdminCategoriesPage() {
                   >
                     {savingId === c.id ? t('message.saving') : t('common.save')}
                   </button>
+                  <button
+                    className={styles.refreshButton}
+                    onClick={() => cancelEdit(c.id)}
+                    style={{ marginLeft: 8 }}
+                    type="button"
+                    disabled={savingId === c.id}
+                  >
+                    {t('common.cancel')}
+                  </button>
                   <div className={styles.hint}>
                     {lang.startsWith('en') ? (c?.name?.en || c?.name?.th || '') : (c?.name?.th || c?.name?.en || '')}
                   </div>
@@ -345,6 +439,47 @@ export default function AdminCategoriesPage() {
           </tbody>
         </table>
       </div>
+
+      {confirmState.open ? (
+        <div
+          onClick={closeConfirm}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            zIndex: 50,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(520px, 100%)',
+              background: '#fff',
+              borderRadius: '0.75rem',
+              border: '1px solid #e7ebf3',
+              boxShadow: '0 20px 40px rgba(2, 6, 23, 0.25)',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e7ebf3', fontWeight: 800, color: '#0d121b' }}>
+              ยืนยัน
+            </div>
+            <div style={{ padding: '1rem 1.25rem', color: '#0d121b' }}>{confirmState.message}</div>
+            <div style={{ padding: '0 1.25rem 1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button type="button" className={styles.refreshButton} onClick={closeConfirm}>
+                {t('common.cancel')}
+              </button>
+              <button type="button" className={styles.saveButton} onClick={confirmOk}>
+                ยืนยัน
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   orderBy,
   setDoc,
   updateDoc,
+  deleteDoc,
   Timestamp,
 } from '../repositories/firestore';
 
@@ -213,6 +214,11 @@ export async function createOrReplaceCategory(categoryId, data) {
 export async function updateCategory(categoryId, partial) {
   const ref = doc(db, 'categories', categoryId);
   await updateDoc(ref, { ...partial, updatedAt: Timestamp.now() });
+}
+
+export async function deleteCategory(categoryId) {
+  const ref = doc(db, 'categories', categoryId);
+  await deleteDoc(ref);
 }
 
 export async function seedDefaultCategories() {
