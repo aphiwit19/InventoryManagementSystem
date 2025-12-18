@@ -6,6 +6,7 @@ import styles from './AdminCategoriesPage.module.css';
 export default function AdminCategoriesPage() {
   const { t, i18n } = useTranslation();
   const [categories, setCategories] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [baselineById, setBaselineById] = useState({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
