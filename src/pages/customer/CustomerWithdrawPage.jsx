@@ -91,6 +91,7 @@ export default function CustomerWithdrawPage() {
     };
     
     loadUserData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, profile]);
 
   const handleQuantityChange = async (item, newQty) => {
