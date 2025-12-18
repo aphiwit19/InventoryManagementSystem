@@ -47,11 +47,6 @@ export default function EditProductPage() {
     storageGb: '',
     storageType: '',
   });
-  const [warranty, setWarranty] = useState({
-    type: 'manufacturer',
-    months: '',
-    startPolicy: 'activated_date',
-  });
 
   const [serialStatusFilter, setSerialStatusFilter] = useState('');
   const [serialItems, setSerialItems] = useState([]);
@@ -156,13 +151,6 @@ export default function EditProductPage() {
           storageType: pSpecs.storageType || '',
         });
 
-        const pWarranty = product.warranty && typeof product.warranty === 'object' ? product.warranty : {};
-        setWarranty({
-          type: pWarranty.type || 'manufacturer',
-          months: pWarranty.months ?? '',
-          startPolicy: 'activated_date',
-        });
-
         if (product.image) {
           setImagePreview(product.image);
         }
@@ -250,7 +238,7 @@ export default function EditProductPage() {
       setShowCustomSize(false);
       setNewVariant(prev => ({ ...prev, size: '' }));
     }
-  }, [formData.categoryId]);
+  }, [formData.categoryId, sizePreset]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -321,6 +309,14 @@ export default function EditProductPage() {
         throw new Error(t('product.image_uploading_wait'));
       }
 
+      if (isElectronics) {
+        const brand = String(specs.brand || '').trim();
+        const model = String(specs.model || '').trim();
+        if (!brand || !model) {
+          throw new Error(t('product.electronics_brand_model_required'));
+        }
+      }
+
       // Calculate promotion price if active
       let promotionData = null;
       
@@ -359,11 +355,6 @@ export default function EditProductPage() {
             ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
             storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
           } : null,
-          warranty: isElectronics ? {
-            ...warranty,
-            months: warranty.months === '' ? '' : parseInt(warranty.months) || 0,
-            startPolicy: 'activated_date',
-          } : null,
           hasVariants: true,
           variants: variants.map(v => ({
             size: v.size,
@@ -387,11 +378,6 @@ export default function EditProductPage() {
             ...specs,
             ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
             storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
-          } : null,
-          warranty: isElectronics ? {
-            ...warranty,
-            months: warranty.months === '' ? '' : parseInt(warranty.months) || 0,
-            startPolicy: 'activated_date',
           } : null,
           hasVariants: false,
           ...simpleProduct,
@@ -746,9 +732,6 @@ export default function EditProductPage() {
                             setSerialLoading(true);
                             const res = await bulkImportSerialItems(id, serialImportText, {
                               costPrice: simpleProduct.costPrice || null,
-                              warrantyProvider: warranty.type === 'store' ? 'store' : 'manufacturer',
-                              warrantyMonths: warranty.months,
-                              variantKey: null,
                             });
                             setSerialImportResult(res);
                             const rows = await listSerialItems(id, { status: serialStatusFilter || undefined });
@@ -788,7 +771,6 @@ export default function EditProductPage() {
                             <th>{t('product.serial')}</th>
                             <th>{t('common.status')}</th>
                             <th>{t('order.order_id') || 'Order'}</th>
-                            <th>{t('product.warranty')}</th>
                           </tr>
                         </thead>
                         <tbody className={styles.variantsTableBody}>
@@ -797,9 +779,6 @@ export default function EditProductPage() {
                               <td style={{ fontFamily: 'ui-monospace, monospace' }}>{s.serial || s.id}</td>
                               <td>{s.status || '-'}</td>
                               <td>{s.order?.orderId || '-'}</td>
-                              <td>
-                                {s.warranty?.startAt ? (s.warranty?.months ? `${s.warranty.months}m` : '-') : '-'}
-                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -843,18 +822,20 @@ export default function EditProductPage() {
 
                     <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
                       <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>{t('product.spec_brand')}</label>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>{t('product.spec_brand')}</label>
                         <input
                           value={specs.brand}
                           onChange={(e) => setSpecs((p) => ({ ...p, brand: e.target.value }))}
+                          required={isElectronics}
                           className={styles.formInput}
                         />
                       </div>
                       <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>{t('product.spec_model')}</label>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>{t('product.spec_model')}</label>
                         <input
                           value={specs.model}
                           onChange={(e) => setSpecs((p) => ({ ...p, model: e.target.value }))}
+                          required={isElectronics}
                           className={styles.formInput}
                         />
                       </div>
@@ -901,48 +882,6 @@ export default function EditProductPage() {
                         />
                       </div>
                     </div>
-
-                    <div className={styles.divider}></div>
-
-                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
-                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
-                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>verified</span>
-                        {t('product.warranty')}
-                      </h3>
-                    </div>
-
-                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
-                      <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>{t('product.warranty_type')}</label>
-                        <select
-                          value={warranty.type}
-                          onChange={(e) => setWarranty((p) => ({ ...p, type: e.target.value }))}
-                          className={styles.formSelect}
-                        >
-                          <option value="none">{t('product.warranty_type_none')}</option>
-                          <option value="manufacturer">{t('product.warranty_type_manufacturer')}</option>
-                          <option value="store">{t('product.warranty_type_store')}</option>
-                        </select>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>{t('product.warranty_months')}</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={warranty.months}
-                          onChange={(e) => setWarranty((p) => ({ ...p, months: e.target.value }))}
-                          className={styles.formInput}
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <div className={styles.statusDescription}>
-                        {t('product.warranty_start_policy_activated_date')}
-                      </div>
-                    </div>
-
                     <div className={styles.divider}></div>
                   </>
                 )}

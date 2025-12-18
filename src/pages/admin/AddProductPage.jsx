@@ -77,7 +77,7 @@ export default function AddProductPage() {
       setShowCustomSize(false);
       setNewVariant(prev => ({ ...prev, size: '' }));
     }
-  }, [formData.categoryId]);
+  }, [formData.categoryId, sizePreset]);
 
   // UI states
   const [saving, setSaving] = useState(false);
@@ -86,6 +86,24 @@ export default function AddProductPage() {
   const [uploadError, setUploadError] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [popupMessage, setPopupMessage] = useState('');
+
+  const isElectronics = formData.categoryId === 'electronics';
+  const [inventoryMode, setInventoryMode] = useState('bulk');
+  const [specs, setSpecs] = useState({
+    brand: '',
+    model: '',
+    cpu: '',
+    ramGb: '',
+    storageGb: '',
+    storageType: '',
+  });
+
+  useEffect(() => {
+    if (!isElectronics) {
+      setInventoryMode('bulk');
+      setSpecs({ brand: '', model: '', cpu: '', ramGb: '', storageGb: '', storageType: '' });
+    }
+  }, [isElectronics]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -152,12 +170,32 @@ export default function AddProductPage() {
         throw new Error(t('product.image_uploading_wait'));
       }
 
+      if (isElectronics) {
+        const brand = String(specs.brand || '').trim();
+        const model = String(specs.model || '').trim();
+        if (!brand || !model) {
+          throw new Error(t('product.electronics_brand_model_required'));
+        }
+      }
+
+      const electronicsPayload = isElectronics
+        ? {
+            inventoryMode,
+            specs: {
+              ...specs,
+              ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb, 10) || 0,
+              storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb, 10) || 0,
+            },
+          }
+        : {};
+
       if (hasVariants) {
         if (variants.length === 0) {
           throw new Error(t('product.at_least_one_variant'));
         }
         await addProduct({
           ...formData,
+          ...electronicsPayload,
           hasVariants: true,
           variants: variants.map(v => ({
             size: v.size,
@@ -173,6 +211,7 @@ export default function AddProductPage() {
         }
         await addProduct({
           ...formData,
+          ...electronicsPayload,
           hasVariants: false,
           ...simpleProduct,
         });
@@ -456,6 +495,95 @@ export default function AddProductPage() {
                     {t('product.pricing_inventory')}
                   </h2>
                 </div>
+
+                {isElectronics && (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>{t('product.inventory_mode')}</label>
+                      <select
+                        value={inventoryMode}
+                        onChange={(e) => setInventoryMode(e.target.value)}
+                        className={styles.formSelect}
+                      >
+                        <option value="bulk">{t('product.inventory_mode_bulk')}</option>
+                        <option value="serialized">{t('product.inventory_mode_serialized')}</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.divider}></div>
+
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>memory</span>
+                        {t('product.electronics_specs')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>{t('product.spec_brand')}</label>
+                        <input
+                          value={specs.brand}
+                          onChange={(e) => setSpecs((p) => ({ ...p, brand: e.target.value }))}
+                          required={isElectronics}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>{t('product.spec_model')}</label>
+                        <input
+                          value={specs.model}
+                          onChange={(e) => setSpecs((p) => ({ ...p, model: e.target.value }))}
+                          required={isElectronics}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_cpu')}</label>
+                        <input
+                          value={specs.cpu}
+                          onChange={(e) => setSpecs((p) => ({ ...p, cpu: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_ram_gb')}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={specs.ramGb}
+                          onChange={(e) => setSpecs((p) => ({ ...p, ramGb: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_storage_gb')}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={specs.storageGb}
+                          onChange={(e) => setSpecs((p) => ({ ...p, storageGb: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.spec_storage_type')}</label>
+                        <input
+                          value={specs.storageType}
+                          onChange={(e) => setSpecs((p) => ({ ...p, storageType: e.target.value }))}
+                          className={styles.formInput}
+                        />
+                      </div>
+                    </div>
+                    <div className={styles.divider}></div>
+                  </>
+                )}
 
                 {/* Variants Toggle */}
                 <label className={styles.variantsToggle}>

@@ -285,6 +285,7 @@
     "warranty_type_store": "Store",
     "warranty_months": "Warranty (months)",
     "warranty_start_policy_activated_date": "Warranty starts when delivered / picked up (activated date).",
+    "electronics_brand_model_required": "Please enter brand and model.",
     "serial_manager": "Serial manager",
     "serial_filter_status": "Filter status",
     "serial_count": "Serial count",

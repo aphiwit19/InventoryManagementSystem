@@ -284,6 +284,7 @@
     "warranty_type_store": "ประกันร้าน",
     "warranty_months": "ระยะประกัน (เดือน)",
     "warranty_start_policy_activated_date": "ประกันเริ่มนับเมื่อส่งมอบสำเร็จ/รับของแล้ว (วันที่ Activate)",
+    "electronics_brand_model_required": "กรุณากรอกยี่ห้อและรุ่น",
     "serial_manager": "จัดการ Serial",
     "serial_filter_status": "กรองสถานะ",
     "serial_count": "จำนวน Serial",

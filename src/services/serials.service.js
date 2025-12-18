@@ -17,12 +17,6 @@ function normalizeSerial(raw) {
   return String(raw || '').trim().toUpperCase();
 }
 
-function addMonths(date, months) {
-  const d = new Date(date.getTime());
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
 export async function listSerialItems(productId, { status } = {}) {
   if (!productId) throw new Error('productId is required');
 
@@ -45,8 +39,6 @@ export async function bulkImportSerialItems(
   rawSerials,
   {
     costPrice = null,
-    warrantyProvider = 'manufacturer',
-    warrantyMonths = null,
     variantKey = null,
   } = {}
 ) {
@@ -102,15 +94,6 @@ export async function bulkImportSerialItems(
         status: 'available',
         variantKey: variantKey || null,
         costPrice: costPrice === null || costPrice === undefined ? null : parseFloat(costPrice),
-        warranty: {
-          provider: warrantyProvider || 'manufacturer',
-          months:
-            warrantyMonths === null || warrantyMonths === undefined || warrantyMonths === ''
-              ? null
-              : parseInt(warrantyMonths, 10),
-          startAt: null,
-          endAt: null,
-        },
         order: {
           orderId: null,
           reservedAt: null,
@@ -193,7 +176,7 @@ export async function reserveSerialItemsForOrder(productId, orderId, rawSerials)
   return { reserved: uniq.length };
 }
 
-export async function markSerialItemsSoldAndActivateWarrantyForOrder(productId, orderId, deliveredAt = null) {
+export async function markSerialItemsSoldForOrder(productId, orderId, deliveredAt = null) {
   if (!productId) throw new Error('productId is required');
   if (!orderId) throw new Error('orderId is required');
 
@@ -230,29 +213,12 @@ export async function markSerialItemsSoldAndActivateWarrantyForOrder(productId, 
         return;
       }
 
-      const months = data.warranty?.months;
-      const startAtExisting = data.warranty?.startAt;
-
-      const startAt = startAtExisting || deliverTs;
-      let endAt = data.warranty?.endAt || null;
-
-      if (!endAt && typeof months === 'number' && !Number.isNaN(months) && months > 0) {
-        const base = startAt.toDate ? startAt.toDate() : deliverDate;
-        const endDate = addMonths(base, months);
-        endAt = Timestamp.fromDate(endDate);
-      }
-
       await updateDoc(d.ref, {
         status: 'sold',
         order: {
           ...(data.order || {}),
           orderId,
           soldAt: deliverTs,
-        },
-        warranty: {
-          ...(data.warranty || {}),
-          startAt,
-          endAt,
         },
         updatedAt: Timestamp.now(),
       });

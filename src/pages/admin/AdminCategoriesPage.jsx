@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAllCategories, seedDefaultCategories, updateCategory } from '../../services';
 import styles from './AdminCategoriesPage.module.css';
@@ -13,7 +13,7 @@ export default function AdminCategoriesPage() {
 
   const lang = useMemo(() => i18n.language || 'th', [i18n.language]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -25,11 +25,11 @@ export default function AdminCategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const onChangeField = (id, updater) => {
     setCategories((prev) =>

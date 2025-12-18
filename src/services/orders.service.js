@@ -1,6 +1,6 @@
 // Orders service layer
 import { db, collection, doc, Timestamp, runTransaction, collectionGroup, getDocs, query, orderBy, getDoc, updateDoc } from '../repositories/firestore';
-import { markSerialItemsSoldAndActivateWarrantyForOrder } from './serials.service';
+import { markSerialItemsSoldForOrder } from './serials.service';
 
 export async function createWithdrawal(payload) {
   try {
@@ -194,12 +194,12 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
     const isNewShippingProgressStatus =
       (updates.shippingStatus === 'กำลังดำเนินการส่ง' || updates.shippingStatus === 'ส่งสำเร็จ');
 
-    const shouldActivateWarrantyOnComplete =
+    const shouldMarkSerialSoldOnComplete =
       (isPickup && updates.shippingStatus === 'รับของแล้ว' && currentData.shippingStatus !== 'รับของแล้ว') ||
       (!isPickup && updates.shippingStatus === 'ส่งสำเร็จ' && currentData.shippingStatus !== 'ส่งสำเร็จ');
 
-    const activateWarrantyForSerializedElectronics = async () => {
-      if (!shouldActivateWarrantyOnComplete) return;
+    const markSerialSoldForSerializedElectronics = async () => {
+      if (!shouldMarkSerialSoldOnComplete) return;
 
       const items = currentData.items || [];
       const productIds = Array.from(new Set(items.map((it) => it.productId).filter(Boolean)));
@@ -207,7 +207,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
 
       await Promise.all(
         productIds.map((pid) =>
-          markSerialItemsSoldAndActivateWarrantyForOrder(pid, withdrawalId, Timestamp.now())
+          markSerialItemsSoldForOrder(pid, withdrawalId, Timestamp.now())
         )
       );
     };
@@ -299,7 +299,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
         });
       });
 
-      await activateWarrantyForSerializedElectronics();
+      await markSerialSoldForSerializedElectronics();
       return;
     }
 
@@ -392,7 +392,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
         });
       });
 
-      await activateWarrantyForSerializedElectronics();
+      await markSerialSoldForSerializedElectronics();
       return;
     }
 
@@ -403,7 +403,7 @@ export async function updateWithdrawalShipping(withdrawalId, updates, createdByU
       updatedAt: Timestamp.now(),
     });
 
-    await activateWarrantyForSerializedElectronics();
+    await markSerialSoldForSerializedElectronics();
   } catch (error) {
     console.error('Error updating withdrawal shipping:', error);
     throw error;

@@ -78,7 +78,6 @@ export async function addProduct(productData) {
     const category = productData.category || categoryName?.th || 'อื่นๆ';
     const inventoryMode = productData.inventoryMode || 'bulk';
     const specs = productData.specs && typeof productData.specs === 'object' ? productData.specs : null;
-    const warranty = productData.warranty && typeof productData.warranty === 'object' ? productData.warranty : null;
     
     let data;
     
@@ -108,7 +107,6 @@ export async function addProduct(productData) {
         category,
         inventoryMode,
         specs,
-        warranty,
         hasVariants: true,
         variants: variants,
         // Summary fields for easy querying
@@ -147,7 +145,6 @@ export async function addProduct(productData) {
         category,
         inventoryMode,
         specs,
-        warranty,
         hasVariants: false,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
@@ -220,7 +217,6 @@ export async function updateProduct(productId, productData) {
     const category = productData.category ?? categoryName?.th ?? current?.category ?? 'อื่นๆ';
     const inventoryMode = productData.inventoryMode ?? current?.inventoryMode ?? 'bulk';
     const specs = productData.specs && typeof productData.specs === 'object' ? productData.specs : (current?.specs ?? null);
-    const warranty = productData.warranty && typeof productData.warranty === 'object' ? productData.warranty : (current?.warranty ?? null);
     
     let addDateValue;
     if (typeof productData.addDate === 'string') {
@@ -261,7 +257,6 @@ export async function updateProduct(productId, productData) {
         category,
         inventoryMode,
         specs,
-        warranty,
         hasVariants: true,
         variants: variants,
         quantity: totalQuantity,
@@ -296,7 +291,6 @@ export async function updateProduct(productId, productData) {
         category,
         inventoryMode,
         specs,
-        warranty,
         hasVariants: false,
         promotion: productData.promotion || null,
         updatedAt: Timestamp.now(),
