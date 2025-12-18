@@ -51,21 +51,6 @@ export default function AdminCategoriesPage() {
     );
   };
 
-  const isDirty = (c) => {
-    const base = baselineById?.[c?.id];
-    if (!base) return false;
-
-    const nameTh = String(c?.name?.th || '');
-    const nameEn = String(c?.name?.en || '');
-    const baseTh = String(base?.name?.th || '');
-    const baseEn = String(base?.name?.en || '');
-
-    const active = c?.active !== false;
-    const sortOrder = Number(c?.sortOrder) || 0;
-
-    return nameTh !== baseTh || nameEn !== baseEn || active !== base.active || sortOrder !== base.sortOrder;
-  };
-
   const openConfirm = (message, onConfirm) => {
     confirmActionRef.current = typeof onConfirm === 'function' ? onConfirm : null;
     setConfirmState({ open: true, message: String(message || '') });
