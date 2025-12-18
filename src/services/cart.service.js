@@ -1,6 +1,12 @@
 // Cart service layer - Firebase-based cart management
 import { db, doc, getDoc, setDoc, Timestamp } from '../repositories/firestore';
 
+function normalizeSelectedOptions(selectedOptions) {
+  if (!selectedOptions || typeof selectedOptions !== 'object') return '';
+  const keys = Object.keys(selectedOptions).filter(Boolean).sort();
+  return keys.map((k) => `${k}:${String(selectedOptions[k] ?? '')}`).join('|');
+}
+
 /**
  * Get user's cart from Firebase
  * @param {string} uid - User ID
@@ -57,12 +63,15 @@ export async function addToCart(uid, product, role = 'customer') {
   try {
     if (!uid) throw new Error('User ID is required');
     const currentCart = await getCart(uid, role);
+
+    const nextSelKey = normalizeSelectedOptions(product.selectedOptions);
     
     // Find existing item by productId AND variant (size + color)
     const existingIndex = currentCart.findIndex(item => 
       item.productId === product.productId &&
       item.variantSize === (product.variantSize || null) &&
-      item.variantColor === (product.variantColor || null)
+      item.variantColor === (product.variantColor || null) &&
+      normalizeSelectedOptions(item.selectedOptions) === nextSelKey
     );
     
     let updatedCart;
@@ -91,6 +100,10 @@ export async function addToCart(uid, product, role = 'customer') {
         maxQuantity: product.maxQuantity || 999,
         variantSize: product.variantSize || null,
         variantColor: product.variantColor || null,
+        selectedOptions:
+          product.selectedOptions && typeof product.selectedOptions === 'object'
+            ? product.selectedOptions
+            : null,
       }];
     }
     
@@ -111,14 +124,26 @@ export async function addToCart(uid, product, role = 'customer') {
  * @param {string} role - User role ('customer' or 'staff')
  * @returns {Promise<void>}
  */
-export async function updateCartItem(uid, productId, quantity, variantSize = null, variantColor = null, role = 'customer') {
+export async function updateCartItem(
+  uid,
+  productId,
+  quantity,
+  variantSize = null,
+  variantColor = null,
+  selectedOptions = null,
+  role = 'customer'
+) {
   try {
     if (!uid) throw new Error('User ID is required');
     const currentCart = await getCart(uid, role);
+    const selKey = normalizeSelectedOptions(selectedOptions);
     const updatedCart = currentCart.map(item => {
-      if (item.productId === productId && 
-          item.variantSize === variantSize && 
-          item.variantColor === variantColor) {
+      if (
+        item.productId === productId &&
+        item.variantSize === variantSize &&
+        item.variantColor === variantColor &&
+        normalizeSelectedOptions(item.selectedOptions) === selKey
+      ) {
         return { ...item, quantity: Math.max(1, quantity) };
       }
       return item;
@@ -139,14 +164,23 @@ export async function updateCartItem(uid, productId, quantity, variantSize = nul
  * @param {string} role - User role ('customer' or 'staff')
  * @returns {Promise<void>}
  */
-export async function removeFromCart(uid, productId, variantSize = null, variantColor = null, role = 'customer') {
+export async function removeFromCart(
+  uid,
+  productId,
+  variantSize = null,
+  variantColor = null,
+  selectedOptions = null,
+  role = 'customer'
+) {
   try {
     if (!uid) throw new Error('User ID is required');
     const currentCart = await getCart(uid, role);
+    const selKey = normalizeSelectedOptions(selectedOptions);
     const updatedCart = currentCart.filter(item => 
       !(item.productId === productId && 
         item.variantSize === variantSize && 
-        item.variantColor === variantColor)
+        item.variantColor === variantColor &&
+        normalizeSelectedOptions(item.selectedOptions) === selKey)
     );
     await saveCart(uid, updatedCart, role);
   } catch (error) {

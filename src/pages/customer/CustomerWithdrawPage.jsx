@@ -14,6 +14,15 @@ export default function CustomerWithdrawPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState('shipping');
 
+  const selectedOptionsKey = (selectedOptions) => {
+    if (!selectedOptions || typeof selectedOptions !== 'object') return '';
+    return Object.keys(selectedOptions)
+      .filter(Boolean)
+      .sort()
+      .map((k) => `${k}:${String(selectedOptions[k] ?? '')}`)
+      .join('|');
+  };
+
   // Form data
   const [formData, setFormData] = useState({
     recipientName: '',
@@ -97,10 +106,15 @@ export default function CustomerWithdrawPage() {
   const handleQuantityChange = async (item, newQty) => {
     if (newQty < 1) return;
     try {
-      await updateCartItem(user.uid, item.productId, newQty, item.variantSize, item.variantColor);
+      await updateCartItem(user.uid, item.productId, newQty, item.variantSize, item.variantColor, item.selectedOptions);
       window.dispatchEvent(new Event('customer-cart-updated'));
       setCart(prev => prev.map(c => {
-        if (c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor) {
+        if (
+          c.productId === item.productId &&
+          c.variantSize === item.variantSize &&
+          c.variantColor === item.variantColor &&
+          selectedOptionsKey(c.selectedOptions) === selectedOptionsKey(item.selectedOptions)
+        ) {
           return { ...c, quantity: newQty };
         }
         return c;
@@ -113,8 +127,13 @@ export default function CustomerWithdrawPage() {
 
   const handleRemoveItem = async (item) => {
     try {
-      await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor);
-      setCart(prev => prev.filter(c => !(c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor)));
+      await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor, item.selectedOptions);
+      setCart(prev => prev.filter(c => !(
+        c.productId === item.productId &&
+        c.variantSize === item.variantSize &&
+        c.variantColor === item.variantColor &&
+        selectedOptionsKey(c.selectedOptions) === selectedOptionsKey(item.selectedOptions)
+      )));
       window.dispatchEvent(new Event('customer-cart-updated'));
     } catch (error) {
       console.error('Error removing item:', error);
@@ -126,7 +145,7 @@ export default function CustomerWithdrawPage() {
     if (!window.confirm(t('cart.confirm_clear_cart'))) return;
     try {
       for (const item of cart) {
-        await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor);
+        await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor, item.selectedOptions);
       }
       setCart([]);
       window.dispatchEvent(new Event('customer-cart-updated'));
@@ -221,7 +240,7 @@ export default function CustomerWithdrawPage() {
 
               {cart.map((item, idx) => (
                 <div
-                  key={`${item.productId}-${item.variantSize}-${item.variantColor}-${idx}`}
+                  key={`${item.productId}-${item.variantSize}-${item.variantColor}-${selectedOptionsKey(item.selectedOptions)}-${idx}`}
                   className={styles.cartItem}
                 >
                   <div
@@ -237,6 +256,13 @@ export default function CustomerWithdrawPage() {
                           {item.variantSize && item.variantColor && ' | '}
                           {item.variantColor && `${t('product.color')}: ${item.variantColor}`}
                         </p>
+                        {item.selectedOptions && typeof item.selectedOptions === 'object' && Object.keys(item.selectedOptions).length > 0 && (
+                          <div style={{ marginTop: 6, fontSize: '0.75rem', color: '#64748b' }}>
+                            {Object.entries(item.selectedOptions)
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join(' | ')}
+                          </div>
+                        )}
                       </div>
                       <p className={styles.cartItemPrice}>฿{item.sellPrice.toLocaleString()}</p>
                     </div>

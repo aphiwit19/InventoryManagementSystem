@@ -22,6 +22,7 @@ export default function CustomerDashboard() {
   // Variant selection modal
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedOptions, setSelectedOptions] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
 
@@ -129,12 +130,14 @@ export default function CustomerDashboard() {
   const openProductModal = (product) => {
     setSelectedProduct(product);
     setSelectedVariant(null);
+    setSelectedOptions({});
     setQuantity(1);
   };
 
   const closeModal = () => {
     setSelectedProduct(null);
     setSelectedVariant(null);
+    setSelectedOptions({});
     setQuantity(1);
   };
 
@@ -163,6 +166,19 @@ export default function CustomerDashboard() {
         unit: product.unit || t('common.piece'),
         quantity: quantity,
       };
+
+      const selectedOptionsPayload =
+        selectedOptions && typeof selectedOptions === 'object'
+          ? Object.fromEntries(
+              Object.entries(selectedOptions)
+                .map(([k, v]) => [k, String(v || '').trim()])
+                .filter(([k, v]) => k && v)
+            )
+          : null;
+
+      if (selectedOptionsPayload && Object.keys(selectedOptionsPayload).length > 0) {
+        cartItem.selectedOptions = selectedOptionsPayload;
+      }
 
       if (hasVariants && selectedVariant) {
         cartItem.variantSize = selectedVariant.size;
@@ -620,6 +636,87 @@ export default function CustomerDashboard() {
                     </span>
                   </div>
                 </div>
+              )}
+
+              {selectedProduct.variationOptions && typeof selectedProduct.variationOptions === 'object' && (
+                (() => {
+                  const labelMap = {
+                    ram: 'variation_ram',
+                    storage: 'variation_storage',
+                    color: 'variation_color',
+                    screenSize: 'variation_screen_size',
+                    condition: 'variation_condition',
+                    fitStyle: 'variation_fit_style',
+                    length: 'variation_length',
+                    pattern: 'variation_pattern',
+                    gender: 'variation_gender',
+                    flavor: 'variation_flavor',
+                    sizeWeight: 'variation_size_weight',
+                    volume: 'variation_volume',
+                    packageType: 'variation_package_type',
+                    shadeTone: 'variation_shade_tone',
+                    volumeSize: 'variation_volume_size',
+                    skinType: 'variation_skin_type',
+                    spf: 'variation_spf',
+                    size: 'variation_size',
+                    tipSize: 'variation_tip_size',
+                    packSize: 'variation_pack_size',
+                    material: 'variation_material',
+                    voltagePower: 'variation_voltage_power',
+                    type: 'variation_type',
+                    capacity: 'variation_capacity',
+                    powerWattage: 'variation_power_wattage',
+                    oemAftermarket: 'variation_oem_aftermarket',
+                    sizeDimension: 'variation_size_dimension',
+                    level: 'variation_level',
+                    ageGroup: 'variation_age_group',
+                    ageRange: 'variation_age_range',
+                    batteryRequired: 'variation_battery_required',
+                    batteryType: 'variation_battery_type',
+                  };
+
+                  const entries = Object.entries(selectedProduct.variationOptions)
+                    .filter(([, arr]) => Array.isArray(arr) && arr.length > 0)
+                    .map(([k, arr]) => [k, arr.map((x) => String(x)).filter(Boolean)]);
+
+                  if (entries.length === 0) return null;
+
+                  return (
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                        {t('product.variation_options') || 'Options'}:
+                      </h3>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                        {entries.map(([key, options]) => (
+                          <div key={key}>
+                            <label style={{ display: 'block', marginBottom: 6, fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>
+                              {t(`product.${labelMap[key] || ''}`, key)}
+                            </label>
+                            <select
+                              value={selectedOptions[key] || ''}
+                              onChange={(e) =>
+                                setSelectedOptions((prev) => ({
+                                  ...prev,
+                                  [key]: e.target.value,
+                                }))
+                              }
+                              className={styles.quantityInput}
+                              style={{ width: '100%' }}
+                            >
+                              <option value="">-</option>
+                              {options.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()
               )}
 
               {/* Quantity */}

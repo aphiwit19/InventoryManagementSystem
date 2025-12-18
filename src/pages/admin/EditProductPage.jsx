@@ -37,6 +37,10 @@ export default function EditProductPage() {
 
   const [categories, setCategories] = useState([]);
   const lang = useMemo(() => i18n.language || 'th', [i18n.language]);
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.id === formData.categoryId) || null,
+    [categories, formData.categoryId]
+  );
 
   const [inventoryMode, setInventoryMode] = useState('bulk');
   const [specs, setSpecs] = useState({
@@ -47,6 +51,76 @@ export default function EditProductPage() {
     storageGb: '',
     storageType: '',
   });
+
+  const [electronicsVariationInputs, setElectronicsVariationInputs] = useState({
+    ram: '',
+    storage: '',
+    color: '',
+    screenSize: '',
+    condition: '',
+  });
+
+  const [fashionVariationInputs, setFashionVariationInputs] = useState({
+    fitStyle: '',
+    length: '',
+    pattern: '',
+    gender: '',
+  });
+
+  const [foodVariationInputs, setFoodVariationInputs] = useState({
+    flavor: '',
+    sizeWeight: '',
+    volume: '',
+    packageType: '',
+  });
+
+  const [beautyVariationInputs, setBeautyVariationInputs] = useState({
+    shadeTone: '',
+    volume: '',
+    skinType: '',
+    spf: '',
+  });
+
+  const [officeVariationInputs, setOfficeVariationInputs] = useState({
+    color: '',
+    size: '',
+    tipSize: '',
+    packSize: '',
+  });
+
+  const [toolsVariationInputs, setToolsVariationInputs] = useState({
+    size: '',
+    material: '',
+    voltagePower: '',
+    type: '',
+  });
+
+  const [homeKitchenVariationInputs, setHomeKitchenVariationInputs] = useState({
+    capacity: '',
+    powerWattage: '',
+    color: '',
+  });
+
+  const [automotiveVariationInputs, setAutomotiveVariationInputs] = useState({
+    oemAftermarket: '',
+    sizeDimension: '',
+    material: '',
+  });
+
+  const [sportsOutdoorVariationInputs, setSportsOutdoorVariationInputs] = useState({
+    level: '',
+    gender: '',
+    ageGroup: '',
+  });
+
+  const [toysKidsVariationInputs, setToysKidsVariationInputs] = useState({
+    ageRange: '',
+    batteryRequired: '',
+    batteryType: '',
+  });
+
+  const [categorySpecs, setCategorySpecs] = useState({});
+  const [productSpecsRaw, setProductSpecsRaw] = useState({});
 
   const [serialStatusFilter, setSerialStatusFilter] = useState('');
   const [serialItems, setSerialItems] = useState([]);
@@ -93,6 +167,7 @@ export default function EditProductPage() {
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [showCustomSize, setShowCustomSize] = useState(false);
   const [showCustomColor, setShowCustomColor] = useState(false);
+  const [autoUnitValue, setAutoUnitValue] = useState('');
 
   // Promotion state
   const [promotion, setPromotion] = useState({
@@ -113,7 +188,75 @@ export default function EditProductPage() {
   const [popupMessage, setPopupMessage] = useState('');
 
   const isElectronics = formData.categoryId === 'electronics';
+  const isFashion = formData.categoryId === 'fashion';
+  const isFoodBeverage = formData.categoryId === 'food_beverage';
+  const isBeautyPersonalCare = formData.categoryId === 'beauty_personal_care';
+  const isOfficeStationery = formData.categoryId === 'office_stationery';
+  const isToolsHardware = formData.categoryId === 'tools_hardware';
+  const isHomeKitchen = formData.categoryId === 'home_kitchen';
+  const isAutomotive = formData.categoryId === 'automotive';
+  const isSportsOutdoor = formData.categoryId === 'sports_outdoor';
+  const isToysKids = formData.categoryId === 'toys_kids';
   const isSerialized = inventoryMode === 'serialized';
+
+  const unitConfig = useMemo(() => {
+    switch (formData.categoryId) {
+      case 'food_beverage':
+        return { defaultUnit: 'แพ็ก', preferredUnits: ['แพ็ก', 'ชิ้น', 'กล่อง'] };
+      case 'beauty_personal_care':
+        return { defaultUnit: 'ขวด', preferredUnits: ['ขวด', 'ชิ้น', 'กล่อง', 'แพ็ก'] };
+      case 'office_stationery':
+        return { defaultUnit: 'ชิ้น', preferredUnits: ['ชิ้น', 'กล่อง', 'แพ็ก', 'รีม'] };
+      case 'tools_hardware':
+        return { defaultUnit: 'อัน', preferredUnits: ['อัน', 'ชิ้น', 'กล่อง', 'แพ็ก'] };
+      case 'fashion':
+        return { defaultUnit: 'ตัว', preferredUnits: ['ตัว', 'ชิ้น', 'คู่'] };
+      case 'electronics':
+      case 'home_kitchen':
+      case 'automotive':
+      case 'sports_outdoor':
+      case 'toys_kids':
+        return { defaultUnit: 'ชิ้น', preferredUnits: ['ชิ้น', 'อัน', 'กล่อง', 'แพ็ก'] };
+      default:
+        return { defaultUnit: '', preferredUnits: [] };
+    }
+  }, [formData.categoryId]);
+
+  const unitOptions = useMemo(() => {
+    const preferred = Array.isArray(unitConfig.preferredUnits) ? unitConfig.preferredUnits : [];
+    const seen = new Set();
+    const ordered = [];
+    for (const u of preferred) {
+      if (!u || seen.has(u)) continue;
+      seen.add(u);
+      ordered.push(u);
+    }
+    for (const u of DEFAULT_UNITS) {
+      if (!u || seen.has(u)) continue;
+      seen.add(u);
+      ordered.push(u);
+    }
+    return ordered;
+  }, [unitConfig.preferredUnits]);
+
+  useEffect(() => {
+    if (showCustomUnit) return;
+    if (!formData.categoryId) return;
+    if (!unitConfig.defaultUnit) return;
+    if (formData.unit && formData.unit !== autoUnitValue) return;
+    setFormData((prev) => ({ ...prev, unit: unitConfig.defaultUnit }));
+    setAutoUnitValue(unitConfig.defaultUnit);
+  }, [formData.categoryId, formData.unit, showCustomUnit, unitConfig.defaultUnit, autoUnitValue]);
+
+  useEffect(() => {
+    if (showCustomUnit) return;
+    if (!formData.categoryId) return;
+    if (!unitConfig.defaultUnit) return;
+    if (!formData.unit) return;
+    if (autoUnitValue) return;
+    if (formData.unit !== unitConfig.defaultUnit) return;
+    setAutoUnitValue(unitConfig.defaultUnit);
+  }, [autoUnitValue, formData.categoryId, formData.unit, showCustomUnit, unitConfig.defaultUnit]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -142,6 +285,7 @@ export default function EditProductPage() {
         setInventoryMode(product.inventoryMode || 'bulk');
 
         const pSpecs = product.specs && typeof product.specs === 'object' ? product.specs : {};
+        setProductSpecsRaw(pSpecs);
         setSpecs({
           brand: pSpecs.brand || '',
           model: pSpecs.model || '',
@@ -149,6 +293,74 @@ export default function EditProductPage() {
           ramGb: pSpecs.ramGb ?? '',
           storageGb: pSpecs.storageGb ?? '',
           storageType: pSpecs.storageType || '',
+        });
+
+        const vo = product.variationOptions && typeof product.variationOptions === 'object' ? product.variationOptions : {};
+        setElectronicsVariationInputs({
+          ram: Array.isArray(vo.ram) ? vo.ram.join('\n') : '',
+          storage: Array.isArray(vo.storage) ? vo.storage.join('\n') : '',
+          color: Array.isArray(vo.color) ? vo.color.join('\n') : '',
+          screenSize: Array.isArray(vo.screenSize) ? vo.screenSize.join('\n') : '',
+          condition: Array.isArray(vo.condition) ? vo.condition.join('\n') : '',
+        });
+
+        setFashionVariationInputs({
+          fitStyle: Array.isArray(vo.fitStyle) ? vo.fitStyle.join('\n') : '',
+          length: Array.isArray(vo.length) ? vo.length.join('\n') : '',
+          pattern: Array.isArray(vo.pattern) ? vo.pattern.join('\n') : '',
+          gender: Array.isArray(vo.gender) ? vo.gender.join('\n') : '',
+        });
+
+        setFoodVariationInputs({
+          flavor: Array.isArray(vo.flavor) ? vo.flavor.join('\n') : '',
+          sizeWeight: Array.isArray(vo.sizeWeight) ? vo.sizeWeight.join('\n') : '',
+          volume: Array.isArray(vo.volume) ? vo.volume.join('\n') : '',
+          packageType: Array.isArray(vo.packageType) ? vo.packageType.join('\n') : '',
+        });
+
+        setBeautyVariationInputs({
+          shadeTone: Array.isArray(vo.shadeTone) ? vo.shadeTone.join('\n') : '',
+          volume: Array.isArray(vo.volume) ? vo.volume.join('\n') : '',
+          skinType: Array.isArray(vo.skinType) ? vo.skinType.join('\n') : '',
+          spf: Array.isArray(vo.spf) ? vo.spf.join('\n') : '',
+        });
+
+        setOfficeVariationInputs({
+          color: Array.isArray(vo.color) ? vo.color.join('\n') : '',
+          size: Array.isArray(vo.size) ? vo.size.join('\n') : '',
+          tipSize: Array.isArray(vo.tipSize) ? vo.tipSize.join('\n') : '',
+          packSize: Array.isArray(vo.packSize) ? vo.packSize.join('\n') : '',
+        });
+
+        setToolsVariationInputs({
+          size: Array.isArray(vo.size) ? vo.size.join('\n') : '',
+          material: Array.isArray(vo.material) ? vo.material.join('\n') : '',
+          voltagePower: Array.isArray(vo.voltagePower) ? vo.voltagePower.join('\n') : '',
+          type: Array.isArray(vo.type) ? vo.type.join('\n') : '',
+        });
+
+        setHomeKitchenVariationInputs({
+          capacity: Array.isArray(vo.capacity) ? vo.capacity.join('\n') : '',
+          powerWattage: Array.isArray(vo.powerWattage) ? vo.powerWattage.join('\n') : '',
+          color: Array.isArray(vo.color) ? vo.color.join('\n') : '',
+        });
+
+        setAutomotiveVariationInputs({
+          oemAftermarket: Array.isArray(vo.oemAftermarket) ? vo.oemAftermarket.join('\n') : '',
+          sizeDimension: Array.isArray(vo.sizeDimension) ? vo.sizeDimension.join('\n') : '',
+          material: Array.isArray(vo.material) ? vo.material.join('\n') : '',
+        });
+
+        setSportsOutdoorVariationInputs({
+          level: Array.isArray(vo.level) ? vo.level.join('\n') : '',
+          gender: Array.isArray(vo.gender) ? vo.gender.join('\n') : '',
+          ageGroup: Array.isArray(vo.ageGroup) ? vo.ageGroup.join('\n') : '',
+        });
+
+        setToysKidsVariationInputs({
+          ageRange: Array.isArray(vo.ageRange) ? vo.ageRange.join('\n') : '',
+          batteryRequired: Array.isArray(vo.batteryRequired) ? vo.batteryRequired.join('\n') : '',
+          batteryType: Array.isArray(vo.batteryType) ? vo.batteryType.join('\n') : '',
         });
 
         if (product.image) {
@@ -206,6 +418,26 @@ export default function EditProductPage() {
     };
     loadProduct();
   }, [id, t]);
+
+  useEffect(() => {
+    const specKeys = Array.isArray(selectedCategory?.specKeys) ? selectedCategory.specKeys : [];
+    const allowSpecs = selectedCategory?.features?.specs === true;
+
+    if (!allowSpecs || specKeys.length === 0 || isElectronics) {
+      setCategorySpecs({});
+      return;
+    }
+
+    setCategorySpecs((prev) => {
+      const next = {};
+      for (const sk of specKeys) {
+        const key = sk?.key;
+        if (!key) continue;
+        next[key] = (productSpecsRaw?.[key] ?? prev[key] ?? '');
+      }
+      return next;
+    });
+  }, [selectedCategory, isElectronics, productSpecsRaw]);
 
   useEffect(() => {
     const refreshSerials = async () => {
@@ -347,14 +579,122 @@ export default function EditProductPage() {
         if (variants.length === 0) {
           throw new Error(t('product.at_least_one_variant'));
         }
+
+        const parseOptionList = (raw) =>
+          String(raw || '')
+            .split(/\r?\n|,/)
+            .map((s) => String(s || '').trim())
+            .filter(Boolean);
+
+        let variationOptions = null;
+        if (isElectronics) {
+          const v = {
+            ram: parseOptionList(electronicsVariationInputs.ram),
+            storage: parseOptionList(electronicsVariationInputs.storage),
+            color: parseOptionList(electronicsVariationInputs.color),
+            screenSize: parseOptionList(electronicsVariationInputs.screenSize),
+            condition: parseOptionList(electronicsVariationInputs.condition),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isFashion) {
+          const v = {
+            fitStyle: parseOptionList(fashionVariationInputs.fitStyle),
+            length: parseOptionList(fashionVariationInputs.length),
+            pattern: parseOptionList(fashionVariationInputs.pattern),
+            gender: parseOptionList(fashionVariationInputs.gender),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isFoodBeverage) {
+          const v = {
+            flavor: parseOptionList(foodVariationInputs.flavor),
+            sizeWeight: parseOptionList(foodVariationInputs.sizeWeight),
+            volume: parseOptionList(foodVariationInputs.volume),
+            packageType: parseOptionList(foodVariationInputs.packageType),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isBeautyPersonalCare) {
+          const v = {
+            shadeTone: parseOptionList(beautyVariationInputs.shadeTone),
+            volume: parseOptionList(beautyVariationInputs.volume),
+            skinType: parseOptionList(beautyVariationInputs.skinType),
+            spf: parseOptionList(beautyVariationInputs.spf),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isOfficeStationery) {
+          const v = {
+            color: parseOptionList(officeVariationInputs.color),
+            size: parseOptionList(officeVariationInputs.size),
+            tipSize: parseOptionList(officeVariationInputs.tipSize),
+            packSize: parseOptionList(officeVariationInputs.packSize),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isToolsHardware) {
+          const v = {
+            size: parseOptionList(toolsVariationInputs.size),
+            material: parseOptionList(toolsVariationInputs.material),
+            voltagePower: parseOptionList(toolsVariationInputs.voltagePower),
+            type: parseOptionList(toolsVariationInputs.type),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isHomeKitchen) {
+          const v = {
+            capacity: parseOptionList(homeKitchenVariationInputs.capacity),
+            powerWattage: parseOptionList(homeKitchenVariationInputs.powerWattage),
+            color: parseOptionList(homeKitchenVariationInputs.color),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isAutomotive) {
+          const v = {
+            oemAftermarket: parseOptionList(automotiveVariationInputs.oemAftermarket),
+            sizeDimension: parseOptionList(automotiveVariationInputs.sizeDimension),
+            material: parseOptionList(automotiveVariationInputs.material),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isSportsOutdoor) {
+          const v = {
+            level: parseOptionList(sportsOutdoorVariationInputs.level),
+            gender: parseOptionList(sportsOutdoorVariationInputs.gender),
+            ageGroup: parseOptionList(sportsOutdoorVariationInputs.ageGroup),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isToysKids) {
+          const v = {
+            ageRange: parseOptionList(toysKidsVariationInputs.ageRange),
+            batteryRequired: parseOptionList(toysKidsVariationInputs.batteryRequired),
+            batteryType: parseOptionList(toysKidsVariationInputs.batteryType),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        }
+
+        const variationOptionsPayload = variationOptions ? { variationOptions } : {};
+
+        const specsPayload = isElectronics
+          ? {
+              specs: {
+                ...specs,
+                ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
+                storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
+              },
+            }
+          : (selectedCategory?.features?.specs === true && Object.keys(categorySpecs || {}).length > 0
+              ? { specs: { ...categorySpecs } }
+              : { specs: null });
+
         await updateProduct(id, {
           ...formData,
           inventoryMode,
-          specs: isElectronics ? {
-            ...specs,
-            ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
-            storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
-          } : null,
+          ...specsPayload,
+          ...variationOptionsPayload,
           hasVariants: true,
           variants: variants.map(v => ({
             size: v.size,
@@ -371,14 +711,122 @@ export default function EditProductPage() {
         if (!simpleProduct.quantity || !simpleProduct.costPrice || !simpleProduct.sellPrice) {
           throw new Error(t('product.price_qty_required'));
         }
+
+        const parseOptionList = (raw) =>
+          String(raw || '')
+            .split(/\r?\n|,/)
+            .map((s) => String(s || '').trim())
+            .filter(Boolean);
+
+        let variationOptions = null;
+        if (isElectronics) {
+          const v = {
+            ram: parseOptionList(electronicsVariationInputs.ram),
+            storage: parseOptionList(electronicsVariationInputs.storage),
+            color: parseOptionList(electronicsVariationInputs.color),
+            screenSize: parseOptionList(electronicsVariationInputs.screenSize),
+            condition: parseOptionList(electronicsVariationInputs.condition),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isFashion) {
+          const v = {
+            fitStyle: parseOptionList(fashionVariationInputs.fitStyle),
+            length: parseOptionList(fashionVariationInputs.length),
+            pattern: parseOptionList(fashionVariationInputs.pattern),
+            gender: parseOptionList(fashionVariationInputs.gender),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isFoodBeverage) {
+          const v = {
+            flavor: parseOptionList(foodVariationInputs.flavor),
+            sizeWeight: parseOptionList(foodVariationInputs.sizeWeight),
+            volume: parseOptionList(foodVariationInputs.volume),
+            packageType: parseOptionList(foodVariationInputs.packageType),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isBeautyPersonalCare) {
+          const v = {
+            shadeTone: parseOptionList(beautyVariationInputs.shadeTone),
+            volume: parseOptionList(beautyVariationInputs.volume),
+            skinType: parseOptionList(beautyVariationInputs.skinType),
+            spf: parseOptionList(beautyVariationInputs.spf),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isOfficeStationery) {
+          const v = {
+            color: parseOptionList(officeVariationInputs.color),
+            size: parseOptionList(officeVariationInputs.size),
+            tipSize: parseOptionList(officeVariationInputs.tipSize),
+            packSize: parseOptionList(officeVariationInputs.packSize),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isToolsHardware) {
+          const v = {
+            size: parseOptionList(toolsVariationInputs.size),
+            material: parseOptionList(toolsVariationInputs.material),
+            voltagePower: parseOptionList(toolsVariationInputs.voltagePower),
+            type: parseOptionList(toolsVariationInputs.type),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isHomeKitchen) {
+          const v = {
+            capacity: parseOptionList(homeKitchenVariationInputs.capacity),
+            powerWattage: parseOptionList(homeKitchenVariationInputs.powerWattage),
+            color: parseOptionList(homeKitchenVariationInputs.color),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isAutomotive) {
+          const v = {
+            oemAftermarket: parseOptionList(automotiveVariationInputs.oemAftermarket),
+            sizeDimension: parseOptionList(automotiveVariationInputs.sizeDimension),
+            material: parseOptionList(automotiveVariationInputs.material),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isSportsOutdoor) {
+          const v = {
+            level: parseOptionList(sportsOutdoorVariationInputs.level),
+            gender: parseOptionList(sportsOutdoorVariationInputs.gender),
+            ageGroup: parseOptionList(sportsOutdoorVariationInputs.ageGroup),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        } else if (isToysKids) {
+          const v = {
+            ageRange: parseOptionList(toysKidsVariationInputs.ageRange),
+            batteryRequired: parseOptionList(toysKidsVariationInputs.batteryRequired),
+            batteryType: parseOptionList(toysKidsVariationInputs.batteryType),
+          };
+          const has = Object.values(v).some((arr) => Array.isArray(arr) && arr.length > 0);
+          variationOptions = has ? v : null;
+        }
+
+        const variationOptionsPayload = variationOptions ? { variationOptions } : {};
+
+        const specsPayload = isElectronics
+          ? {
+              specs: {
+                ...specs,
+                ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
+                storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
+              },
+            }
+          : (selectedCategory?.features?.specs === true && Object.keys(categorySpecs || {}).length > 0
+              ? { specs: { ...categorySpecs } }
+              : { specs: null });
+
         await updateProduct(id, {
           ...formData,
           inventoryMode,
-          specs: isElectronics ? {
-            ...specs,
-            ramGb: specs.ramGb === '' ? '' : parseInt(specs.ramGb) || 0,
-            storageGb: specs.storageGb === '' ? '' : parseInt(specs.storageGb) || 0,
-          } : null,
+          ...specsPayload,
+          ...variationOptionsPayload,
           hasVariants: false,
           ...simpleProduct,
           promotion: promotionData,
@@ -517,8 +965,10 @@ export default function EditProductPage() {
                         onChange={(e) => {
                           if (e.target.value === '__custom__') {
                             setShowCustomUnit(true);
+                            setAutoUnitValue('');
                             setFormData(prev => ({ ...prev, unit: '' }));
                           } else {
+                            setAutoUnitValue('');
                             handleChange(e);
                           }
                         }}
@@ -526,7 +976,7 @@ export default function EditProductPage() {
                         className={styles.formSelect}
                       >
                         <option value="">-- {t('product.select_unit')} --</option>
-                        {DEFAULT_UNITS.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
+                        {unitOptions.map(u => <option key={u} value={u}>{t(`units.${u}`, u)}</option>)}
                         <option value="__custom__">+ {t('product.add_new_unit')}</option>
                       </select>
                     ) : (
@@ -542,7 +992,7 @@ export default function EditProductPage() {
                         />
                         <button 
                           type="button" 
-                          onClick={() => { setShowCustomUnit(false); setFormData(prev => ({ ...prev, unit: '' })); }}
+                          onClick={() => { setShowCustomUnit(false); setAutoUnitValue(''); setFormData(prev => ({ ...prev, unit: '' })); }}
                           className={styles.cancelButton}
                           style={{ padding: '0.5rem 0.75rem' }}
                         >
@@ -882,6 +1332,620 @@ export default function EditProductPage() {
                         />
                       </div>
                     </div>
+
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_ram')}</label>
+                        <textarea
+                          value={electronicsVariationInputs.ram}
+                          onChange={(e) => setElectronicsVariationInputs((p) => ({ ...p, ram: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_storage')}</label>
+                        <textarea
+                          value={electronicsVariationInputs.storage}
+                          onChange={(e) => setElectronicsVariationInputs((p) => ({ ...p, storage: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_color')}</label>
+                        <textarea
+                          value={electronicsVariationInputs.color}
+                          onChange={(e) => setElectronicsVariationInputs((p) => ({ ...p, color: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_screen_size')}</label>
+                        <textarea
+                          value={electronicsVariationInputs.screenSize}
+                          onChange={(e) => setElectronicsVariationInputs((p) => ({ ...p, screenSize: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>{t('product.variation_condition')}</label>
+                      <textarea
+                        value={electronicsVariationInputs.condition}
+                        onChange={(e) => setElectronicsVariationInputs((p) => ({ ...p, condition: e.target.value }))}
+                        rows={2}
+                        placeholder={t('product.variation_options_placeholder')}
+                        className={styles.formTextarea}
+                      />
+                    </div>
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {!isElectronics && selectedCategory?.features?.specs === true && Array.isArray(selectedCategory?.specKeys) && selectedCategory.specKeys.length > 0 && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.category_specs')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      {selectedCategory.specKeys.map((sk) => {
+                        const key = sk?.key;
+                        if (!key) return null;
+                        const label = (lang.startsWith('en') ? sk?.label?.en : sk?.label?.th) || sk?.label?.th || sk?.label?.en || key;
+                        const type = sk?.type || 'text';
+                        const value = categorySpecs?.[key] ?? '';
+
+                        if (type === 'textarea') {
+                          return (
+                            <div key={key} className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                              <label className={styles.formLabel}>{label}</label>
+                              <textarea
+                                value={value}
+                                onChange={(e) => setCategorySpecs((p) => ({ ...p, [key]: e.target.value }))}
+                                rows={3}
+                                className={styles.formTextarea}
+                              />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={key} className={styles.formGroup}>
+                            <label className={styles.formLabel}>{label}</label>
+                            <input
+                              type={type === 'number' ? 'number' : 'text'}
+                              value={value}
+                              onChange={(e) => setCategorySpecs((p) => ({ ...p, [key]: e.target.value }))}
+                              className={styles.formInput}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isFashion && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_fit_style')}</label>
+                        <textarea
+                          value={fashionVariationInputs.fitStyle}
+                          onChange={(e) => setFashionVariationInputs((p) => ({ ...p, fitStyle: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_length')}</label>
+                        <textarea
+                          value={fashionVariationInputs.length}
+                          onChange={(e) => setFashionVariationInputs((p) => ({ ...p, length: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_pattern')}</label>
+                        <textarea
+                          value={fashionVariationInputs.pattern}
+                          onChange={(e) => setFashionVariationInputs((p) => ({ ...p, pattern: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_gender')}</label>
+                        <textarea
+                          value={fashionVariationInputs.gender}
+                          onChange={(e) => setFashionVariationInputs((p) => ({ ...p, gender: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isFoodBeverage && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_flavor')}</label>
+                        <textarea
+                          value={foodVariationInputs.flavor}
+                          onChange={(e) => setFoodVariationInputs((p) => ({ ...p, flavor: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_size_weight')}</label>
+                        <textarea
+                          value={foodVariationInputs.sizeWeight}
+                          onChange={(e) => setFoodVariationInputs((p) => ({ ...p, sizeWeight: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_volume')}</label>
+                        <textarea
+                          value={foodVariationInputs.volume}
+                          onChange={(e) => setFoodVariationInputs((p) => ({ ...p, volume: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_package_type')}</label>
+                        <textarea
+                          value={foodVariationInputs.packageType}
+                          onChange={(e) => setFoodVariationInputs((p) => ({ ...p, packageType: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isBeautyPersonalCare && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_shade_tone')}</label>
+                        <textarea
+                          value={beautyVariationInputs.shadeTone}
+                          onChange={(e) => setBeautyVariationInputs((p) => ({ ...p, shadeTone: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_volume_size')}</label>
+                        <textarea
+                          value={beautyVariationInputs.volume}
+                          onChange={(e) => setBeautyVariationInputs((p) => ({ ...p, volume: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_skin_type')}</label>
+                        <textarea
+                          value={beautyVariationInputs.skinType}
+                          onChange={(e) => setBeautyVariationInputs((p) => ({ ...p, skinType: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_spf')}</label>
+                        <textarea
+                          value={beautyVariationInputs.spf}
+                          onChange={(e) => setBeautyVariationInputs((p) => ({ ...p, spf: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isOfficeStationery && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_color')}</label>
+                        <textarea
+                          value={officeVariationInputs.color}
+                          onChange={(e) => setOfficeVariationInputs((p) => ({ ...p, color: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_size')}</label>
+                        <textarea
+                          value={officeVariationInputs.size}
+                          onChange={(e) => setOfficeVariationInputs((p) => ({ ...p, size: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_tip_size')}</label>
+                        <textarea
+                          value={officeVariationInputs.tipSize}
+                          onChange={(e) => setOfficeVariationInputs((p) => ({ ...p, tipSize: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_pack_size')}</label>
+                        <textarea
+                          value={officeVariationInputs.packSize}
+                          onChange={(e) => setOfficeVariationInputs((p) => ({ ...p, packSize: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isToolsHardware && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_size')}</label>
+                        <textarea
+                          value={toolsVariationInputs.size}
+                          onChange={(e) => setToolsVariationInputs((p) => ({ ...p, size: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_material')}</label>
+                        <textarea
+                          value={toolsVariationInputs.material}
+                          onChange={(e) => setToolsVariationInputs((p) => ({ ...p, material: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_voltage_power')}</label>
+                        <textarea
+                          value={toolsVariationInputs.voltagePower}
+                          onChange={(e) => setToolsVariationInputs((p) => ({ ...p, voltagePower: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_type')}</label>
+                        <textarea
+                          value={toolsVariationInputs.type}
+                          onChange={(e) => setToolsVariationInputs((p) => ({ ...p, type: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isHomeKitchen && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_capacity')}</label>
+                        <textarea
+                          value={homeKitchenVariationInputs.capacity}
+                          onChange={(e) =>
+                            setHomeKitchenVariationInputs((p) => ({ ...p, capacity: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_power_wattage')}</label>
+                        <textarea
+                          value={homeKitchenVariationInputs.powerWattage}
+                          onChange={(e) =>
+                            setHomeKitchenVariationInputs((p) => ({ ...p, powerWattage: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_color')}</label>
+                        <textarea
+                          value={homeKitchenVariationInputs.color}
+                          onChange={(e) => setHomeKitchenVariationInputs((p) => ({ ...p, color: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isAutomotive && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_oem_aftermarket')}</label>
+                        <textarea
+                          value={automotiveVariationInputs.oemAftermarket}
+                          onChange={(e) =>
+                            setAutomotiveVariationInputs((p) => ({ ...p, oemAftermarket: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_size_dimension')}</label>
+                        <textarea
+                          value={automotiveVariationInputs.sizeDimension}
+                          onChange={(e) =>
+                            setAutomotiveVariationInputs((p) => ({ ...p, sizeDimension: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_material')}</label>
+                        <textarea
+                          value={automotiveVariationInputs.material}
+                          onChange={(e) => setAutomotiveVariationInputs((p) => ({ ...p, material: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isSportsOutdoor && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_level')}</label>
+                        <textarea
+                          value={sportsOutdoorVariationInputs.level}
+                          onChange={(e) => setSportsOutdoorVariationInputs((p) => ({ ...p, level: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_gender')}</label>
+                        <textarea
+                          value={sportsOutdoorVariationInputs.gender}
+                          onChange={(e) => setSportsOutdoorVariationInputs((p) => ({ ...p, gender: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_age_group')}</label>
+                        <textarea
+                          value={sportsOutdoorVariationInputs.ageGroup}
+                          onChange={(e) => setSportsOutdoorVariationInputs((p) => ({ ...p, ageGroup: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+                  </>
+                )}
+
+                {isToysKids && (
+                  <>
+                    <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                      <h3 className={styles.cardTitle} style={{ fontSize: '1rem' }}>
+                        <span className={`material-symbols-outlined ${styles.cardTitleIcon}`}>tune</span>
+                        {t('product.variation_options')}
+                      </h3>
+                    </div>
+
+                    <div className={styles.formRow2} style={{ marginTop: '1rem' }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_age_range')}</label>
+                        <textarea
+                          value={toysKidsVariationInputs.ageRange}
+                          onChange={(e) => setToysKidsVariationInputs((p) => ({ ...p, ageRange: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_battery_required')}</label>
+                        <textarea
+                          value={toysKidsVariationInputs.batteryRequired}
+                          onChange={(e) =>
+                            setToysKidsVariationInputs((p) => ({ ...p, batteryRequired: e.target.value }))
+                          }
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow2}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>{t('product.variation_battery_type')}</label>
+                        <textarea
+                          value={toysKidsVariationInputs.batteryType}
+                          onChange={(e) => setToysKidsVariationInputs((p) => ({ ...p, batteryType: e.target.value }))}
+                          rows={2}
+                          placeholder={t('product.variation_options_placeholder')}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                    </div>
+
                     <div className={styles.divider}></div>
                   </>
                 )}

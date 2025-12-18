@@ -39,6 +39,8 @@ export async function createWithdrawal(payload) {
         subtotal: parseFloat(it.subtotal || 0),
         variantSize: it.variantSize || null,
         variantColor: it.variantColor || null,
+        selectedOptions:
+          it.selectedOptions && typeof it.selectedOptions === 'object' ? it.selectedOptions : null,
       })),
       requestedBy: payload.requestedBy || null,
       requestedAddress: payload.requestedAddress || '',

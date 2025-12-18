@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { Fragment, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { getAllProducts, deleteProduct, isLowStock, addInventoryHistory, getAllCategories, getCategoryNameByLang } from '../../services';
 import { db } from '../../firebase';
@@ -395,8 +395,8 @@ export default function ProductsPage() {
                       : `฿${(product.costPrice || 0).toLocaleString()}`;
 
                     return (
-                      <>
-                        <tr key={product.id} className={styles.tableRow}>
+                      <Fragment key={product.id}>
+                        <tr className={styles.tableRow}>
                           {/* Product */}
                           <td className={styles.tableCell}>
                             <div className={styles.productCell}>
@@ -529,7 +529,7 @@ export default function ProductsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>

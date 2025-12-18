@@ -35,7 +35,25 @@ export const DEFAULT_SHOE_SIZES = [
 
 // Default colors for dropdown
 export const DEFAULT_COLORS = [
-  'ดำ', 'ขาว', 'แดง', 'น้ำเงิน', 'เขียว', 'เหลือง', 'ส้ม', 'ชมพู', 'ม่วง', 'เทา', 'น้ำตาล', 'ครีม'
+  'ดำ',
+  'ขาว',
+  'เทา',
+  'เงิน',
+  'ทอง',
+  'โรสโกลด์',
+  'น้ำเงิน',
+  'ฟ้า',
+  'เขียว',
+  'เหลือง',
+  'ส้ม',
+  'แดง',
+  'ชมพู',
+  'ม่วง',
+  'น้ำตาล',
+  'ครีม',
+  'เบจ',
+  'โอลีฟ',
+  'มินต์'
 ];
 
 // Helper: Calculate total quantity from variants
@@ -78,6 +96,10 @@ export async function addProduct(productData) {
     const category = productData.category || categoryName?.th || 'อื่นๆ';
     const inventoryMode = productData.inventoryMode || 'bulk';
     const specs = productData.specs && typeof productData.specs === 'object' ? productData.specs : null;
+    const variationOptions =
+      productData.variationOptions && typeof productData.variationOptions === 'object'
+        ? productData.variationOptions
+        : null;
     
     let data;
     
@@ -107,6 +129,7 @@ export async function addProduct(productData) {
         category,
         inventoryMode,
         specs,
+        variationOptions,
         hasVariants: true,
         variants: variants,
         // Summary fields for easy querying
@@ -145,6 +168,7 @@ export async function addProduct(productData) {
         category,
         inventoryMode,
         specs,
+        variationOptions,
         hasVariants: false,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
@@ -217,6 +241,10 @@ export async function updateProduct(productId, productData) {
     const category = productData.category ?? categoryName?.th ?? current?.category ?? 'อื่นๆ';
     const inventoryMode = productData.inventoryMode ?? current?.inventoryMode ?? 'bulk';
     const specs = productData.specs && typeof productData.specs === 'object' ? productData.specs : (current?.specs ?? null);
+    const variationOptions =
+      productData.variationOptions && typeof productData.variationOptions === 'object'
+        ? productData.variationOptions
+        : (current?.variationOptions ?? null);
     
     let addDateValue;
     if (typeof productData.addDate === 'string') {
@@ -257,6 +285,7 @@ export async function updateProduct(productId, productData) {
         category,
         inventoryMode,
         specs,
+        variationOptions,
         hasVariants: true,
         variants: variants,
         quantity: totalQuantity,
@@ -291,6 +320,7 @@ export async function updateProduct(productId, productData) {
         category,
         inventoryMode,
         specs,
+        variationOptions,
         hasVariants: false,
         promotion: productData.promotion || null,
         updatedAt: Timestamp.now(),

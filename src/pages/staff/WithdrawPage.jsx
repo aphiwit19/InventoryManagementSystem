@@ -56,7 +56,7 @@ export default function WithdrawPage() {
   const handleQuantityChange = async (item, newQty) => {
     if (newQty < 1) return;
     try {
-      await updateCartItem(user.uid, item.productId, newQty, item.variantSize, item.variantColor, 'staff');
+      await updateCartItem(user.uid, item.productId, newQty, item.variantSize, item.variantColor, item.selectedOptions, 'staff');
       setCart(prev => prev.map(c => {
         if (c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor) {
           return { ...c, quantity: newQty };
@@ -72,7 +72,7 @@ export default function WithdrawPage() {
   const handleRemoveItem = async (item) => {
     if (!window.confirm(t('cart.confirm_remove_item'))) return;
     try {
-      await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor, 'staff');
+      await removeFromCart(user.uid, item.productId, item.variantSize, item.variantColor, item.selectedOptions, 'staff');
       setCart(prev => prev.filter(c => !(c.productId === item.productId && c.variantSize === item.variantSize && c.variantColor === item.variantColor)));
     } catch (error) {
       console.error('Error removing item:', error);
@@ -121,6 +121,8 @@ export default function WithdrawPage() {
           subtotal: item.sellPrice * item.quantity,
           variantSize: item.variantSize || null,
           variantColor: item.variantColor || null,
+          selectedOptions:
+            item.selectedOptions && typeof item.selectedOptions === 'object' ? item.selectedOptions : null,
         })),
         requestedBy: formData.requesterName,
         requestedAddress: addressForOrder,

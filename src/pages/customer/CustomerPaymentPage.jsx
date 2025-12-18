@@ -212,6 +212,8 @@ export default function CustomerPaymentPage() {
             subtotal: unitPrice * it.quantity,
             variantSize: it.variantSize || null,
             variantColor: it.variantColor || null,
+            selectedOptions:
+              it.selectedOptions && typeof it.selectedOptions === 'object' ? it.selectedOptions : null,
           };
         }),
         requestedBy: requestedBy.trim(),
