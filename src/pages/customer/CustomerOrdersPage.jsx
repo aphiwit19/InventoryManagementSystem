@@ -41,13 +41,23 @@ export default function CustomerOrdersPage() {
     load();
   }, [load]);
 
+  // Normalize status to stable code
+  const normalizeStatus = (status) => {
+    if (!status) return 'pending';
+    if (status === 'pending' || status === 'รอดำเนินการ') return 'pending';
+    if (status === 'shipped' || status === 'shipping' || status === 'กำลังดำเนินการส่ง') return 'shipped';
+    if (status === 'delivered' || status === 'ส่งสำเร็จ') return 'delivered';
+    if (status === 'cancelled' || status === 'ยกเลิก') return 'cancelled';
+    return 'pending';
+  };
+
   const filtered = orders.filter(o => {
     const hit = (
       (o.trackingNumber || '').toLowerCase().includes(search.toLowerCase()) ||
       (o.shippingCarrier || '').toLowerCase().includes(search.toLowerCase()) ||
       (o.id || '').toLowerCase().includes(search.toLowerCase())
     );
-    const statusOk = statusFilter === 'all' || (o.shippingStatus || 'pending') === statusFilter;
+    const statusOk = statusFilter === 'all' || normalizeStatus(o.shippingStatus) === statusFilter;
     return hit && statusOk;
   });
 
@@ -104,15 +114,13 @@ export default function CustomerOrdersPage() {
   };
 
   const getStatusClass = (status) => {
-    switch (status) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 'shipped':
-      case 'กำลังดำเนินการส่ง':
         return styles.statusShipped;
       case 'delivered':
-      case 'ส่งสำเร็จ':
         return styles.statusDelivered;
       case 'cancelled':
-      case 'ยกเลิก':
         return styles.statusCancelled;
       default:
         return styles.statusPending;
@@ -120,15 +128,13 @@ export default function CustomerOrdersPage() {
   };
 
   const getStatusText = (status) => {
-    switch (status) {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
       case 'shipped':
-      case 'กำลังดำเนินการส่ง':
         return t('order.status_shipped');
       case 'delivered':
-      case 'ส่งสำเร็จ':
         return t('order.status_delivered');
       case 'cancelled':
-      case 'ยกเลิก':
         return t('order.status_cancelled');
       default:
         return t('order.status_pending');
