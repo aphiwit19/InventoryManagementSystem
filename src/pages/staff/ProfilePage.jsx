@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { ensureUserProfile, updateUserProfile, addAddress, deleteAddress, setDefaultAddress } from '../../services';
+import { ensureUserProfile, updateUserProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress } from '../../services';
 import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -24,7 +24,7 @@ export default function ProfilePage() {
   // Address management
   const [addresses, setAddresses] = useState([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [, setEditingAddress] = useState(null);
+  const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
     name: '',
     address: '',
@@ -235,6 +235,20 @@ export default function ProfilePage() {
     setShowAddressModal(true);
   };
 
+  const openEditAddressModal = (addr) => {
+    setEditingAddress(addr.id);
+    setAddressForm({
+      name: addr.name || '',
+      address: addr.address || '',
+      district: addr.district || '',
+      city: addr.city || '',
+      province: addr.province || '',
+      postalCode: addr.postalCode || '',
+      phone: addr.phone || '',
+    });
+    setShowAddressModal(true);
+  };
+
   const handleSaveAddress = async () => {
     if (!user?.uid) return;
     
@@ -245,9 +259,19 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
-      const newAddress = await addAddress(user.uid, addressForm);
-      setAddresses(prev => [...prev, newAddress]);
+      if (editingAddress) {
+        // Update existing address
+        const updatedAddr = await updateAddress(user.uid, editingAddress, addressForm);
+        setAddresses(prev => prev.map(addr => 
+          addr.id === editingAddress ? updatedAddr : addr
+        ));
+      } else {
+        // Add new address
+        const newAddress = await addAddress(user.uid, addressForm);
+        setAddresses(prev => [...prev, newAddress]);
+      }
       setShowAddressModal(false);
+      setEditingAddress(null);
     } catch (error) {
       console.error('Error saving address:', error);
     } finally {
@@ -260,8 +284,14 @@ export default function ProfilePage() {
     if (!window.confirm(t('profile.confirm_delete_address'))) return;
 
     try {
-      await deleteAddress(user.uid, addressId);
-      setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+      // กรณี legacy address ที่ไม่มีใน Database จริง
+      if (addressId === 'legacy-address') {
+        await updateUserProfile(user.uid, { address: '' });
+        setAddresses([]);
+      } else {
+        await deleteAddress(user.uid, addressId);
+        setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+      }
     } catch (error) {
       console.error('Error deleting address:', error);
     }
@@ -591,7 +621,7 @@ export default function ProfilePage() {
                       className={`${styles.addressCard} ${addr.isDefault ? styles.addressCardDefault : ''}`}
                     >
                       <div className={styles.addressCardActions}>
-                        <button type="button" className={styles.addressActionButton} title="Edit">
+                        <button type="button" className={styles.addressActionButton} title="Edit" onClick={() => openEditAddressModal(addr)}>
                           <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>edit</span>
                         </button>
                         <button
@@ -719,7 +749,7 @@ export default function ProfilePage() {
       {showAddressModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <h2 className={styles.modalTitle}>{t('profile.add_new_address')}</h2>
+            <h2 className={styles.modalTitle}>{editingAddress ? t('profile.edit_address') : t('profile.add_new_address')}</h2>
 
             <form className={styles.form}>
               <div className={styles.formGrid}>
