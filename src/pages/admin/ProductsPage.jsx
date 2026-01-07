@@ -194,21 +194,39 @@ export default function ProductsPage() {
         const updatedVariants = [...addStockModal.variants];
         updatedVariants[addStockVariantIdx] = {
           ...updatedVariants[addStockVariantIdx],
-          quantity: (updatedVariants[addStockVariantIdx].quantity || 0) + addStockQty
+          quantity: (updatedVariants[addStockVariantIdx].quantity || 0) + addStockQty,
+          initialQuantity: Math.max(
+            parseInt(updatedVariants[addStockVariantIdx].initialQuantity || 0),
+            ((updatedVariants[addStockVariantIdx].quantity || 0) + addStockQty) +
+              (updatedVariants[addStockVariantIdx].reserved || 0) +
+              (updatedVariants[addStockVariantIdx].staffReserved || 0)
+          ),
         };
         // Calculate total quantity
         const totalQty = updatedVariants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+
+        const nextInitialQuantity = Math.max(
+          parseInt(addStockModal.initialQuantity || 0),
+          totalQty + (addStockModal.reserved || 0) + (addStockModal.staffReserved || 0)
+        );
         
         await updateDoc(docRef, {
           variants: updatedVariants,
           quantity: totalQty,
+          initialQuantity: nextInitialQuantity,
           updatedAt: Timestamp.now()
         });
       } else {
         // Update simple product quantity
         const newQty = (addStockModal.quantity || 0) + addStockQty;
+
+        const nextInitialQuantity = Math.max(
+          parseInt(addStockModal.initialQuantity || 0),
+          newQty + (addStockModal.reserved || 0) + (addStockModal.staffReserved || 0)
+        );
         await updateDoc(docRef, {
           quantity: newQty,
+          initialQuantity: nextInitialQuantity,
           updatedAt: Timestamp.now()
         });
       }

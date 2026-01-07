@@ -54,10 +54,10 @@ export default function AdminAlertsPage() {
   // Reset page when search changes
   useEffect(() => { setCurrentPage(1); }, [search]);
 
-  const getStockStatus = (quantity, threshold = 10) => {
-    if (quantity === 0) return { status: 'critical', label: t('admin.critical'), percent: 0 };
-    const percent = Math.min((quantity / threshold) * 100, 100);
-    if (quantity <= threshold * 0.3) return { status: 'critical', label: t('admin.critical'), percent };
+  const getStockStatus = (available, initial) => {
+    if (available === 0) return { status: 'critical', label: t('admin.critical'), percent: 0 };
+    const percent = initial > 0 ? Math.min((available / initial) * 100, 100) : 0;
+    if (percent <= 10) return { status: 'critical', label: t('admin.critical'), percent };
     return { status: 'warning', label: t('product.low_stock'), percent };
   };
 
@@ -147,8 +147,14 @@ export default function AdminAlertsPage() {
                 <tbody className={styles.tableBody}>
                   {currentItems.map((p) => {
                     const quantity = p.quantity || 0;
-                    const threshold = p.lowStockThreshold || 10;
-                    const stockStatus = getStockStatus(quantity, threshold);
+                    const reserved = p.reserved || 0;
+                    const staffReserved = p.staffReserved || 0;
+                    const available = Math.max(0, quantity - reserved);
+                    const initial = (p.initialQuantity && p.initialQuantity > 0)
+                      ? p.initialQuantity
+                      : Math.max(0, quantity + reserved + staffReserved);
+                    const threshold = Math.floor(initial * 0.2);
+                    const stockStatus = getStockStatus(available, initial);
                     const isCritical = stockStatus.status === 'critical';
 
                     return (
@@ -175,7 +181,7 @@ export default function AdminAlertsPage() {
                           <div className={styles.stockLevelWrapper}>
                             <div className={styles.stockLevelInfo}>
                               <span className={isCritical ? styles.stockLevelCurrent : styles.stockLevelCurrentWarning}>
-                                {quantity} {p.unit || t('common.piece')}
+                                {available} {p.unit || t('common.piece')}
                               </span>
                               <span className={styles.stockLevelThreshold}>{t('admin.threshold')}: {threshold}</span>
                             </div>

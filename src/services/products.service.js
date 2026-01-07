@@ -352,7 +352,16 @@ export async function updateProductQuantity(productId, quantity, isAdd = true) {
     const change = parseInt(quantity);
     const newQuantity = isAdd ? currentQuantity + change : Math.max(0, currentQuantity - change);
     const docRef = doc(db, 'products', productId);
-    await updateDoc(docRef, { quantity: newQuantity, updatedAt: Timestamp.now() });
+
+    if (isAdd) {
+      const reserved = parseInt(product?.reserved || 0);
+      const staffReserved = parseInt(product?.staffReserved || 0);
+      const currentInitial = parseInt(product?.initialQuantity || 0);
+      const nextInitial = Math.max(currentInitial, newQuantity + reserved + staffReserved);
+      await updateDoc(docRef, { quantity: newQuantity, initialQuantity: nextInitial, updatedAt: Timestamp.now() });
+    } else {
+      await updateDoc(docRef, { quantity: newQuantity, updatedAt: Timestamp.now() });
+    }
 
     if (isAdd) {
       await addInventoryHistory(productId, {
@@ -378,22 +387,34 @@ export async function updateProductQuantity(productId, quantity, isAdd = true) {
 }
 
 export function isLowStock(p) {
-  // ตรวจสอบสต๊อกรวม
-  const initial = parseInt(p.initialQuantity ?? p.quantity ?? 0);
-  const available = Math.max(0, parseInt(p.quantity || 0) - parseInt(p.reserved || 0));
-  if (initial && available / initial < 0.2) return true;
-  
-  // ตรวจสอบแต่ละ variant
-  if (p.hasVariants && Array.isArray(p.variants) && p.variants.length > 0) {
+  const qty = parseInt(p?.quantity || 0);
+  const reserved = parseInt(p?.reserved || 0);
+  const staffReserved = parseInt(p?.staffReserved || 0);
+  const available = Math.max(0, qty - reserved);
+
+  // ใช้ initialQuantity เป็นหลัก; ถ้าไม่มี/เป็น 0 ให้ fallback เป็น “สต๊อกทั้งหมด ณ ตอนนี้”
+  // เพื่อไม่ให้สินค้าที่ initialQuantity หาย/ผิดเพี้ยนคำนวณกลับด้าน
+  let initial = parseInt(p?.initialQuantity ?? 0);
+  if (!initial) initial = Math.max(0, qty + reserved + staffReserved);
+
+  // ตรวจสอบสต๊อกรวม: แจ้งเตือนเมื่อเหลือน้อยกว่า 20%
+  if (initial > 0 && available / initial < 0.2) return true;
+
+  // ตรวจสอบแต่ละ variant (ถ้ามี): แจ้งเตือนเมื่อเหลือน้อยกว่า 20% ของ initialQuantity ของ variant
+  if (p?.hasVariants && Array.isArray(p?.variants) && p.variants.length > 0) {
     for (const v of p.variants) {
-      const vInitial = parseInt(v.initialQuantity ?? v.quantity ?? 0);
-      const vAvailable = Math.max(0, parseInt(v.quantity || 0) - parseInt(v.reserved || 0));
-      if (vInitial && vAvailable / vInitial < 0.2) return true;
-      // ถ้า variant เหลือน้อยกว่า 5 ก็ถือว่าต่ำ
-      if (vAvailable <= 5) return true;
+      const vQty = parseInt(v?.quantity || 0);
+      const vReserved = parseInt(v?.reserved || 0);
+      const vStaffReserved = parseInt(v?.staffReserved || 0);
+      const vAvailable = Math.max(0, vQty - vReserved);
+
+      let vInitial = parseInt(v?.initialQuantity ?? 0);
+      if (!vInitial) vInitial = Math.max(0, vQty + vReserved + vStaffReserved);
+
+      if (vInitial > 0 && vAvailable / vInitial < 0.2) return true;
     }
   }
-  
+
   return false;
 }
 
@@ -402,11 +423,13 @@ export function getLowStockVariants(p) {
   if (!p.hasVariants || !Array.isArray(p.variants)) return [];
   
   return p.variants.filter(v => {
-    const vInitial = parseInt(v.initialQuantity ?? v.quantity ?? 0);
-    const vAvailable = Math.max(0, parseInt(v.quantity || 0) - parseInt(v.reserved || 0));
-    if (vInitial && vAvailable / vInitial < 0.2) return true;
-    if (vAvailable <= 5) return true;
-    return false;
+    const vQty = parseInt(v?.quantity || 0);
+    const vReserved = parseInt(v?.reserved || 0);
+    const vStaffReserved = parseInt(v?.staffReserved || 0);
+    const vAvailable = Math.max(0, vQty - vReserved);
+    let vInitial = parseInt(v?.initialQuantity ?? 0);
+    if (!vInitial) vInitial = Math.max(0, vQty + vReserved + vStaffReserved);
+    return vInitial > 0 && vAvailable / vInitial < 0.2;
   }).map(v => ({
     size: v.size,
     color: v.color,
